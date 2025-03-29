@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:js-app"],
+  "prConcurrentLimit": 0,
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "prHourlyLimit": 0,
+  "rebaseWhen": "auto",
+  "baseBranches": ["main"],
+  "schedule": ["before 5am on Monday"],
+  "autoApprove": true,
+  "automerge": true
+}
