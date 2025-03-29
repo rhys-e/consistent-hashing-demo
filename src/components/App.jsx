@@ -363,7 +363,7 @@ export function App({
                 </label>
                 <input
                   type="range"
-                  min="0"
+                  min="1"
                   max="20"
                   value={vnodeCount}
                   onChange={e => setVnodeCount(Number(e.target.value))}
