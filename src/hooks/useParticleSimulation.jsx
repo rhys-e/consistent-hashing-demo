@@ -135,7 +135,6 @@ export function useParticleSimulation({
         // start animation
         console.log('Starting animation');
         requestRef.current = requestAnimationFrame(time => {
-          console.log('start: spawn particles');
           spawnParticles();
           animateParticles(time);
         });
