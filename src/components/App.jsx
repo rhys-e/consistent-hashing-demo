@@ -188,7 +188,6 @@ export function App({
     }
   }, [runningState, addLog]);
 
-  // -------------- Add / Remove servers --------------
   const addServer = (position = null) => {
     // due to node removals. it's possible to create clashes with existing IDs
     // so we need to check if the new ID already exists and cycle through the alphabet
