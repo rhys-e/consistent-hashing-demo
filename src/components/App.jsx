@@ -481,16 +481,14 @@ export function App({
           </div>
         </div>
       </div>
-      <div className="flex items-end justify-end pt-2">
-        <a
-          href="https://github.com/rhys-e/consistent-hashing-demo"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-sm p-0 pb-2 text-[0.65em] text-ui-text-secondary no-underline transition-colors duration-200 hover:text-ui-text-primary"
-        >
-          <span className="tracking-wide">SOURCE</span>
-        </a>
-      </div>
+      <a
+        href="https://github.com/rhys-e/consistent-hashing-demo"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-sm p-0 pb-2 text-[0.65em] text-ui-text-secondary no-underline transition-colors duration-200 hover:text-ui-text-primary"
+      >
+        <span className="tracking-wide">[SOURCE]</span>
+      </a>
     </div>
   );
 }
