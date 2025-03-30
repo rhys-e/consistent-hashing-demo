@@ -57,7 +57,7 @@ export function App({
     svgRadius: 0,
   });
 
-  const [numRequests, setNumRequests] = useState(5);
+  const [numRequests, setNumRequests] = useState(1);
 
   useEffect(() => {
     function calculateDimensions() {
