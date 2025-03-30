@@ -253,13 +253,12 @@ export function App({
     <div
       className={`mx-auto flex min-h-screen max-w-[1200px] flex-col bg-body-bg p-8 font-mono text-body-text`}
     >
-      <h1
-        className={`text-glow m-0 border-b-2 border-cyber-border pb-2 tracking-wider text-heading-color`}
-      >
-        CONSISTENT HASHING{' '}
-        <span className="text-[0.8em] text-ui-text-secondary">// VISUALISATION</span>
-      </h1>
-
+      <div className="flex items-end justify-between border-b-2 border-cyber-border pb-2">
+        <h1 className={`text-glow m-0 tracking-wider text-heading-color`}>
+          CONSISTENT HASHING{' '}
+          <span className="text-[0.8em] text-ui-text-secondary">// VISUALISATION</span>
+        </h1>
+      </div>
       <p
         className={`border-l-[3px] border-l-btn-purple-border bg-btn-neutral-bg p-[1rem_1rem] pl-4 text-ui-text-bright`}
       >
@@ -268,7 +267,6 @@ export function App({
         <br />
         Routing algorithm: particles routed to first node clockwise on ring from hash position.
       </p>
-
       <div className="flex gap-4">
         {/* Visualisation Panel - Left Column */}
         <div className="flex flex-col gap-4" style={{ width: `${dimensions.svgWidth}px` }}>
@@ -483,6 +481,16 @@ export function App({
             </div>
           </div>
         </div>
+      </div>
+      <div className="flex items-end justify-end pt-2">
+        <a
+          href="https://github.com/rhys-e/consistent-hashing-demo"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-sm p-0 pb-2 text-[0.65em] text-ui-text-secondary no-underline transition-colors duration-200 hover:text-ui-text-primary"
+        >
+          <span className="tracking-wide">SOURCE</span>
+        </a>
       </div>
     </div>
   );
