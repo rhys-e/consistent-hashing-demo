@@ -7,6 +7,7 @@ import { useConsoleLog } from '../hooks/useConsoleLog';
 import { ConsoleLog } from './ConsoleLog';
 import { STATE_MACHINE } from '../utils/stateUtils';
 import theme from '../themes';
+import { ToggleIcon } from './ToggleIcon';
 
 const CYBER_COLORS = [
   '#E15759', // Neo-Tokyo Red (first node)
@@ -301,7 +302,9 @@ export function App({
               <h3 className="panel-title panel-title-with-dot panel-title-with-dot-controls text-heading-color">
                 System Controls
               </h3>
-              <div className="panel-toggle">{collapsedPanels.controls ? '+' : '–'}</div>
+              <div className="panel-toggle flex items-center justify-center">
+                <ToggleIcon isExpanded={!collapsedPanels.controls} size={12} />
+              </div>
             </div>
 
             <div
@@ -400,7 +403,9 @@ export function App({
               <h3 className="panel-title panel-title-with-dot panel-title-with-dot-metrics text-heading-color">
                 System Metrics
               </h3>
-              <div className="panel-toggle">{collapsedPanels.metrics ? '+' : '–'}</div>
+              <div className="panel-toggle flex items-center justify-center">
+                <ToggleIcon isExpanded={!collapsedPanels.metrics} size={12} />
+              </div>
             </div>
 
             <div

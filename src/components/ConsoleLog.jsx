@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-
+import { ToggleIcon } from './ToggleIcon';
 export function ConsoleLog({ logs, collapsed, togglePanel }) {
   const consoleRef = useRef(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
@@ -35,14 +35,14 @@ export function ConsoleLog({ logs, collapsed, togglePanel }) {
   };
 
   return (
-    <div
-      className={`rounded-sm border border-cyber-border bg-panel-bg p-6 ${collapsed ? '' : 'h-full'}`}
-    >
+    <div className={`rounded-sm border border-cyber-border bg-panel-bg p-6`}>
       <div className="panel-header" onClick={togglePanel}>
         <h3 className="panel-title panel-title-with-dot panel-title-with-dot-console text-heading-color">
           System Console
         </h3>
-        <div className="panel-toggle">{collapsed ? '+' : '–'}</div>
+        <div className="panel-toggle flex items-center justify-center">
+          <ToggleIcon isExpanded={!collapsed} size={12} />
+        </div>
       </div>
 
       <div
