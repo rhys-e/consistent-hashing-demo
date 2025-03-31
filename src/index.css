@@ -391,7 +391,7 @@
   }
 
   .stack span {
-    opacity: 0.8;
+    opacity: 0.9;
     grid-row-start: 1;
     grid-column-start: 1;
     --stack-height: calc(100% / var(--stacks) - 1px);

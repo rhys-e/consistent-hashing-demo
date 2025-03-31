@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { useRingNodes } from '../hooks/useRingNodes';
@@ -59,24 +59,31 @@ export function App({
   });
 
   const [numRequests, setNumRequests] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
 
   const NUM_STACKS = 5;
 
+  useLayoutEffect(() => {
+    function updateSize() {
+      setIsMobile(window.innerWidth < 950);
+    }
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
   useEffect(() => {
     function calculateDimensions() {
-      const pagePadding = theme.layout.pagePadding; // 64px
-      const columnGap = theme.layout.columnGap; // 32px
+      const pagePadding = isMobile ? 0 : theme.layout.pagePadding;
+      const columnGap = isMobile ? 0 : theme.layout.columnGap;
       const containerWidth = Math.min(window.innerWidth - pagePadding, CONTAINER_MAX_WIDTH);
       const availableWidth = containerWidth - columnGap;
 
-      const svgWidth = Math.min(
-        (availableWidth * SVG_WIDTH_PERCENTAGE) / 100,
-        availableWidth * 0.85
-      );
+      const svgWidth = isMobile
+        ? availableWidth
+        : Math.min((availableWidth * SVG_WIDTH_PERCENTAGE) / 100, availableWidth * 0.85);
 
       const svgHeight = svgWidth * SVG_ASPECT_RATIO;
       const svgRadius = (svgWidth / 2) * (SVG_RADIUS_PERCENTAGE / 100);
-
       setDimensions({ svgWidth, svgHeight, svgRadius });
     }
 
@@ -84,7 +91,13 @@ export function App({
 
     window.addEventListener('resize', calculateDimensions);
     return () => window.removeEventListener('resize', calculateDimensions);
-  }, [SVG_WIDTH_PERCENTAGE, SVG_ASPECT_RATIO, SVG_RADIUS_PERCENTAGE, CONTAINER_MAX_WIDTH]);
+  }, [
+    SVG_WIDTH_PERCENTAGE,
+    SVG_ASPECT_RATIO,
+    SVG_RADIUS_PERCENTAGE,
+    CONTAINER_MAX_WIDTH,
+    isMobile,
+  ]);
 
   // Physical servers
   const [servers, setServers] = useState(() => {
@@ -253,31 +266,38 @@ export function App({
 
   return (
     <div
-      className={`mx-auto flex min-h-screen max-w-[1200px] flex-col bg-body-bg p-8 font-mono text-body-text`}
+      className={`mx-auto flex min-h-screen max-w-[1200px] flex-col bg-body-bg p-0 font-mono text-body-text md:p-8`}
     >
       <div className="flex items-end justify-between border-b-2 border-cyber-border pb-2">
-        <h1 className={`text-glow m-0 tracking-wider text-heading-color`}>
+        <h1 className={`text-glow m-0 text-xl tracking-wider text-heading-color md:text-2xl`}>
           <div className="stack" style={{ '--stacks': NUM_STACKS }}>
             {Array.from({ length: NUM_STACKS }).map((_, index) => (
               <span className="text-glow" key={index} style={{ '--index': index }}>
                 CONSISTENT HASHING{' '}
-                <span className="text-[0.8em] text-ui-text-secondary">// VISUALISATION</span>
+                <span className="hidden text-[0.8em] text-ui-text-secondary md:inline">
+                  // VISUALISATION
+                </span>
               </span>
             ))}
           </div>
         </h1>
       </div>
+
       <p
-        className={`border-l-[3px] border-l-btn-purple-border bg-btn-neutral-bg p-[1rem_1rem] pl-4 text-ui-text-bright`}
+        className={`hidden border-l-[3px] border-l-btn-purple-border bg-btn-neutral-bg p-[1rem_1rem] pl-4 text-ui-text-bright md:block`}
       >
         <span className="text-ui-text-success">:: SYSTEM STATUS</span> // Distributing requests
         across server nodes.
         <br />
         Routing algorithm: particles routed to first node clockwise on ring from hash position.
       </p>
-      <div className="flex gap-4">
-        {/* Visualisation Panel - Left Column */}
-        <div className="flex flex-col gap-4" style={{ width: `${dimensions.svgWidth}px` }}>
+
+      <div className="flex flex-col gap-4 md:flex-row">
+        {/* Visualisation Panel */}
+        <div
+          className="flex w-full flex-col gap-4 md:w-auto"
+          style={{ width: isMobile ? '100%' : `${dimensions.svgWidth}px` }}
+        >
           <HashRingVisualisation
             SVG_WIDTH={dimensions.svgWidth}
             SVG_HEIGHT={dimensions.svgHeight}
@@ -292,19 +312,26 @@ export function App({
             onAddServerAtPosition={position => addServer(position)}
           />
 
-          <ConsoleLog
-            logs={logs}
-            collapsed={collapsedPanels.console}
-            togglePanel={() => togglePanel('console')}
-          />
+          <div className="hidden md:block">
+            <ConsoleLog
+              logs={logs}
+              collapsed={collapsedPanels.console}
+              togglePanel={() => togglePanel('console')}
+            />
+          </div>
         </div>
 
-        {/* Controls and Stats Panel - Right Column */}
-        <div className="flex flex-1 flex-col gap-4" style={{ minWidth: 'min(15vw, 180px)' }}>
+        {/* Controls and Stats Panel */}
+        <div
+          className="flex flex-1 flex-col gap-4"
+          style={{ minWidth: isMobile ? '100%' : 'min(15vw, 180px)' }}
+        >
           {/* Controls Panel */}
           <div
-            className="rounded-sm border border-cyber-border bg-panel-bg p-6"
-            style={{ minHeight: collapsedPanels.controls ? 'auto' : `${dimensions.svgHeight}px` }}
+            className="rounded-sm border border-cyber-border bg-panel-bg p-4 md:p-6"
+            style={{
+              minHeight: collapsedPanels.controls ? 'auto' : `${dimensions.svgHeight}px`,
+            }}
           >
             <div className="panel-header" onClick={() => togglePanel('controls')}>
               <h3 className="panel-title panel-title-with-dot panel-title-with-dot-controls text-heading-color">
@@ -406,7 +433,7 @@ export function App({
           </div>
 
           {/* Stats display */}
-          <div className="rounded-sm border border-cyber-border bg-panel-bg p-6 font-mono">
+          <div className="rounded-sm border border-cyber-border bg-panel-bg p-4 font-mono md:p-6">
             <div className="panel-header" onClick={() => togglePanel('metrics')}>
               <h3 className="panel-title panel-title-with-dot panel-title-with-dot-metrics text-heading-color">
                 System Metrics

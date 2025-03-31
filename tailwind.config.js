@@ -5,6 +5,9 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      screens: {
+        md: '950px',
+      },
       colors: {
         // Primary colors from theme
         'neo-red': theme.colors.primary.neoRed,
