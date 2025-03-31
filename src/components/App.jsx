@@ -60,6 +60,8 @@ export function App({
 
   const [numRequests, setNumRequests] = useState(1);
 
+  const NUM_STACKS = 5;
+
   useEffect(() => {
     function calculateDimensions() {
       const pagePadding = theme.layout.pagePadding; // 64px
@@ -255,8 +257,14 @@ export function App({
     >
       <div className="flex items-end justify-between border-b-2 border-cyber-border pb-2">
         <h1 className={`text-glow m-0 tracking-wider text-heading-color`}>
-          CONSISTENT HASHING{' '}
-          <span className="text-[0.8em] text-ui-text-secondary">// VISUALISATION</span>
+          <div className="stack" style={{ '--stacks': NUM_STACKS }}>
+            {Array.from({ length: NUM_STACKS }).map((_, index) => (
+              <span className="text-glow" key={index} style={{ '--index': index }}>
+                CONSISTENT HASHING{' '}
+                <span className="text-[0.8em] text-ui-text-secondary">// VISUALISATION</span>
+              </span>
+            ))}
+          </div>
         </h1>
       </div>
       <p
