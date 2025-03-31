@@ -101,11 +101,11 @@ export function App({
   const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
   const [collapsedPanels, setCollapsedPanels] = useState({
     controls: false,
-    metrics: false,
+    metrics: true,
     documentation: false,
     legend: true,
     status: true,
-    console: false,
+    console: true,
   });
 
   const { logs, addLog, clearLogs } = useConsoleLog(200);
@@ -292,7 +292,11 @@ export function App({
 
         {/* Controls and Stats Panel - Right Column */}
         <div className="flex flex-1 flex-col gap-4" style={{ minWidth: 'min(15vw, 180px)' }}>
-          <div className="rounded-sm border border-cyber-border bg-panel-bg p-6">
+          {/* Controls Panel */}
+          <div
+            className="rounded-sm border border-cyber-border bg-panel-bg p-6"
+            style={{ minHeight: `${dimensions.svgHeight}px` }}
+          >
             <div className="panel-header" onClick={() => togglePanel('controls')}>
               <h3 className="panel-title panel-title-with-dot panel-title-with-dot-controls text-heading-color">
                 System Controls
