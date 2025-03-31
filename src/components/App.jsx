@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { useRingNodes } from '../hooks/useRingNodes';
 import { useStats } from '../hooks/useStats';
 import { useConsoleLog } from '../hooks/useConsoleLog';
+import { useResponsive } from '../hooks/useResponsive';
 import { ConsoleLog } from './ConsoleLog';
+import { Header } from './Header';
+import { ControlsPanel } from './ControlsPanel';
+import { MetricsPanel } from './MetricsPanel';
 import { STATE_MACHINE } from '../utils/stateUtils';
 import theme from '../themes';
-import { ToggleIcon } from './ToggleIcon';
 
 const CYBER_COLORS = [
   '#E15759', // Neo-Tokyo Red (first node)
@@ -59,17 +62,8 @@ export function App({
   });
 
   const [numRequests, setNumRequests] = useState(1);
-  const [isMobile, setIsMobile] = useState(false);
-
+  const { isMobile } = useResponsive(950);
   const NUM_STACKS = 5;
-
-  useLayoutEffect(() => {
-    function updateSize() {
-      setIsMobile(window.innerWidth < 950);
-    }
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
 
   useEffect(() => {
     function calculateDimensions() {
@@ -268,29 +262,7 @@ export function App({
     <div
       className={`mx-auto flex min-h-screen max-w-[1200px] flex-col bg-body-bg p-0 font-mono text-body-text md:p-8`}
     >
-      <div className="flex items-end justify-between border-b-2 border-cyber-border pb-2">
-        <h1 className={`text-glow m-0 text-xl tracking-wider text-heading-color md:text-2xl`}>
-          <div className="stack" style={{ '--stacks': NUM_STACKS }}>
-            {Array.from({ length: NUM_STACKS }).map((_, index) => (
-              <span className="text-glow" key={index} style={{ '--index': index }}>
-                CONSISTENT HASHING{' '}
-                <span className="hidden text-[0.8em] text-ui-text-secondary md:inline">
-                  // VISUALISATION
-                </span>
-              </span>
-            ))}
-          </div>
-        </h1>
-      </div>
-
-      <p
-        className={`hidden border-l-[3px] border-l-btn-purple-border bg-btn-neutral-bg p-[1rem_1rem] pl-4 text-ui-text-bright md:block`}
-      >
-        <span className="text-ui-text-success">:: SYSTEM STATUS</span> // Distributing requests
-        across server nodes.
-        <br />
-        Routing algorithm: particles routed to first node clockwise on ring from hash position.
-      </p>
+      <Header stackCount={NUM_STACKS} />
 
       <div className="flex flex-col gap-4 md:flex-row">
         {/* Visualisation Panel */}
@@ -327,202 +299,32 @@ export function App({
           style={{ minWidth: isMobile ? '100%' : 'min(15vw, 180px)' }}
         >
           {/* Controls Panel */}
-          <div
-            className="rounded-sm border border-cyber-border bg-panel-bg p-4 md:p-6"
-            style={{
-              minHeight: collapsedPanels.controls ? 'auto' : `${dimensions.svgHeight}px`,
-            }}
-          >
-            <div className="panel-header" onClick={() => togglePanel('controls')}>
-              <h3 className="panel-title panel-title-with-dot panel-title-with-dot-controls text-heading-color">
-                System Controls
-              </h3>
-              <div className="panel-toggle flex items-center justify-center">
-                <ToggleIcon isExpanded={!collapsedPanels.controls} size={12} />
-              </div>
-            </div>
-
-            <div
-              className={`panel-content ${collapsedPanels.controls ? 'panel-content-collapsed' : 'panel-content-expanded'}`}
-            >
-              <div className="mb-4 mt-4 flex gap-2">
-                <button
-                  className={`btn flex-1 cursor-pointer rounded-sm border px-4 py-2 font-bold shadow-md transition-all ${
-                    runningState === STATE_MACHINE.RUNNING
-                      ? 'border-btn-danger-border bg-btn-danger-bg text-ui-text-bright shadow-btn-danger-shadow'
-                      : 'border-btn-success-border bg-btn-success-bg text-ui-text-bright shadow-btn-success-shadow'
-                  } `}
-                  onClick={toggleRunning}
-                >
-                  {runningState === STATE_MACHINE.RUNNING ? 'HALT' : 'EXECUTE'}
-                </button>
-
-                <button
-                  className="btn flex-1 cursor-pointer rounded-sm border border-cyber-border bg-btn-neutral-bg px-4 py-2 font-bold text-ui-text-bright shadow-button-glow shadow-btn-neutral-shadow"
-                  onClick={resetAll}
-                >
-                  RESET
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <button
-                  className="btn w-full cursor-pointer rounded-sm border border-btn-purple-border bg-btn-purple-bg px-4 py-2 font-bold text-ui-text-bright shadow-button-glow shadow-btn-purple-shadow"
-                  onClick={addServer}
-                >
-                  ADD SERVER NODE
-                </button>
-                <p className="mt-2 text-sm italic text-ui-text-secondary">
-                  // Click node on ring to terminate server
-                </p>
-              </div>
-
-              <div className="mb-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
-                <label className="mb-3 block text-ui-text-bright">
-                  <span className="text-body-text">PARTICLE_SPEED:</span>{' '}
-                  {speedMultiplier.toFixed(1)}x
-                </label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="3"
-                  step="0.1"
-                  value={speedMultiplier}
-                  onChange={e => setSpeedMultiplier(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-2 text-sm italic text-ui-text-secondary">
-                  // Adjust particle travel speed
-                </p>
-              </div>
-
-              <div className="mb-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
-                <label className="mb-3 block text-ui-text-bright">
-                  <span className="text-body-text">VNODE_COUNT:</span> {vnodeCount}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="20"
-                  value={vnodeCount}
-                  onChange={e => setVnodeCount(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-2 text-sm italic text-ui-text-secondary">
-                  // Higher count = better distribution
-                </p>
-              </div>
-
-              <div className="mb-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
-                <label className="mb-3 block text-ui-text-bright">
-                  <span className="text-body-text">REQUEST_COUNT:</span> {numRequests}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="20"
-                  value={numRequests}
-                  onChange={e => setNumRequests(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-2 text-sm italic text-ui-text-secondary">
-                  // Number of concurrent requests in the system
-                </p>
-              </div>
-            </div>
-          </div>
+          <ControlsPanel
+            collapsed={collapsedPanels.controls}
+            togglePanel={() => togglePanel('controls')}
+            runningState={runningState}
+            toggleRunning={toggleRunning}
+            resetAll={resetAll}
+            addServer={addServer}
+            speedMultiplier={speedMultiplier}
+            setSpeedMultiplier={setSpeedMultiplier}
+            vnodeCount={vnodeCount}
+            setVnodeCount={setVnodeCount}
+            numRequests={numRequests}
+            setNumRequests={setNumRequests}
+            dimensions={dimensions}
+          />
 
           {/* Stats display */}
-          <div className="rounded-sm border border-cyber-border bg-panel-bg p-4 font-mono md:p-6">
-            <div className="panel-header" onClick={() => togglePanel('metrics')}>
-              <h3 className="panel-title panel-title-with-dot panel-title-with-dot-metrics text-heading-color">
-                System Metrics
-              </h3>
-              <div className="panel-toggle flex items-center justify-center">
-                <ToggleIcon isExpanded={!collapsedPanels.metrics} size={12} />
-              </div>
-            </div>
-
-            <div
-              className={`panel-content ${collapsedPanels.metrics ? 'panel-content-collapsed' : 'panel-content-expanded'}`}
-            >
-              <div className="mt-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4 font-mono text-[0.9rem]">
-                <p className="m-0 mb-2 flex justify-between">
-                  <span className="text-ui-text-secondary">SERVER_COUNT:</span>
-                  <span className="text-ui-text-bright">{servers.length}</span>
-                </p>
-                <p className="m-0 mb-2 flex justify-between">
-                  <span className="text-ui-text-secondary">VNODE_PER_SERVER:</span>
-                  <span className="text-ui-text-bright">{Math.max(1, vnodeCount)}</span>
-                </p>
-                <p className="m-0 mb-2 flex justify-between">
-                  <span className="text-ui-text-secondary">TOTAL_RING_NODES:</span>
-                  <span className="text-ui-text-bright">{Object.keys(ringNodes).length}</span>
-                </p>
-                <p className="m-0 mb-2 flex justify-between">
-                  <span className="text-ui-text-secondary">REQUESTS_PROCESSED:</span>
-                  <span className="text-ui-text-bright">{stats.requestsProcessed}</span>
-                </p>
-                <p className="m-0 mb-2 flex justify-between">
-                  <span className="text-ui-text-secondary">LOAD_IMBALANCE:</span>
-                  <span
-                    className={`${loadImbalance < 10 ? 'text-ui-text-success' : loadImbalance < 30 ? 'text-ui-text-warning' : 'text-ui-text-error'}`}
-                  >
-                    {loadImbalance.toFixed(2)}%
-                  </span>
-                </p>
-                <p className="mt-2 text-sm italic text-ui-text-secondary">
-                  // Lower imbalance = optimal distribution
-                </p>
-              </div>
-
-              {servers.length > 0 && (
-                <div className="mt-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
-                  <h4 className="m-0 mb-3 text-[0.9rem] uppercase tracking-wider text-ui-text-bright">
-                    Node Load Distribution
-                  </h4>
-                  {/* sort lexographically */}
-                  {servers
-                    .sort((a, b) => a.id.localeCompare(b.id))
-                    .map(server => {
-                      const requests = stats.nodeStats[server.id] || 0;
-                      const maxRequests = Math.max(...Object.values(stats.nodeStats), 1);
-                      const percentage = Math.round((requests / maxRequests) * 100) || 0;
-
-                      return (
-                        <div key={server.id} className="mb-3">
-                          <div className="mb-1 flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div
-                                className="mr-2 h-[10px] w-[10px] rounded-sm"
-                                style={{
-                                  background: server.color,
-                                  boxShadow: `0 0 5px ${server.color}`,
-                                }}
-                              />
-                              <span className="text-[0.9rem] text-ui-text-bright">{server.id}</span>
-                            </div>
-                            <span className="text-[0.9rem] text-ui-text-bright">{requests}</span>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div className="relative h-[5px] w-full overflow-hidden bg-dark-cyber">
-                            <div
-                              className={`absolute h-full transition-[width] duration-normal ease-default`}
-                              style={{
-                                width: `${percentage}%`,
-                                background: server.color,
-                                boxShadow: `0 0 10px ${server.color}`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-          </div>
+          <MetricsPanel
+            collapsed={collapsedPanels.metrics}
+            togglePanel={() => togglePanel('metrics')}
+            stats={stats}
+            servers={servers}
+            vnodeCount={vnodeCount}
+            loadImbalance={loadImbalance}
+            ringNodes={ringNodes}
+          />
         </div>
       </div>
       <a
