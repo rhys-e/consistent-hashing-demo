@@ -295,7 +295,7 @@ export function App({
           {/* Controls Panel */}
           <div
             className="rounded-sm border border-cyber-border bg-panel-bg p-6"
-            style={{ minHeight: `${dimensions.svgHeight}px` }}
+            style={{ minHeight: collapsedPanels.controls ? 'auto' : `${dimensions.svgHeight}px` }}
           >
             <div className="panel-header" onClick={() => togglePanel('controls')}>
               <h3 className="panel-title panel-title-with-dot panel-title-with-dot-controls text-heading-color">
