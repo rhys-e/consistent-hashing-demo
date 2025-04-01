@@ -54,6 +54,7 @@ export function App({
   CONTAINER_MAX_WIDTH = 1200,
   initialNodeCount = 2,
   initialVnodeCount = 2,
+  initialNumRequests = 1,
 }) {
   const [dimensions, setDimensions] = useState({
     svgWidth: 0,
@@ -61,7 +62,7 @@ export function App({
     svgRadius: 0,
   });
 
-  const [numRequests, setNumRequests] = useState(1);
+  const [numRequests, setNumRequests] = useState(initialNumRequests);
   const { isMobile } = useResponsive(950);
   const NUM_STACKS = 5;
 
@@ -238,6 +239,7 @@ export function App({
     setServers(initialServers);
     setVnodeCount(initialVnodeCount);
     setRunningState(STATE_MACHINE.INIT);
+    setNumRequests(initialNumRequests);
     resetStats();
     clearLogs();
     addLog('System reset to initial state', 'info');
