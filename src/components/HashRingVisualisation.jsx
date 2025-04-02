@@ -370,7 +370,10 @@ export function HashRingVisualisation({
                         y2={y}
                         stroke={`url(#${gradientId})`}
                         strokeWidth={theme.hashRing.particle.trailWidth}
-                        className="particle-trail"
+                        className="particle-trail animate-particle-blink"
+                        style={{
+                          opacity: theme.hashRing.particle.trailOpacity,
+                        }}
                       />
 
                       {/* Particle dot */}

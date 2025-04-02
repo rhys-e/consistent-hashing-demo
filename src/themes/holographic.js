@@ -160,14 +160,14 @@ const holographicTheme = {
     particle: {
       ...baseTheme.hashRing.particle,
       color: '#FFFFFF',
-      size: 6,
+      size: 5,
       strokeColor: 'rgba(150, 220, 255, 0.8)',
       strokeWidth: 2,
       glowDeviation: 3,
       trailWidth: 6,
-      trailOpacity: 0.6,
+      trailOpacity: 0.8,
       trailLength: 0.01,
-      animationDuration: 1000,
+      animationDuration: 1500,
     },
     // Hit effect appearance
     hitEffect: {
@@ -205,8 +205,8 @@ const holographicTheme = {
       animationDuration: 2500,
       dotSize: 6,
       dotColor: 'rgba(255, 255, 255, 0.9)',
-      blinkDuration: 1200,
-      minOpacity: 0.4,
+      blinkDuration: 1500,
+      minOpacity: 0.5,
       maxOpacity: 1.0,
     },
     // Tooltip appearance
