@@ -4,12 +4,12 @@ import seedrandom from 'seedrandom';
 
 async function generateRequest(prng) {
   // Generate a random key using the seeded PRNG
-  const randomStr = Array.from({ length: 8 }, () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const randomStr = Array.from({ length: 4 }, () => {
+    const chars = '0123456789';
     return chars.charAt(Math.floor(prng() * chars.length));
   }).join('');
 
-  const key = `req-${randomStr}`;
+  const key = `user_id_${randomStr}`;
   const { normalised } = await hashString(key);
   return { key, initialPos: normalised };
 }

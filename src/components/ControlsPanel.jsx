@@ -105,7 +105,7 @@ export function ControlsPanel({
 
         <div className="mb-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
           <label className="mb-3 block text-ui-text-bright">
-            <span className="text-body-text">REQUEST_COUNT:</span> {numRequests}
+            <span className="text-body-text">USER_COUNT:</span> {numRequests}
           </label>
           <input
             type="range"
@@ -116,7 +116,7 @@ export function ControlsPanel({
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">
-            // Number of concurrent requests in the system
+            // Number of concurrent users in the system
           </p>
         </div>
       </div>
