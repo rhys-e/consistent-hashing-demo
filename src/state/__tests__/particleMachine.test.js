@@ -1,6 +1,5 @@
 import { createActor, fromCallback } from 'xstate';
 import { createParticleMachine } from '../particleMachine';
-
 describe('Particle State Machine', () => {
   // Test configuration
   const SVG_WIDTH = 817;
@@ -8,7 +7,6 @@ describe('Particle State Machine', () => {
   const SVG_RADIUS = 347;
   const PARTICLE_SPEED = 0.002;
 
-  // Create a standard initial props object
   const createInitialProps = (overrides = {}) => ({
     id: 'test-particle-id',
     spawnPos: 0.3652613142890067,

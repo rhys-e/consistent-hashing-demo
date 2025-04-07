@@ -102,7 +102,6 @@ export const createParticleMachine = initialProps =>
 
         return updates;
       }),
-
       incrementRingAnimationProgress: assign(({ context: ctx, event }, { epsilon }) => {
         const updates = {
           lastTickTime: event.time,

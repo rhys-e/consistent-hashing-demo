@@ -9,8 +9,14 @@ export const simulationMachine = initialProps =>
       cycleCount: 0,
       particleRefs: [],
       hits: [],
-      ringNodes: Object.values(initialProps.ringNodes).sort((a, b) => a.position - b.position),
+      ringNodes: initialProps.ringNodes,
+      fixedRequests: initialProps.fixedRequests,
     }),
+    on: {
+      UPDATE: {
+        actions: 'updateContext',
+      },
+    },
     states: {
       idle: {
         on: {
@@ -20,7 +26,7 @@ export const simulationMachine = initialProps =>
         },
       },
       running: {
-        entry: 'spawnParticles',
+        entry: ['spawnParticles', 'sortRingNodes'],
         on: {
           TICK: {
             actions: 'forwardTickToParticles',
@@ -47,6 +53,17 @@ export const simulationMachine = initialProps =>
     },
   }).provide({
     actions: {
+      updateContext: assign(({ context, event }) => {
+        return {
+          ...context,
+          ...event.payload,
+        };
+      }),
+      sortRingNodes: assign(({ context }) => {
+        return {
+          ringNodes: context.ringNodes.sort((a, b) => a.position - b.position),
+        };
+      }),
       spawnParticles: assign(({ context, spawn }) => {
         function findResponsibleNode(nodesSorted, keyPos) {
           for (let i = 0; i < nodesSorted.length; i++) {
@@ -58,7 +75,7 @@ export const simulationMachine = initialProps =>
           return nodesSorted[0];
         }
 
-        const requests = initialProps.fixedRequests || [];
+        const requests = context.fixedRequests || [];
         const newParticleRefs = requests.map(reqData => {
           // create a child machine
           const responsible = findResponsibleNode(context.ringNodes, reqData.position);
@@ -86,7 +103,6 @@ export const simulationMachine = initialProps =>
           hits: [],
         };
       }),
-
       markOneParticleDone: assign(({ context: ctx, event }) => {
         const updatedRefs = ctx.particleRefs.filter(p => p.particleId !== event.particleId);
         return {
@@ -100,18 +116,15 @@ export const simulationMachine = initialProps =>
           ],
         };
       }),
-
       incrementCycleCount: assign({
         cycleCount: ({ context }) => context.cycleCount + 1,
       }),
-
       forwardTickToParticles: (ctx, event) => {
         ctx.particleRefs.forEach(({ ref }) => {
           ref.send(event);
         });
       },
     },
-
     guards: {
       isLastParticle: ({ context, event }) =>
         context.particleRefs.length === 1 &&

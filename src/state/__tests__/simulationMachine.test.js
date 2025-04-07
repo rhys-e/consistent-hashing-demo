@@ -1,20 +1,25 @@
 import { createActor, fromCallback } from 'xstate';
-import { simulationMachine } from '../simulationMachine'; // <--- adjust path as needed
-
+import { simulationMachine } from '../simulationMachine';
 describe('Simulation State Machine', () => {
   let simulationService;
   let parentActor;
   let receivedEvents;
 
-  // Example "fixedRequests" to pass into the simulation
   const fixedRequests = [
     { id: 'p1', position: 0.2, targetPos: 0.3 },
     { id: 'p2', position: 0.4, targetPos: 0.5 },
     { id: 'p3', position: 0.6, targetPos: 0.8 },
   ];
 
+  const initialRingNodes = [
+    { id: 'node1', position: 0.3 },
+    { id: 'node2', position: 0.6 },
+    { id: 'node3', position: 0.9 },
+  ];
+
   const createInitialProps = (overrides = {}) => ({
     fixedRequests,
+    ringNodes: initialRingNodes,
     SVG_WIDTH: 817,
     SVG_HEIGHT: 817,
     SVG_RADIUS: 347,
@@ -122,7 +127,46 @@ describe('Simulation State Machine', () => {
     // Cycle count incremented
     expect(snapshot.context.cycleCount).toBe(1);
 
-    // Also check we spawned new set of particles if that’s your design
+    // Also check we spawned new set of particles if that's your design
+    expect(snapshot.context.particleRefs.length).toBe(fixedRequests.length);
+  });
+
+  test('should update ring nodes and maintain sorted order', () => {
+    // Initial ring nodes should be sorted
+    let snapshot = simulationService.getSnapshot();
+    expect(snapshot.context.ringNodes).toEqual([
+      { id: 'node1', position: 0.3 },
+      { id: 'node2', position: 0.6 },
+      { id: 'node3', position: 0.9 },
+    ]);
+
+    // Update with new ring nodes in random order
+    const newRingNodes = [
+      { id: 'node4', position: 0.8 },
+      { id: 'node5', position: 0.2 },
+      { id: 'node6', position: 0.5 },
+    ];
+
+    simulationService.send({
+      type: 'UPDATE',
+      payload: {
+        ringNodes: newRingNodes,
+      },
+    });
+
+    snapshot = simulationService.getSnapshot();
+    expect(snapshot.context.ringNodes).toEqual(newRingNodes);
+    // Start simulation to verify particles use new nodes
+    simulationService.send({ type: 'START' });
+    snapshot = simulationService.getSnapshot();
+    // Check ring nodes are sorted
+    expect(snapshot.context.ringNodes).toEqual([
+      { id: 'node5', position: 0.2 },
+      { id: 'node6', position: 0.5 },
+      { id: 'node4', position: 0.8 },
+    ]);
+
+    // Verify particles are spawned
     expect(snapshot.context.particleRefs.length).toBe(fixedRequests.length);
   });
 });
