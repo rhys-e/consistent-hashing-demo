@@ -53,17 +53,13 @@ export const simulationMachine = initialProps =>
     },
   }).provide({
     actions: {
-      updateContext: assign(({ context, event }) => {
-        return {
-          ...context,
-          ...event.payload,
-        };
-      }),
-      sortRingNodes: assign(({ context }) => {
-        return {
-          ringNodes: context.ringNodes.sort((a, b) => a.position - b.position),
-        };
-      }),
+      updateContext: assign(({ context, event }) => ({
+        ...context,
+        ...event.payload,
+      })),
+      sortRingNodes: assign(({ context }) => ({
+        ringNodes: context.ringNodes.sort((a, b) => a.position - b.position),
+      })),
       spawnParticles: assign(({ context, spawn }) => {
         function findResponsibleNode(nodesSorted, keyPos) {
           for (let i = 0; i < nodesSorted.length; i++) {
