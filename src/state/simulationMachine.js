@@ -26,7 +26,7 @@ export const simulationMachine = initialProps =>
         },
       },
       running: {
-        entry: ['spawnParticles', 'sortRingNodes'],
+        entry: ['sortRingNodes', 'spawnParticles'],
         on: {
           TICK: {
             actions: 'forwardTickToParticles',
