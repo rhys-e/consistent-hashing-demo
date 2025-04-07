@@ -10,5 +10,11 @@
   "baseBranches": ["main"],
   "schedule": ["before 5am on Monday"],
   "autoApprove": true,
-  "automerge": true
+  "automerge": true,
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "All Non-Major Updates"
+    }
+  ]
 }
