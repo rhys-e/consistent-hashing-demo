@@ -9,6 +9,7 @@ export const simulationMachine = initialProps =>
       cycleCount: 0,
       particleRefs: [],
       hits: [],
+      ringNodes: Object.values(initialProps.ringNodes).sort((a, b) => a.position - b.position),
     }),
     states: {
       idle: {
@@ -46,14 +47,25 @@ export const simulationMachine = initialProps =>
     },
   }).provide({
     actions: {
-      spawnParticles: assign(({ spawn }) => {
+      spawnParticles: assign(({ context, spawn }) => {
+        function findResponsibleNode(nodesSorted, keyPos) {
+          for (let i = 0; i < nodesSorted.length; i++) {
+            if (keyPos <= nodesSorted[i].position) {
+              return nodesSorted[i];
+            }
+          }
+          // If none in the middle, it wraps around to the first node.
+          return nodesSorted[0];
+        }
+
         const requests = initialProps.fixedRequests || [];
         const newParticleRefs = requests.map(reqData => {
           // create a child machine
+          const responsible = findResponsibleNode(context.ringNodes, reqData.position);
           const particleMachine = createParticleMachine({
             id: reqData.id,
             spawnPos: reqData.position,
-            targetPos: reqData.targetPos,
+            targetPos: responsible.position,
             SVG_WIDTH: initialProps.SVG_WIDTH,
             SVG_HEIGHT: initialProps.SVG_HEIGHT,
             SVG_RADIUS: initialProps.SVG_RADIUS,
@@ -61,7 +73,6 @@ export const simulationMachine = initialProps =>
             speedMultiplier: initialProps.speedMultiplier,
           });
 
-          // spawn the actor with a system ID
           const actorRef = spawn(particleMachine, { id: `particle-${reqData.id}` });
 
           return {
