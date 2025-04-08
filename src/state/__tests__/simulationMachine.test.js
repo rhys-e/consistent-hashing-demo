@@ -1,172 +1,140 @@
-import { createActor, fromCallback } from 'xstate';
+import { createActor } from 'xstate';
 import { simulationMachine } from '../simulationMachine';
+
 describe('Simulation State Machine', () => {
-  let simulationService;
-  let parentActor;
-  let receivedEvents;
-
-  const fixedRequests = [
-    { id: 'p1', position: 0.2, targetPos: 0.3 },
-    { id: 'p2', position: 0.4, targetPos: 0.5 },
-    { id: 'p3', position: 0.6, targetPos: 0.8 },
-  ];
-
-  const initialRingNodes = [
-    { id: 'node1', position: 0.3 },
-    { id: 'node2', position: 0.6 },
-    { id: 'node3', position: 0.9 },
-  ];
-
-  const createInitialProps = (overrides = {}) => ({
-    fixedRequests,
-    ringNodes: initialRingNodes,
+  // Test configuration
+  const dimensions = {
     SVG_WIDTH: 817,
     SVG_HEIGHT: 817,
     SVG_RADIUS: 347,
-    PARTICLE_SPEED: 0.002,
+  };
+
+  const speed = {
+    particleSpeed: 0.002,
     speedMultiplier: 1.0,
+  };
+
+  const createInput = (overrides = {}) => ({
+    dimensions,
+    speed,
+    ringNodes: [
+      { id: 'node1', position: 0.1 },
+      { id: 'node2', position: 0.5 },
+      { id: 'node3', position: 0.9 },
+    ],
+    fixedRequests: [
+      { key: 'req1', position: 0.2 },
+      { key: 'req2', position: 0.6 },
+      { key: 'req3', position: 0.8 },
+    ],
     ...overrides,
   });
 
+  let simulationService;
+
   beforeEach(() => {
-    receivedEvents = [];
-
-    // We'll create a simple "parent" actor that logs events
-    parentActor = createActor(
-      fromCallback(({ receive }) => {
-        // Collect events (if the simulationMachine or children send them)
-        receive(evt => receivedEvents.push(evt));
-      })
-    ).start();
-
-    // Create the simulation machine actor
-    simulationService = createActor(simulationMachine(createInitialProps()), {
-      parent: parentActor,
-    }).start();
+    const input = createInput();
+    simulationService = createActor(simulationMachine, { input }).start();
   });
 
   afterEach(() => {
-    parentActor.stop();
+    simulationService.stop();
   });
 
-  test('should start in idle', () => {
+  test('should start in idle state', () => {
     expect(simulationService.getSnapshot().value).toBe('idle');
-    const { cycleCount, particleRefs } = simulationService.getSnapshot().context;
-    expect(cycleCount).toBe(0);
-    expect(particleRefs).toEqual([]);
   });
 
-  test('should move to running on START and spawn particles', () => {
+  test('should transition through spawning to running state on START', () => {
     simulationService.send({ type: 'START' });
     expect(simulationService.getSnapshot().value).toBe('running');
 
-    const { particleRefs } = simulationService.getSnapshot().context;
-    // We expect 3, given the fixedRequests above
-    expect(particleRefs.length).toBe(fixedRequests.length);
+    const { particleRefs, pCurPos, pRingInitialPos } = simulationService.getSnapshot().context;
+    expect(particleRefs).toHaveLength(3);
+    expect(pCurPos).toHaveLength(0);
+    expect(pRingInitialPos).toHaveLength(3);
   });
 
-  test('should stay in running until all particles are done', () => {
+  test('should handle particle updates', () => {
     simulationService.send({ type: 'START' });
-    let snapshot = simulationService.getSnapshot();
-    expect(snapshot.value).toBe('running');
-    expect(snapshot.context.particleRefs.length).toBe(3);
+    const now = performance.now();
 
-    // Send PARTICLE_DONE for one particle
+    // Send a TICK event
     simulationService.send({
-      type: 'PARTICLE_DONE',
-      particleId: 'p1',
+      type: 'TICK',
+      time: now,
     });
 
-    snapshot = simulationService.getSnapshot();
-    expect(snapshot.value).toBe('running');
-    expect(snapshot.context.particleRefs.length).toBe(2);
-
-    // Send PARTICLE_DONE for a second particle
+    // Simulate a particle update
     simulationService.send({
-      type: 'PARTICLE_DONE',
-      particleId: 'p2',
+      type: 'PARTICLE_UPDATED',
+      key: 0,
+      pos: 0.3,
+      x: 100,
+      y: 100,
     });
 
-    snapshot = simulationService.getSnapshot();
-    expect(snapshot.value).toBe('running');
-    expect(snapshot.context.particleRefs.length).toBe(1);
-
-    // Finally, last particle
-    simulationService.send({
-      type: 'PARTICLE_DONE',
-      particleId: 'p3',
+    const { pCurPos, particleRefs } = simulationService.getSnapshot().context;
+    expect(pCurPos[0]).toMatchObject({
+      phase: 'initial',
+      pos: 0.3,
+      x: 100,
+      y: 100,
     });
-
-    snapshot = simulationService.getSnapshot();
-    // Now we should have 0 refs, and the guard allParticlesDone should pass
-    expect(snapshot.value).toBe('running');
-    expect(snapshot.context.particleRefs.length).toBe(3);
+    expect(particleRefs[0].completed).toBe(false);
   });
 
-  test('increments cycleCount and returns to running after last particle is done', () => {
+  test('should complete cycle when all particles are done', () => {
     simulationService.send({ type: 'START' });
 
-    // Confirm initial
-    let snapshot = simulationService.getSnapshot();
-    expect(snapshot.value).toBe('running');
-    expect(snapshot.context.cycleCount).toBe(0);
+    // Send enough TICK events to complete all particles
+    // Each particle needs to:
+    // 1. Complete initial animation (about 100 frames)
+    // 2. Complete ring animation (about 200 frames)
+    let now = performance.now();
+    const frameTime = 16.667; // 60fps
 
-    // Mark p1, p2 done
-    simulationService.send({ type: 'PARTICLE_DONE', particleId: 'p1' });
-    simulationService.send({ type: 'PARTICLE_DONE', particleId: 'p2' });
-    snapshot = simulationService.getSnapshot();
-    expect(snapshot.value).toBe('running');
-    expect(snapshot.context.particleRefs.length).toBe(1);
+    // Send 300 frames worth of TICK events
+    for (let i = 0; i < 300; i++) {
+      now += frameTime;
+      simulationService.send({
+        type: 'TICK',
+        time: now,
+        deltaTime: frameTime,
+      });
+    }
 
-    // Mark last done
-    simulationService.send({ type: 'PARTICLE_DONE', particleId: 'p3' });
-
-    // Now ephemeral cycleComplete -> running
-    snapshot = simulationService.getSnapshot();
+    // Should be in running state with incremented cycle count
+    const snapshot = simulationService.getSnapshot();
     expect(snapshot.value).toBe('running');
-    // Cycle count incremented
     expect(snapshot.context.cycleCount).toBe(1);
 
-    // Also check we spawned new set of particles if that's your design
-    expect(snapshot.context.particleRefs.length).toBe(fixedRequests.length);
+    // Verify new particles are spawned
+    expect(snapshot.context.particleRefs).toHaveLength(3);
+    expect(snapshot.context.particleRefs.every(p => !p.completed)).toBe(true);
   });
 
-  test('should update ring nodes and maintain sorted order', () => {
-    // Initial ring nodes should be sorted
-    let snapshot = simulationService.getSnapshot();
-    expect(snapshot.context.ringNodes).toEqual([
-      { id: 'node1', position: 0.3 },
-      { id: 'node2', position: 0.6 },
-      { id: 'node3', position: 0.9 },
-    ]);
+  test('should pause and resume simulation', () => {
+    simulationService.send({ type: 'START' });
+    simulationService.send({ type: 'PAUSE' });
+    expect(simulationService.getSnapshot().value).toBe('idle');
+    expect(simulationService.getSnapshot().context.lastTickTime).toBeNull();
 
-    // Update with new ring nodes in random order
-    const newRingNodes = [
-      { id: 'node4', position: 0.8 },
-      { id: 'node5', position: 0.2 },
-      { id: 'node6', position: 0.5 },
-    ];
+    simulationService.send({ type: 'RESUME' });
+    expect(simulationService.getSnapshot().value).toBe('running');
+  });
+
+  test('should update context on UPDATE event', () => {
+    const newSpeed = {
+      particleSpeed: 0.004,
+      speedMultiplier: 2.0,
+    };
 
     simulationService.send({
       type: 'UPDATE',
-      payload: {
-        ringNodes: newRingNodes,
-      },
+      payload: { speed: newSpeed },
     });
 
-    snapshot = simulationService.getSnapshot();
-    expect(snapshot.context.ringNodes).toEqual(newRingNodes);
-    // Start simulation to verify particles use new nodes
-    simulationService.send({ type: 'START' });
-    snapshot = simulationService.getSnapshot();
-    // Check ring nodes are sorted
-    expect(snapshot.context.ringNodes).toEqual([
-      { id: 'node5', position: 0.2 },
-      { id: 'node6', position: 0.5 },
-      { id: 'node4', position: 0.8 },
-    ]);
-
-    // Verify particles are spawned
-    expect(snapshot.context.particleRefs.length).toBe(fixedRequests.length);
+    expect(simulationService.getSnapshot().context.speed).toEqual(newSpeed);
   });
 });

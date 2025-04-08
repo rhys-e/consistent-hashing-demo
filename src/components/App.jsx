@@ -125,18 +125,14 @@ export function App({
 
   const ringNodes = useRingNodes(servers, vnodeCount);
 
-  const handleRequestCompleted = completedParticles => {
-    completedParticles.forEach(completedParticle => {
-      trackRequest(completedParticle.targetNodeId);
+  const handleRequestCompleted = (node, completedParticle) => {
+    trackRequest(node.id);
 
-      const targetNode = ringNodes[completedParticle.targetPos];
+    const detailedMessage =
+      `Request processed by ${node.id}: Id=${completedParticle.data.id}, Pos=${completedParticle.data.ringStartPos.toFixed(2)}%, ` +
+      `VnodeId='${node.vnodeId}', VNode=#${node.vnodeIndex + 1}/${vnodeCount}, VPos=${node.position.toFixed(2)}%`;
 
-      const detailedMessage =
-        `Request processed by ${completedParticle.targetNodeId}: Id=${completedParticle.key}, Pos=${completedParticle.initialPos.toFixed(2)}%, ` +
-        `VnodeId='${targetNode.vnodeId}', VNode=#${targetNode.vnodeIndex + 1}/${vnodeCount}, VPos=${targetNode.position.toFixed(2)}%`;
-
-      addLog(detailedMessage, 'success');
-    });
+    addLog(detailedMessage, 'success');
   };
 
   const handleReroutedParticles = reroutedParticles => {
@@ -162,7 +158,7 @@ export function App({
     });
   };
 
-  const { particles, hitsToRender } = useParticleSimulation({
+  const { pCurPos, pRingInitialPos, hitsToRender, renderNodes } = useParticleSimulation({
     runningState,
     ringNodes,
     speedMultiplier,
@@ -273,11 +269,10 @@ export function App({
           style={{ width: isMobile ? '100%' : `${dimensions.svgWidth}px` }}
         >
           <HashRingVisualisation
-            SVG_WIDTH={dimensions.svgWidth}
-            SVG_HEIGHT={dimensions.svgHeight}
-            SVG_RADIUS={dimensions.svgRadius}
-            ringNodes={ringNodes}
-            particles={particles}
+            dimensions={dimensions}
+            ringNodes={renderNodes}
+            pCurPos={pCurPos}
+            pRingInitialPos={pRingInitialPos}
             runningState={runningState}
             onRemoveServer={removeServer}
             hitsToRender={hitsToRender}

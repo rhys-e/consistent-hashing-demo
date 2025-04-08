@@ -11,11 +11,10 @@ async function generateRequest(prng) {
 
   const key = `user_id_${randomStr}`;
   const { normalised } = await hashString(key);
-  return { key, initialPos: normalised };
+  return { key, position: normalised };
 }
 
 async function populateHashCache(hashCache, cacheSize, prng) {
-  console.log('generating num requests', cacheSize - hashCache.length);
   const promises = Array.from({ length: cacheSize - hashCache.length }, () =>
     generateRequest(prng)
   );

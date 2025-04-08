@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import { angleScale, toXY } from '../utils/geometryUtils';
 import theme from '../themes';
-import { STATE_MACHINE, ANIMATION_PHASE } from '../utils/stateUtils';
+import { STATE_MACHINE } from '../utils/stateUtils';
 
 const sortNodes = nodeMap => {
   return Object.values(nodeMap)
@@ -12,20 +12,19 @@ const sortNodes = nodeMap => {
 
 export function HashRingVisualisation({
   ringNodes,
-  particles,
+  dimensions,
+  pCurPos,
+  pRingInitialPos,
   runningState,
   onRemoveServer,
   onAddServerAtPosition,
   hitsToRender,
   collapsedPanels,
   togglePanel,
-  SVG_WIDTH,
-  SVG_HEIGHT,
-  SVG_RADIUS,
 }) {
-  const width = SVG_WIDTH;
-  const height = SVG_HEIGHT;
-  const radius = SVG_RADIUS;
+  const width = dimensions.svgWidth;
+  const height = dimensions.svgHeight;
+  const radius = dimensions.svgRadius;
 
   const handleNodeClick = useCallback(
     node => {
@@ -50,8 +49,8 @@ export function HashRingVisualisation({
       const wrapsAround = nextNode.position < current.position;
 
       // Get the exact node coordinates
-      const [startX, startY] = toXY(current.position, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS);
-      const [endX, endY] = toXY(nextNode.position, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS);
+      const [startX, startY] = toXY(current.position, width, height, radius);
+      const [endX, endY] = toXY(nextNode.position, width, height, radius);
 
       // Pre-calculate the arc path data
       const startAngle = angleScale(current.position);
@@ -86,7 +85,7 @@ export function HashRingVisualisation({
     }
 
     return segments;
-  }, [ringNodes, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS, radius]);
+  }, [ringNodes, width, height, radius]);
 
   const nodeElements = useMemo(() => {
     const nodeElements = [];
@@ -99,7 +98,7 @@ export function HashRingVisualisation({
     });
 
     Object.values(ringNodes).forEach((node, i) => {
-      const [x, y] = toXY(node.position, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS);
+      const [x, y] = toXY(node.position, width, height, radius);
 
       nodeElements.push(
         <circle
@@ -127,7 +126,7 @@ export function HashRingVisualisation({
     });
 
     return nodeElements;
-  }, [SVG_HEIGHT, SVG_RADIUS, SVG_WIDTH, handleNodeClick, ringNodes]);
+  }, [width, height, radius, handleNodeClick, ringNodes]);
 
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -307,19 +306,19 @@ export function HashRingVisualisation({
         {nodeElements}
 
         {/* Render particles */}
-        {particles &&
-          particles
+        {pCurPos &&
+          pCurPos
             .map((particle, i) => {
-              if (particle.phase === ANIMATION_PHASE.POST_COMPLETED) {
+              if (particle.phase === 'completed') {
                 return null;
               }
               // Check if particle is in initial animation or regular movement
-              if (particle.phase === ANIMATION_PHASE.INITIAL) {
+              if (particle.phase === 'initial') {
                 return (
                   <circle
                     key={`particle-${i}`}
-                    cx={particle.currentX}
-                    cy={particle.currentY}
+                    cx={particle.x}
+                    cy={particle.y}
                     r={theme.hashRing.particle.size}
                     fill={theme.hashRing.particle.color}
                     stroke={theme.hashRing.particle.strokeColor}
@@ -328,13 +327,11 @@ export function HashRingVisualisation({
                     className="particle-dot animate-particle-blink"
                   />
                 );
-              } else {
-                const [x, y] = toXY(particle.currentPos, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS);
-
+              } else if (particle.phase === 'ring') {
                 // Calculate a point slightly behind the particle for the trail
                 const trailLength = theme.hashRing.particle.trailLength || 0.01;
-                const trailPos = (particle.currentPos - trailLength + 1) % 1;
-                const [trailX, trailY] = toXY(trailPos, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS);
+                const trailPos = (particle.pos - trailLength + 1) % 1;
+                const [trailX, trailY] = toXY(trailPos, width, height, radius);
                 const gradientId = `particleTrailGradient-${i}`;
 
                 return (
@@ -345,8 +342,8 @@ export function HashRingVisualisation({
                         gradientUnits="userSpaceOnUse"
                         x1={trailX}
                         y1={trailY}
-                        x2={x}
-                        y2={y}
+                        x2={particle.x}
+                        y2={particle.y}
                       >
                         <stop
                           offset="0%"
@@ -366,8 +363,8 @@ export function HashRingVisualisation({
                       <line
                         x1={trailX}
                         y1={trailY}
-                        x2={x}
-                        y2={y}
+                        x2={particle.x}
+                        y2={particle.y}
                         stroke={`url(#${gradientId})`}
                         strokeWidth={theme.hashRing.particle.trailWidth}
                         className="particle-trail animate-particle-blink"
@@ -378,8 +375,8 @@ export function HashRingVisualisation({
 
                       {/* Particle dot */}
                       <circle
-                        cx={x}
-                        cy={y}
+                        cx={particle.x}
+                        cy={particle.y}
                         r={theme.hashRing.particle.size}
                         fill={theme.hashRing.particle.color}
                         stroke={theme.hashRing.particle.strokeColor}
@@ -396,21 +393,23 @@ export function HashRingVisualisation({
 
         {/* hit effects */}
         {hitsToRender &&
-          hitsToRender.map((hit, i) => {
-            const [x, y] = toXY(hit.targetPos, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS);
-            return (
-              <g key={`hit-${i}-${hit.completedAt}`} className="hit-effect">
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={theme.hashRing.hitEffect.width}
-                  fill="none"
-                  stroke={theme.hashRing.hitEffect.color}
-                  strokeWidth={theme.hashRing.hitEffect.strokeWidth}
-                  opacity={theme.hashRing.hitEffect.opacity}
-                  className="hit-pulse animate-pulse"
-                />
-                {/* <circle
+          hitsToRender
+            .map((hit, i) => {
+              if (hit.expired) return null;
+              const [x, y] = toXY(hit.pos, width, height, radius);
+              return (
+                <g key={`hit-${i}-${hit.completedAt}`} className="hit-effect">
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={theme.hashRing.hitEffect.width}
+                    fill="none"
+                    stroke={theme.hashRing.hitEffect.color}
+                    strokeWidth={theme.hashRing.hitEffect.strokeWidth}
+                    opacity={theme.hashRing.hitEffect.opacity}
+                    className="hit-pulse animate-pulse"
+                  />
+                  {/* <circle
                   cx={x}
                   cy={y}
                   r={theme.hashRing.hitEffect.innerDotSize}
@@ -418,18 +417,19 @@ export function HashRingVisualisation({
                   opacity={theme.hashRing.hitEffect.innerDotOpacity}
                   className="hit-dot animate-hit-dot-blink"
                 /> */}
-              </g>
-            );
-          })}
+                </g>
+              );
+            })
+            .filter(Boolean)}
 
         {/* Preview indicator for next particle */}
-        {particles &&
-          particles.length > 0 &&
-          particles.map(particle => {
+        {pRingInitialPos &&
+          pRingInitialPos.length > 0 &&
+          pRingInitialPos.map(particle => {
             return (
-              <g className="preview-indicator" key={`preview-${particle.key}`}>
+              <g className="preview-indicator" key={`preview-${particle.id}`}>
                 <path
-                  d={`M ${width / 2} ${height / 2} L ${toXY(particle.initialPos, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS).join(' ')}`}
+                  d={`M ${width / 2} ${height / 2} L ${particle.x} ${particle.y}`}
                   stroke={theme.hashRing.previewIndicator.pathColor}
                   strokeWidth={theme.hashRing.previewIndicator.pathWidth}
                   strokeDasharray={theme.hashRing.previewIndicator.pathDashArray}
@@ -437,8 +437,8 @@ export function HashRingVisualisation({
                   className="preview-path animate-dash"
                 />
                 <circle
-                  cx={toXY(particle.initialPos, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS)[0]}
-                  cy={toXY(particle.initialPos, SVG_WIDTH, SVG_HEIGHT, SVG_RADIUS)[1]}
+                  cx={particle.x}
+                  cy={particle.y}
                   r={theme.hashRing.previewIndicator.dotSize}
                   fill={theme.hashRing.previewIndicator.dotColor}
                   className="preview-dot animate-blink"
