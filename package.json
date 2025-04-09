@@ -23,6 +23,7 @@
   "author": "rhys-e",
   "dependencies": {
     "@xstate/react": "5.0.3",
+    "@xstate/store": "^3.4.3",
     "d3": "7.9.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

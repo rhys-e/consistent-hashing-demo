@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { useRingNodes } from '../hooks/useRingNodes';
@@ -9,9 +9,11 @@ import { ConsoleLog } from './ConsoleLog';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
-import { STATE_MACHINE } from '../utils/stateUtils';
 import theme from '../themes';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
+import { dimensionsStore } from '../state/dimensionsStore';
+import { useSelector } from '@xstate/store/react';
+import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
 
 const CYBER_COLORS = [
   '#E15759', // Neo-Tokyo Red (first node)
@@ -48,55 +50,14 @@ function generateRandomCyberColor() {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
-export function App({
-  SVG_WIDTH_PERCENTAGE,
-  SVG_ASPECT_RATIO,
-  SVG_RADIUS_PERCENTAGE,
-  CONTAINER_MAX_WIDTH = 1200,
-  initialNodeCount = 2,
-  initialVnodeCount = 2,
-  initialNumRequests = 1,
-}) {
-  const [dimensions, setDimensions] = useState({
-    svgWidth: 0,
-    svgHeight: 0,
-    svgRadius: 0,
-  });
-
+function AppComponent({ initialNodeCount = 2, initialVnodeCount = 2, initialNumRequests = 1 }) {
+  const dimensions = useSelector(dimensionsStore, state => state.context);
   const [numRequests, setNumRequests] = useState(initialNumRequests);
   const { isMobile } = useResponsive(950);
   const NUM_STACKS = 5;
 
   const { getState } = useExecutionStatus();
   const executionStatus = getState();
-
-  useEffect(() => {
-    function calculateDimensions() {
-      const pagePadding = isMobile ? 0 : theme.layout.pagePadding;
-      const columnGap = isMobile ? 0 : theme.layout.columnGap;
-      const containerWidth = Math.min(window.innerWidth - pagePadding, CONTAINER_MAX_WIDTH);
-      const availableWidth = containerWidth - columnGap;
-
-      const svgWidth = isMobile
-        ? availableWidth
-        : Math.min((availableWidth * SVG_WIDTH_PERCENTAGE) / 100, availableWidth * 0.85);
-
-      const svgHeight = svgWidth * SVG_ASPECT_RATIO;
-      const svgRadius = (svgWidth / 2) * (SVG_RADIUS_PERCENTAGE / 100);
-      setDimensions({ svgWidth, svgHeight, svgRadius });
-    }
-
-    calculateDimensions();
-
-    window.addEventListener('resize', calculateDimensions);
-    return () => window.removeEventListener('resize', calculateDimensions);
-  }, [
-    SVG_WIDTH_PERCENTAGE,
-    SVG_ASPECT_RATIO,
-    SVG_RADIUS_PERCENTAGE,
-    CONTAINER_MAX_WIDTH,
-    isMobile,
-  ]);
 
   // Physical servers
   const [servers, setServers] = useState(() => {
@@ -328,3 +289,5 @@ export function App({
     </div>
   );
 }
+
+export const App = withResponsiveDimensions(AppComponent);
