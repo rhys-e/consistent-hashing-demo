@@ -1,13 +1,12 @@
 import { useRef, useEffect } from 'react';
-import { STATE_MACHINE } from '../utils/stateUtils';
 import { useHashCache } from './useHashCache';
 import { useMachine } from '@xstate/react';
 import { simulationMachine } from '../state/simulationMachine';
+import { useExecutionStatus, EXECUTION_STATES } from './useExecutionStatus';
 
 const PARTICLE_SPEED = 0.002; // Speed per frame - consistent for all particles
 
 export function useParticleSimulation({
-  runningState,
   ringNodes,
   speedMultiplier,
   requestCompletedCallback,
@@ -15,6 +14,8 @@ export function useParticleSimulation({
   dimensions,
   numRequests,
 }) {
+  const { getState } = useExecutionStatus();
+  const runningState = getState();
   const { hashCache: fixedRequests } = useHashCache({ cacheSize: numRequests, seedNumber: 1000 });
 
   const [snapshot, send, ref] = useMachine(simulationMachine, {
@@ -42,7 +43,7 @@ export function useParticleSimulation({
 
   useEffect(() => {
     let payload = { fixedRequests, ringNodes: Object.values(ringNodes), dimensions };
-    if (runningState === STATE_MACHINE.INIT) {
+    if (runningState === EXECUTION_STATES.INIT) {
       payload.renderNodes = Object.values(ringNodes);
     }
     send({
@@ -58,7 +59,7 @@ export function useParticleSimulation({
       send({ type: 'TICK', time });
     }
 
-    if (runningState === STATE_MACHINE.RUNNING) {
+    if (runningState === EXECUTION_STATES.RUNNING) {
       if (!requestRef.current) {
         send({ type: 'START' });
         animate(performance.now());
@@ -66,7 +67,7 @@ export function useParticleSimulation({
         send({ type: 'RESUME' });
         animate(performance.now());
       }
-    } else if (runningState === STATE_MACHINE.PAUSED) {
+    } else if (runningState === EXECUTION_STATES.PAUSED) {
       send({ type: 'PAUSE' });
       cancelAnimationFrame(requestRef.current);
     }

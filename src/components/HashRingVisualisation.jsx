@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import { angleScale, toXY } from '../utils/geometryUtils';
 import theme from '../themes';
-import { STATE_MACHINE } from '../utils/stateUtils';
+import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 
 const sortNodes = nodeMap => {
   return Object.values(nodeMap)
@@ -15,13 +15,14 @@ export function HashRingVisualisation({
   dimensions,
   pCurPos,
   pRingInitialPos,
-  runningState,
   onRemoveServer,
   onAddServerAtPosition,
   hitsToRender,
   collapsedPanels,
   togglePanel,
 }) {
+  const { getState } = useExecutionStatus();
+  const executionStatus = getState();
   const width = dimensions.svgWidth;
   const height = dimensions.svgHeight;
   const radius = dimensions.svgRadius;
@@ -611,12 +612,12 @@ export function HashRingVisualisation({
               className="mr-2 h-3 w-3 rounded-full"
               style={{
                 backgroundColor:
-                  runningState === STATE_MACHINE.RUNNING
+                  executionStatus === EXECUTION_STATES.RUNNING
                     ? theme.hashRing.statusIndicator.activeColor
                     : theme.hashRing.statusIndicator.inactiveColor,
               }}
             ></div>
-            <span>{runningState === STATE_MACHINE.RUNNING ? 'Active' : 'Paused'}</span>
+            <span>{executionStatus === EXECUTION_STATES.RUNNING ? 'Active' : 'Paused'}</span>
           </div>
           <button
             onClick={() => togglePanel('status')}

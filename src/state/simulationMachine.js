@@ -1,4 +1,4 @@
-import { createMachine, assign, log, not, enqueueActions, emit } from 'xstate';
+import { createMachine, assign, not, enqueueActions } from 'xstate';
 import { particleMachine } from './particleMachine';
 import { toXY } from '../utils/geometryUtils';
 
@@ -195,10 +195,6 @@ export const simulationMachine = createMachine({
         lastTickTime: event.time,
       };
     },
-    log: log(
-      ({ context, event }) =>
-        `Received event: ${event.type}, context: ${JSON.stringify(context, null, 2)}`
-    ),
   },
   guards: {
     allParticlesCompleted: ({ context }) => context.particleRefs.every(p => p.completed),

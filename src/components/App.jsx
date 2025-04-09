@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { useRingNodes } from '../hooks/useRingNodes';
@@ -11,6 +11,7 @@ import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
 import { STATE_MACHINE } from '../utils/stateUtils';
 import theme from '../themes';
+import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 
 const CYBER_COLORS = [
   '#E15759', // Neo-Tokyo Red (first node)
@@ -66,6 +67,9 @@ export function App({
   const { isMobile } = useResponsive(950);
   const NUM_STACKS = 5;
 
+  const { getState } = useExecutionStatus();
+  const executionStatus = getState();
+
   useEffect(() => {
     function calculateDimensions() {
       const pagePadding = isMobile ? 0 : theme.layout.pagePadding;
@@ -108,7 +112,6 @@ export function App({
   });
 
   const [vnodeCount, setVnodeCount] = useState(initialVnodeCount);
-  const [runningState, setRunningState] = useState(STATE_MACHINE.INIT);
   const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
   const [collapsedPanels, setCollapsedPanels] = useState({
     controls: false,
@@ -136,7 +139,7 @@ export function App({
   };
 
   const handleReroutedParticles = reroutedParticles => {
-    if (runningState !== STATE_MACHINE.RUNNING) {
+    if (executionStatus !== EXECUTION_STATES.RUNNING) {
       return;
     }
 
@@ -159,7 +162,6 @@ export function App({
   };
 
   const { pCurPos, pRingInitialPos, hitsToRender, renderNodes } = useParticleSimulation({
-    runningState,
     ringNodes,
     speedMultiplier,
     vnodeCount,
@@ -174,26 +176,26 @@ export function App({
   });
 
   useEffect(() => {
-    if (servers.length > 0 && runningState === STATE_MACHINE.RUNNING) {
+    if (servers.length > 0 && executionStatus === EXECUTION_STATES.RUNNING) {
       addLog(`Server configuration updated: ${servers.length} nodes active`, 'info');
     }
-  }, [servers, addLog, runningState]);
+  }, [servers, addLog, executionStatus]);
 
   useEffect(() => {
-    if (runningState === STATE_MACHINE.RUNNING) {
+    if (executionStatus === EXECUTION_STATES.RUNNING) {
       addLog(`Virtual node count set to ${vnodeCount}`, 'info');
     }
-  }, [vnodeCount, addLog, runningState]);
+  }, [vnodeCount, addLog, executionStatus]);
 
   useEffect(() => {
-    if (runningState === STATE_MACHINE.RUNNING) {
+    if (executionStatus === EXECUTION_STATES.RUNNING) {
       addLog('Simulation started', 'info');
-    } else if (runningState === STATE_MACHINE.PAUSED) {
+    } else if (executionStatus === EXECUTION_STATES.PAUSED) {
       addLog('Simulation paused', 'info');
-    } else if (runningState === STATE_MACHINE.STOPPED) {
+    } else if (executionStatus === EXECUTION_STATES.STOPPED) {
       addLog('Simulation stopped', 'info');
     }
-  }, [runningState, addLog]);
+  }, [executionStatus, addLog]);
 
   const addServer = (position = null) => {
     // due to node removals. it's possible to create clashes with existing IDs
@@ -234,17 +236,11 @@ export function App({
     }
     setServers(initialServers);
     setVnodeCount(initialVnodeCount);
-    setRunningState(STATE_MACHINE.INIT);
+    setSpeedMultiplier(1.0);
     setNumRequests(initialNumRequests);
     resetStats();
     clearLogs();
     addLog('System reset to initial state', 'info');
-  };
-
-  const toggleRunning = () => {
-    setRunningState(prev =>
-      prev === STATE_MACHINE.RUNNING ? STATE_MACHINE.PAUSED : STATE_MACHINE.RUNNING
-    );
   };
 
   const loadImbalance = calculateDistribution();
@@ -273,7 +269,6 @@ export function App({
             ringNodes={renderNodes}
             pCurPos={pCurPos}
             pRingInitialPos={pRingInitialPos}
-            runningState={runningState}
             onRemoveServer={removeServer}
             hitsToRender={hitsToRender}
             collapsedPanels={collapsedPanels}
@@ -299,8 +294,6 @@ export function App({
           <ControlsPanel
             collapsed={collapsedPanels.controls}
             togglePanel={() => togglePanel('controls')}
-            runningState={runningState}
-            toggleRunning={toggleRunning}
             resetAll={resetAll}
             addServer={addServer}
             speedMultiplier={speedMultiplier}

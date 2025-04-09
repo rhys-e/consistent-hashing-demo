@@ -1,12 +1,10 @@
 import React from 'react';
 import { ToggleIcon } from './ToggleIcon';
-import { STATE_MACHINE } from '../utils/stateUtils';
+import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 
 export function ControlsPanel({
   collapsed,
   togglePanel,
-  runningState,
-  toggleRunning,
   resetAll,
   addServer,
   speedMultiplier,
@@ -17,6 +15,14 @@ export function ControlsPanel({
   setNumRequests,
   dimensions,
 }) {
+  const { toggleRunning, stop, getState } = useExecutionStatus();
+  const currentState = getState();
+
+  const handleReset = () => {
+    stop();
+    resetAll();
+  };
+
   return (
     <div
       className="rounded-sm border border-cyber-border bg-panel-bg p-4 md:p-6"
@@ -39,18 +45,18 @@ export function ControlsPanel({
         <div className="mb-4 mt-4 flex gap-2">
           <button
             className={`btn flex-1 cursor-pointer rounded-sm border px-4 py-2 font-bold shadow-md transition-all ${
-              runningState === STATE_MACHINE.RUNNING
+              currentState === EXECUTION_STATES.RUNNING
                 ? 'border-btn-danger-border bg-btn-danger-bg text-ui-text-bright shadow-btn-danger-shadow'
                 : 'border-btn-success-border bg-btn-success-bg text-ui-text-bright shadow-btn-success-shadow'
             } `}
             onClick={toggleRunning}
           >
-            {runningState === STATE_MACHINE.RUNNING ? 'HALT' : 'EXECUTE'}
+            {currentState === EXECUTION_STATES.RUNNING ? 'HALT' : 'EXECUTE'}
           </button>
 
           <button
             className="btn flex-1 cursor-pointer rounded-sm border border-cyber-border bg-btn-neutral-bg px-4 py-2 font-bold text-ui-text-bright shadow-button-glow shadow-btn-neutral-shadow"
-            onClick={resetAll}
+            onClick={handleReset}
           >
             RESET
           </button>
