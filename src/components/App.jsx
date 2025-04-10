@@ -11,13 +11,12 @@ import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
-import { useStore, useAtom } from '../hooks/useStore';
+import { useSelector, useAtom } from '../hooks/useStore';
 import { numRequestsAtom } from '../state/numRequestsAtom';
 import { dimensionsStore } from '../state/dimensionsStore';
-import { serversAtom, createInitialServers } from '../state/serversAtom';
+import { serversStore } from '../state/serversStore';
 import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
 import { vnodeCountAtom } from '../state/vnodeCountAtom';
-import { CYBER_COLORS } from '../constants/colors';
 import {
   INITIAL_NUM_REQUESTS,
   INITIAL_SPEED_MULTIPLIER,
@@ -28,18 +27,10 @@ export const sortNodes = nodeArray => {
   return nodeArray.slice().sort((a, b) => a.position - b.position);
 };
 
-function generateRandomCyberColor() {
-  const hue = Math.floor(Math.random() * 360); // Random hue
-  const saturation = 70 + Math.floor(Math.random() * 30); // High saturation (70-100%)
-  const lightness = 50 + Math.floor(Math.random() * 15); // Medium-high lightness (50-65%)
-
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
-
 function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
-  const dimensions = useStore(dimensionsStore);
+  const dimensions = useSelector(dimensionsStore);
   const numRequests = useAtom(numRequestsAtom);
-  const servers = useAtom(serversAtom);
+  const { servers } = useSelector(serversStore);
   const speedMultiplier = useAtom(speedMultiplierAtom);
   const vnodeCount = useAtom(vnodeCountAtom);
   const { isMobile } = useResponsive({ breakpoint: 950 });
@@ -60,7 +51,7 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
 
   const { stats, trackRequest, calculateDistribution, resetStats } = useStats();
 
-  const ringNodes = useRingNodes(servers, vnodeCount);
+  const ringNodes = useRingNodes();
 
   const handleRequestCompleted = (node, completedParticle) => {
     trackRequest(node.id);
@@ -131,36 +122,18 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     }
   }, [executionStatus, addLog]);
 
-  const addServer = (position = null) => {
-    // due to node removals. it's possible to create clashes with existing IDs
-    // so we need to check if the new ID already exists and cycle through the alphabet
-    let newId = `Node ${String.fromCharCode(65)}`;
-    let colorIndex = 0;
-    while (servers.some(srv => srv.id === newId)) {
-      colorIndex++;
-      newId = `Node ${String.fromCharCode(65 + colorIndex)}`;
-    }
-
-    const newColor =
-      colorIndex < CYBER_COLORS.length ? CYBER_COLORS[colorIndex] : generateRandomCyberColor();
-
-    const newSrv = {
-      id: newId,
-      color: newColor,
-      basePosition: position,
-    };
-    serversAtom.set([...servers, newSrv]);
-    addLog(`Added new server: ${newId}`, 'info');
+  const addServer = () => {
+    serversStore.trigger.add();
+    addLog(`Added new server: ${servers[servers.length - 1].id}`, 'info');
   };
 
   const removeServer = id => {
-    if (servers.length === 1) return;
-    serversAtom.set(servers.filter(srv => srv.id !== id));
+    serversStore.trigger.remove({ id });
     addLog(`Removed server: ${id}`, 'warning');
   };
 
   const resetAll = () => {
-    serversAtom.set(createInitialServers());
+    serversStore.trigger.reset();
     vnodeCountAtom.set(initialVnodeCount);
     speedMultiplierAtom.set(INITIAL_SPEED_MULTIPLIER);
     numRequestsAtom.set(INITIAL_NUM_REQUESTS);
@@ -199,7 +172,7 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
             hitsToRender={hitsToRender}
             collapsedPanels={collapsedPanels}
             togglePanel={togglePanel}
-            onAddServerAtPosition={position => addServer(position)}
+            onAddServer={addServer}
           />
 
           <div className="hidden md:block">

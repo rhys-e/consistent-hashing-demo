@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { hashString } from '../utils/hashString';
+import { serversStore } from '../state/serversStore';
+import { vnodeCountAtom } from '../state/vnodeCountAtom';
+import { useAtom, useSelector } from './useStore';
 
-export function useRingNodes(servers, vnodeCount) {
+export function useRingNodes() {
+  const { servers } = useSelector(serversStore);
+  const vnodeCount = useAtom(vnodeCountAtom);
+
   const [ringNodes, setRingNodes] = useState({});
 
   useEffect(() => {
