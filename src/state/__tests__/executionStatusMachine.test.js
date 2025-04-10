@@ -57,23 +57,31 @@ describe('Execution Status Machine', () => {
       const { result } = renderHook(() => useExecutionStatus());
 
       // Initial state
-      expect(result.current.getState()).toBe('stopped');
+      expect(result.current.executionStatus).toBe('stopped');
 
       // Start simulation
-      act(() => result.current.start());
-      expect(result.current.getState()).toBe('running');
+      act(() => {
+        result.current.start();
+      });
+      expect(result.current.executionStatus).toBe('running');
 
       // Pause simulation
-      act(() => result.current.pause());
-      expect(result.current.getState()).toBe('paused');
+      act(() => {
+        result.current.pause();
+      });
+      expect(result.current.executionStatus).toBe('paused');
 
       // Resume simulation
-      act(() => result.current.resume());
-      expect(result.current.getState()).toBe('running');
+      act(() => {
+        result.current.resume();
+      });
+      expect(result.current.executionStatus).toBe('running');
 
       // Stop simulation
-      act(() => result.current.stop());
-      expect(result.current.getState()).toBe('stopped');
+      act(() => {
+        result.current.stop();
+      });
+      expect(result.current.executionStatus).toBe('stopped');
     });
 
     test('should handle toggleRunning correctly', () => {
@@ -81,15 +89,15 @@ describe('Execution Status Machine', () => {
 
       // Toggle from stopped to running
       act(() => result.current.toggleRunning());
-      expect(result.current.getState()).toBe('running');
+      expect(result.current.executionStatus).toBe('running');
 
       // Toggle from running to paused
       act(() => result.current.toggleRunning());
-      expect(result.current.getState()).toBe('paused');
+      expect(result.current.executionStatus).toBe('paused');
 
       // Toggle from paused to running
       act(() => result.current.toggleRunning());
-      expect(result.current.getState()).toBe('running');
+      expect(result.current.executionStatus).toBe('running');
     });
   });
 });

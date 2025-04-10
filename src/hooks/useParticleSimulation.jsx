@@ -14,8 +14,8 @@ export function useParticleSimulation({
   dimensions,
   numRequests,
 }) {
-  const { getState } = useExecutionStatus();
-  const runningState = getState();
+  const { executionStatus } = useExecutionStatus();
+  const runningState = executionStatus;
   const { hashCache: fixedRequests } = useHashCache({ cacheSize: numRequests, seedNumber: 1000 });
 
   const [snapshot, send, ref] = useMachine(simulationMachine, {

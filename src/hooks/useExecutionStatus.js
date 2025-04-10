@@ -15,16 +15,15 @@ export const useExecutionStatus = () => {
   const pause = () => send({ type: 'PAUSE' });
   const resume = () => send({ type: 'RESUME' });
   const stop = () => send({ type: 'STOP' });
-  const getState = () => state.value;
+  const executionStatus = state.value;
 
   const toggleRunning = () => {
-    const currentState = getState();
-    console.log('currentState', currentState);
-    if (currentState === EXECUTION_STATES.STOPPED) {
+    console.log('executionStatus', executionStatus);
+    if (executionStatus === EXECUTION_STATES.STOPPED) {
       start();
-    } else if (currentState === EXECUTION_STATES.RUNNING) {
+    } else if (executionStatus === EXECUTION_STATES.RUNNING) {
       pause();
-    } else if (currentState === EXECUTION_STATES.PAUSED) {
+    } else if (executionStatus === EXECUTION_STATES.PAUSED) {
       resume();
     }
   };
@@ -34,7 +33,7 @@ export const useExecutionStatus = () => {
     pause,
     resume,
     stop,
-    getState,
+    executionStatus,
     toggleRunning,
   };
 };

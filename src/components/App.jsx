@@ -39,8 +39,7 @@ function AppComponent({ initialVnodeCount = 2 }) {
   const { isMobile } = useResponsive({ breakpoint: 950 });
   const NUM_STACKS = 5;
 
-  const { getState } = useExecutionStatus();
-  const executionStatus = getState();
+  const { toggleRunning, stop, executionStatus } = useExecutionStatus();
 
   const [vnodeCount, setVnodeCount] = useState(initialVnodeCount);
   const [collapsedPanels, setCollapsedPanels] = useState({

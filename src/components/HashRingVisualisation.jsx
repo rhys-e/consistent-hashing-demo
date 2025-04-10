@@ -21,8 +21,7 @@ export function HashRingVisualisation({
   collapsedPanels,
   togglePanel,
 }) {
-  const { getState } = useExecutionStatus();
-  const executionStatus = getState();
+  const { executionStatus } = useExecutionStatus();
   const width = dimensions.svgWidth;
   const height = dimensions.svgHeight;
   const radius = dimensions.svgRadius;

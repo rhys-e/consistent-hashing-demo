@@ -15,8 +15,8 @@ export function ControlsPanel({
   setNumRequests,
   dimensions,
 }) {
-  const { toggleRunning, stop, getState } = useExecutionStatus();
-  const currentState = getState();
+  const { toggleRunning, stop, executionStatus } = useExecutionStatus();
+  const currentState = executionStatus;
   const speedMultiplier = useAtom(speedMultiplierAtom);
 
   const handleReset = () => {
