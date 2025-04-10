@@ -3,21 +3,20 @@ import { ToggleIcon } from './ToggleIcon';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useAtom } from '../hooks/useStore';
 import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
+import { vnodeCountAtom } from '../state/vnodeCountAtom';
 
 export function ControlsPanel({
   collapsed,
   togglePanel,
   resetAll,
   addServer,
-  vnodeCount,
-  setVnodeCount,
   numRequests,
   setNumRequests,
   dimensions,
 }) {
   const { toggleRunning, stop, executionStatus } = useExecutionStatus();
-  const currentState = executionStatus;
   const speedMultiplier = useAtom(speedMultiplierAtom);
+  const vnodeCount = useAtom(vnodeCountAtom);
 
   const handleReset = () => {
     stop();
@@ -46,13 +45,13 @@ export function ControlsPanel({
         <div className="mb-4 mt-4 flex gap-2">
           <button
             className={`btn flex-1 cursor-pointer rounded-sm border px-4 py-2 font-bold shadow-md transition-all ${
-              currentState === EXECUTION_STATES.RUNNING
+              executionStatus === EXECUTION_STATES.RUNNING
                 ? 'border-btn-danger-border bg-btn-danger-bg text-ui-text-bright shadow-btn-danger-shadow'
                 : 'border-btn-success-border bg-btn-success-bg text-ui-text-bright shadow-btn-success-shadow'
             } `}
             onClick={toggleRunning}
           >
-            {currentState === EXECUTION_STATES.RUNNING ? 'HALT' : 'EXECUTE'}
+            {executionStatus === EXECUTION_STATES.RUNNING ? 'HALT' : 'EXECUTE'}
           </button>
 
           <button
@@ -102,7 +101,7 @@ export function ControlsPanel({
             min="1"
             max="20"
             value={vnodeCount}
-            onChange={e => setVnodeCount(Number(e.target.value))}
+            onChange={e => vnodeCountAtom.set(Number(e.target.value))}
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">

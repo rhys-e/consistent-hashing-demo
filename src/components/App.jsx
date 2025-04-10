@@ -16,8 +16,13 @@ import { numRequestsAtom } from '../state/numRequestsAtom';
 import { dimensionsStore } from '../state/dimensionsStore';
 import { serversAtom, createInitialServers } from '../state/serversAtom';
 import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
+import { vnodeCountAtom } from '../state/vnodeCountAtom';
 import { CYBER_COLORS } from '../constants/colors';
-import { INITIAL_NUM_REQUESTS, INITIAL_SPEED_MULTIPLIER } from '../constants/state';
+import {
+  INITIAL_NUM_REQUESTS,
+  INITIAL_SPEED_MULTIPLIER,
+  INITIAL_VNODE_COUNT,
+} from '../constants/state';
 
 export const sortNodes = nodeArray => {
   return nodeArray.slice().sort((a, b) => a.position - b.position);
@@ -31,17 +36,17 @@ function generateRandomCyberColor() {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
-function AppComponent({ initialVnodeCount = 2 }) {
+function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
   const dimensions = useStore(dimensionsStore);
   const numRequests = useAtom(numRequestsAtom);
   const servers = useAtom(serversAtom);
   const speedMultiplier = useAtom(speedMultiplierAtom);
+  const vnodeCount = useAtom(vnodeCountAtom);
   const { isMobile } = useResponsive({ breakpoint: 950 });
   const NUM_STACKS = 5;
 
-  const { toggleRunning, stop, executionStatus } = useExecutionStatus();
+  const { executionStatus } = useExecutionStatus();
 
-  const [vnodeCount, setVnodeCount] = useState(initialVnodeCount);
   const [collapsedPanels, setCollapsedPanels] = useState({
     controls: false,
     metrics: true,
@@ -156,7 +161,7 @@ function AppComponent({ initialVnodeCount = 2 }) {
 
   const resetAll = () => {
     serversAtom.set(createInitialServers());
-    setVnodeCount(initialVnodeCount);
+    vnodeCountAtom.set(initialVnodeCount);
     speedMultiplierAtom.set(INITIAL_SPEED_MULTIPLIER);
     numRequestsAtom.set(INITIAL_NUM_REQUESTS);
     resetStats();
@@ -218,7 +223,7 @@ function AppComponent({ initialVnodeCount = 2 }) {
             resetAll={resetAll}
             addServer={addServer}
             vnodeCount={vnodeCount}
-            setVnodeCount={setVnodeCount}
+            setVnodeCount={vnodeCountAtom.set}
             numRequests={numRequests}
             setNumRequests={numRequestsAtom.set}
             dimensions={dimensions}
