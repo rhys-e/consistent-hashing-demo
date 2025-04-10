@@ -9,34 +9,15 @@ import { ConsoleLog } from './ConsoleLog';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
-import theme from '../themes';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
-import { dimensionsStore } from '../state/dimensionsStore';
-import { useSelector } from '@xstate/store/react';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
-
-const CYBER_COLORS = [
-  '#E15759', // Neo-Tokyo Red (first node)
-  '#4E79A7', // Cyber Blue (second node)
-  '#59A14F', // Matrix Green
-  '#F28E2B', // Neon Orange
-  '#B07AA1', // Synthwave Purple
-  '#76B7B2', // Teal Hologram
-  '#FF9DA7', // Soft Neon Pink
-  '#9D7660', // Rusted Bronze
-  '#BAB0AC', // Chrome Silver
-  '#D37295', // Magenta Haze
-  '#FFBE7D', // Electric Amber
-  '#59A14F', // Digital Lime
-  '#499894', // Cyberdeck Aqua
-  '#F1CE63', // Virtual Gold
-  '#B6992D', // Acid Yellow
-  '#86BCB6', // Terminal Green
-  '#D4A6C8', // Holographic Pink
-  '#499894', // Circuit Blue
-  '#9D7660', // Tech Bronze
-  '#D7B5A6', // Augmented Beige
-];
+import { useStore, useAtom } from '../hooks/useStore';
+import { numRequestsAtom } from '../state/numRequestsAtom';
+import { dimensionsStore } from '../state/dimensionsStore';
+import { serversAtom, createInitialServers } from '../state/serversAtom';
+import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
+import { CYBER_COLORS } from '../constants/colors';
+import { INITIAL_NUM_REQUESTS, INITIAL_SPEED_MULTIPLIER } from '../constants/state';
 
 export const sortNodes = nodeArray => {
   return nodeArray.slice().sort((a, b) => a.position - b.position);
@@ -50,30 +31,18 @@ function generateRandomCyberColor() {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
-function AppComponent({ initialNodeCount = 2, initialVnodeCount = 2, initialNumRequests = 1 }) {
-  const dimensions = useSelector(dimensionsStore, state => state.context);
-  const [numRequests, setNumRequests] = useState(initialNumRequests);
-  const { isMobile } = useResponsive(950);
+function AppComponent({ initialVnodeCount = 2 }) {
+  const dimensions = useStore(dimensionsStore);
+  const numRequests = useAtom(numRequestsAtom);
+  const servers = useAtom(serversAtom);
+  const speedMultiplier = useAtom(speedMultiplierAtom);
+  const { isMobile } = useResponsive({ breakpoint: 950 });
   const NUM_STACKS = 5;
 
   const { getState } = useExecutionStatus();
   const executionStatus = getState();
 
-  // Physical servers
-  const [servers, setServers] = useState(() => {
-    const initialServers = [];
-    for (let i = 0; i < initialNodeCount; i++) {
-      initialServers.push({
-        id: `Node ${String.fromCharCode(65 + i)}`,
-        color: CYBER_COLORS[i % CYBER_COLORS.length],
-        basePosition: Math.random(),
-      });
-    }
-    return initialServers;
-  });
-
   const [vnodeCount, setVnodeCount] = useState(initialVnodeCount);
-  const [speedMultiplier, setSpeedMultiplier] = useState(1.0);
   const [collapsedPanels, setCollapsedPanels] = useState({
     controls: false,
     metrics: true,
@@ -176,29 +145,21 @@ function AppComponent({ initialNodeCount = 2, initialVnodeCount = 2, initialNumR
       color: newColor,
       basePosition: position,
     };
-    setServers([...servers, newSrv]);
+    serversAtom.set([...servers, newSrv]);
     addLog(`Added new server: ${newId}`, 'info');
   };
 
   const removeServer = id => {
     if (servers.length === 1) return;
-    setServers(servers.filter(srv => srv.id !== id));
+    serversAtom.set(servers.filter(srv => srv.id !== id));
     addLog(`Removed server: ${id}`, 'warning');
   };
 
   const resetAll = () => {
-    const initialServers = [];
-    for (let i = 0; i < initialNodeCount; i++) {
-      initialServers.push({
-        id: `Node ${String.fromCharCode(65 + i)}`,
-        color: CYBER_COLORS[i % CYBER_COLORS.length],
-        basePosition: Math.random(),
-      });
-    }
-    setServers(initialServers);
+    serversAtom.set(createInitialServers());
     setVnodeCount(initialVnodeCount);
-    setSpeedMultiplier(1.0);
-    setNumRequests(initialNumRequests);
+    speedMultiplierAtom.set(INITIAL_SPEED_MULTIPLIER);
+    numRequestsAtom.set(INITIAL_NUM_REQUESTS);
     resetStats();
     clearLogs();
     addLog('System reset to initial state', 'info');
@@ -257,12 +218,10 @@ function AppComponent({ initialNodeCount = 2, initialVnodeCount = 2, initialNumR
             togglePanel={() => togglePanel('controls')}
             resetAll={resetAll}
             addServer={addServer}
-            speedMultiplier={speedMultiplier}
-            setSpeedMultiplier={setSpeedMultiplier}
             vnodeCount={vnodeCount}
             setVnodeCount={setVnodeCount}
             numRequests={numRequests}
-            setNumRequests={setNumRequests}
+            setNumRequests={numRequestsAtom.set}
             dimensions={dimensions}
           />
 

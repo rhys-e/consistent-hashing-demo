@@ -1,14 +1,14 @@
 import React from 'react';
 import { ToggleIcon } from './ToggleIcon';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
+import { useAtom } from '../hooks/useStore';
+import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
 
 export function ControlsPanel({
   collapsed,
   togglePanel,
   resetAll,
   addServer,
-  speedMultiplier,
-  setSpeedMultiplier,
   vnodeCount,
   setVnodeCount,
   numRequests,
@@ -17,6 +17,7 @@ export function ControlsPanel({
 }) {
   const { toggleRunning, stop, getState } = useExecutionStatus();
   const currentState = getState();
+  const speedMultiplier = useAtom(speedMultiplierAtom);
 
   const handleReset = () => {
     stop();
@@ -84,7 +85,7 @@ export function ControlsPanel({
             max="3"
             step="0.1"
             value={speedMultiplier}
-            onChange={e => setSpeedMultiplier(Number(e.target.value))}
+            onChange={e => speedMultiplierAtom.set(Number(e.target.value))}
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">

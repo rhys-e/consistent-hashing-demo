@@ -1,6 +1,6 @@
 import { useState, useLayoutEffect } from 'react';
 
-export function useResponsive(breakpoint = 950) {
+export function useResponsive({ breakpoint = 950 }) {
   const [isMobile, setIsMobile] = useState(false);
 
   useLayoutEffect(() => {
