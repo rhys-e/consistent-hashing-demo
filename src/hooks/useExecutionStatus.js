@@ -1,5 +1,5 @@
 import { useMachine } from '@xstate/react';
-import { executionStatusMachine } from '../state/executionStatusMachine';
+import { executionStatusMachine } from '../state/machines';
 
 export const EXECUTION_STATES = {
   INIT: 'init',

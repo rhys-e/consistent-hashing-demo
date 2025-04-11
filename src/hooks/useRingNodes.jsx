@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { hashString } from '../utils/hashString';
-import { serversStore } from '../state/serversStore';
-import { vnodeCountAtom } from '../state/vnodeCountAtom';
+import { serversStore } from '../state/stores/serversStore';
+import { vnodeCountAtom } from '../state/atoms';
 import { useAtom, useSelector } from './useStore';
 
 export function useRingNodes() {

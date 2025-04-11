@@ -1,5 +1,5 @@
 import { createStore } from '@xstate/store';
-import { CYBER_COLORS } from '../constants/colors';
+import { CYBER_COLORS } from '../../constants/colors';
 
 function generateRandomCyberColor() {
   const hue = Math.floor(Math.random() * 360);

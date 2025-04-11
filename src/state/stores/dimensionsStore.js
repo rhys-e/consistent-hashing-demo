@@ -1,5 +1,5 @@
 import { createStore } from '@xstate/store';
-import theme from '../themes';
+import theme from '../../themes';
 
 export const dimensionsStore = createStore({
   context: {

@@ -1,5 +1,5 @@
 import { createMachine, assign, sendTo } from 'xstate';
-import { toXY } from '../utils/geometryUtils';
+import { toXY } from '../../utils/geometryUtils';
 export const particleMachine = createMachine({
   id: 'particle',
   initial: 'initial',

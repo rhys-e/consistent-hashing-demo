@@ -2,8 +2,7 @@ import React from 'react';
 import { ToggleIcon } from './ToggleIcon';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useAtom } from '../hooks/useStore';
-import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
-import { vnodeCountAtom } from '../state/vnodeCountAtom';
+import { vnodeCountAtom, speedMultiplierAtom } from '../state/atoms';
 
 export function ControlsPanel({
   collapsed,

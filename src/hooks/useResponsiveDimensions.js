@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useResponsive } from './useResponsive';
-import { dimensionsStore } from '../state/dimensionsStore';
+import { dimensionsStore } from '../state/stores/dimensionsStore';
 
 export function useResponsiveDimensions({
   SVG_WIDTH_PERCENTAGE,

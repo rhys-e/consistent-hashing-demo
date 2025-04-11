@@ -11,11 +11,9 @@ import { MetricsPanel } from './MetricsPanel';
 import { useExecutionStatus } from '../hooks/useExecutionStatus';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
 import { useSelector, useAtom } from '../hooks/useStore';
-import { numRequestsAtom } from '../state/numRequestsAtom';
-import { dimensionsStore } from '../state/dimensionsStore';
-import { serversStore } from '../state/serversStore';
-import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
-import { vnodeCountAtom } from '../state/vnodeCountAtom';
+import { vnodeCountAtom, speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
+import { dimensionsStore } from '../state/stores/dimensionsStore';
+import { serversStore } from '../state/stores/serversStore';
 import { useSystemLogging } from '../hooks/useSystemLogging';
 import {
   INITIAL_NUM_REQUESTS,

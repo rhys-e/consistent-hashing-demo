@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useAtom, useSelector } from './useStore';
-import { serversStore } from '../state/serversStore';
+import { serversStore } from '../state/stores/serversStore';
 import { useExecutionStatus, EXECUTION_STATES } from './useExecutionStatus';
-import { vnodeCountAtom } from '../state/vnodeCountAtom';
-import { consoleLogStore } from '../state/consoleLogStore';
+import { vnodeCountAtom } from '../state/atoms';
+import { consoleLogStore } from '../state/stores/consoleLogStore';
 
 export const useSystemLogging = () => {
   const { logs } = useSelector(consoleLogStore);

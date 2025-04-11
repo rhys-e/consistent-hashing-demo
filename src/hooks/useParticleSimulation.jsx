@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useHashCache } from './useHashCache';
 import { useMachine } from '@xstate/react';
-import { simulationMachine } from '../state/simulationMachine';
+import { simulationMachine } from '../state/machines';
 import { useExecutionStatus, EXECUTION_STATES } from './useExecutionStatus';
 
 const PARTICLE_SPEED = 0.002; // Speed per frame - consistent for all particles

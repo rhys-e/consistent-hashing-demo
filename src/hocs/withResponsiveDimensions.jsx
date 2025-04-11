@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useResponsive } from '../hooks/useResponsive';
-import { dimensionsStore } from '../state/dimensionsStore';
+import { dimensionsStore } from '../state/stores/dimensionsStore';
 
 function calculateDimensions(
   isMobile,
