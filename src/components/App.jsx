@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { useRingNodes } from '../hooks/useRingNodes';
 import { useStats } from '../hooks/useStats';
-import { useConsoleLog } from '../hooks/useConsoleLog';
 import { useResponsive } from '../hooks/useResponsive';
 import { ConsoleLog } from './ConsoleLog';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
-import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
+import { useExecutionStatus } from '../hooks/useExecutionStatus';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
 import { useSelector, useAtom } from '../hooks/useStore';
 import { numRequestsAtom } from '../state/numRequestsAtom';
@@ -17,6 +16,7 @@ import { dimensionsStore } from '../state/dimensionsStore';
 import { serversStore } from '../state/serversStore';
 import { speedMultiplierAtom } from '../state/speedMultiplierAtom';
 import { vnodeCountAtom } from '../state/vnodeCountAtom';
+import { useSystemLogging } from '../hooks/useSystemLogging';
 import {
   INITIAL_NUM_REQUESTS,
   INITIAL_SPEED_MULTIPLIER,
@@ -47,8 +47,7 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     console: true,
   });
 
-  const { logs, addLog, clearLogs } = useConsoleLog(200);
-
+  const { logs, addLog, clearLogs } = useSystemLogging();
   const { stats, trackRequest, calculateDistribution, resetStats } = useStats();
 
   const ringNodes = useRingNodes();
@@ -100,36 +99,14 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     },
   });
 
-  useEffect(() => {
-    if (servers.length > 0 && executionStatus === EXECUTION_STATES.RUNNING) {
-      addLog(`Server configuration updated: ${servers.length} nodes active`, 'info');
-    }
-  }, [servers, addLog, executionStatus]);
-
-  useEffect(() => {
-    if (executionStatus === EXECUTION_STATES.RUNNING) {
-      addLog(`Virtual node count set to ${vnodeCount}`, 'info');
-    }
-  }, [vnodeCount, addLog, executionStatus]);
-
-  useEffect(() => {
-    if (executionStatus === EXECUTION_STATES.RUNNING) {
-      addLog('Simulation started', 'info');
-    } else if (executionStatus === EXECUTION_STATES.PAUSED) {
-      addLog('Simulation paused', 'info');
-    } else if (executionStatus === EXECUTION_STATES.STOPPED) {
-      addLog('Simulation stopped', 'info');
-    }
-  }, [executionStatus, addLog]);
-
   const addServer = () => {
     serversStore.trigger.add();
-    addLog(`Added new server: ${servers[servers.length - 1].id}`, 'info');
+    //addLog(`Added new server: ${servers[servers.length - 1].id}`, 'info');
   };
 
   const removeServer = id => {
     serversStore.trigger.remove({ id });
-    addLog(`Removed server: ${id}`, 'warning');
+    //addLog(`Removed server: ${id}`, 'warning');
   };
 
   const resetAll = () => {
@@ -139,7 +116,7 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     numRequestsAtom.set(INITIAL_NUM_REQUESTS);
     resetStats();
     clearLogs();
-    addLog('System reset to initial state', 'info');
+    //addLog('System reset to initial state', 'info');
   };
 
   const loadImbalance = calculateDistribution();

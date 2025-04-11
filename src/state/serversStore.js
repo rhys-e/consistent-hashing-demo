@@ -8,22 +8,21 @@ function generateRandomCyberColor() {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
-export const createInitialServers = () => {
-  return [
-    {
-      id: 'Node A',
-      color: CYBER_COLORS[0],
-    },
-    {
-      id: 'Node B',
-      color: CYBER_COLORS[1],
-    },
-  ];
-};
+export const createInitialServers = () => [
+  {
+    id: 'Node A',
+    color: CYBER_COLORS[0],
+  },
+  {
+    id: 'Node B',
+    color: CYBER_COLORS[1],
+  },
+];
 
 export const serversStore = createStore({
   context: {
     servers: createInitialServers(),
+    event: null,
   },
   on: {
     add: context => {
@@ -34,7 +33,6 @@ export const serversStore = createStore({
         colorIndex++;
         newId = `Node ${String.fromCharCode(65 + colorIndex)}`;
       }
-
       const newColor =
         colorIndex < CYBER_COLORS.length ? CYBER_COLORS[colorIndex] : generateRandomCyberColor();
 
@@ -43,18 +41,36 @@ export const serversStore = createStore({
         color: newColor,
       };
 
-      return {
+      const updates = {
         ...context,
         servers: [...context.servers, newServer],
+        event: {
+          type: 'add',
+          payload: newServer,
+        },
       };
+
+      return updates;
     },
     remove: (context, { id }) => {
       if (context.servers.length === 1) return context;
       return {
         ...context,
         servers: context.servers.filter(srv => srv.id !== id),
+        event: {
+          type: 'remove',
+          payload: id,
+        },
       };
     },
-    reset: () => createInitialServers(),
+    reset: context => {
+      return {
+        ...context,
+        servers: createInitialServers(),
+        event: {
+          type: 'reset',
+        },
+      };
+    },
   },
 });
