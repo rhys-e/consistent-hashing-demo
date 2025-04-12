@@ -1,5 +1,5 @@
 import { createActor, fromCallback } from 'xstate';
-import { particleMachine } from '../machines/particleMachine';
+import { particleMachine } from '../particleMachine';
 
 describe('Particle State Machine', () => {
   // Test configuration

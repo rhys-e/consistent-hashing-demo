@@ -1,6 +1,6 @@
 import { createActor } from 'xstate';
-import { executionStatusMachine } from '../machines/executionStatusMachine';
-import { useExecutionStatus } from '../../hooks/useExecutionStatus';
+import { executionStatusMachine } from '../executionStatusMachine';
+import { useExecutionStatus } from '../../../hooks/useExecutionStatus';
 import { renderHook, act } from '@testing-library/react';
 
 describe('Execution Status Machine', () => {
