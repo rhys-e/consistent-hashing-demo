@@ -140,7 +140,6 @@ function AppComponent() {
           <ControlsPanel
             collapsed={collapsedPanels.controls}
             togglePanel={() => togglePanel('controls')}
-            addServer={addServer}
             vnodeCount={vnodeCount}
             setVnodeCount={vnodeCountAtom.set}
             numRequests={numRequests}

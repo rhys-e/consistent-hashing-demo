@@ -1,5 +1,5 @@
 import { createAtom } from '@xstate/store';
-import { INITIAL_NUM_REQUESTS } from '../constants/state';
+import { INITIAL_NUM_REQUESTS } from '../../constants/state';
 
 const numRequestsAtom = createAtom(INITIAL_NUM_REQUESTS);
 

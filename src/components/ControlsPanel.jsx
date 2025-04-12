@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { ToggleIcon } from './ToggleIcon';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useAtom } from '../hooks/useStore';
@@ -8,20 +8,17 @@ import {
   resetVnodeCount,
   resetSpeedMultiplier,
   resetNumRequests,
+  numRequestsAtom,
 } from '../state/atoms';
 import { serversStore, statsStore, consoleLogStore } from '../state/stores';
+import { useSelector } from '../hooks/useStore';
 
-export function ControlsPanel({
-  collapsed,
-  togglePanel,
-  addServer,
-  numRequests,
-  setNumRequests,
-  dimensions,
-}) {
+export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
   const { toggleRunning, stop, executionStatus } = useExecutionStatus();
   const speedMultiplier = useAtom(speedMultiplierAtom);
   const vnodeCount = useAtom(vnodeCountAtom);
+  const { event: serversEvent } = useSelector(serversStore);
+  const numRequests = useAtom(numRequestsAtom);
 
   const handleReset = () => {
     stop();
@@ -33,6 +30,42 @@ export function ControlsPanel({
     consoleLogStore.trigger.clear();
     consoleLogStore.trigger.log({ message: 'System reset to initial state' });
   };
+
+  const handleExecute = () => {
+    if (executionStatus === EXECUTION_STATES.RUNNING) {
+      consoleLogStore.trigger.log({ message: 'Simulation paused' });
+      toggleRunning();
+    } else {
+      consoleLogStore.trigger.log({ message: 'Simulation started' });
+      toggleRunning();
+    }
+  };
+
+  const handleVnodeCountChange = e => {
+    const newVnodeCount = Number(e.target.value);
+    vnodeCountAtom.set(newVnodeCount);
+    consoleLogStore.trigger.log({ message: `Virtual node count set to ${newVnodeCount}` });
+  };
+
+  const handleAddServer = () => {
+    serversStore.trigger.add();
+    if (executionStatus === EXECUTION_STATES.RUNNING) {
+      consoleLogStore.trigger.log({
+        message: `Server configuration updated: ${servers.length} nodes active`,
+      });
+    }
+  };
+
+  const handleNumRequestsChange = e => {
+    const newNumRequests = Number(e.target.value);
+    numRequestsAtom.set(newNumRequests);
+  };
+
+  useEffect(() => {
+    if (serversEvent?.type === 'add') {
+      consoleLogStore.trigger.log({ message: `Added new server: ${serversEvent.payload.id}` });
+    }
+  }, [serversEvent]);
 
   return (
     <div
@@ -60,7 +93,7 @@ export function ControlsPanel({
                 ? 'border-btn-danger-border bg-btn-danger-bg text-ui-text-bright shadow-btn-danger-shadow'
                 : 'border-btn-success-border bg-btn-success-bg text-ui-text-bright shadow-btn-success-shadow'
             } `}
-            onClick={toggleRunning}
+            onClick={handleExecute}
           >
             {executionStatus === EXECUTION_STATES.RUNNING ? 'HALT' : 'EXECUTE'}
           </button>
@@ -76,7 +109,7 @@ export function ControlsPanel({
         <div className="mb-6">
           <button
             className="btn w-full cursor-pointer rounded-sm border border-btn-purple-border bg-btn-purple-bg px-4 py-2 font-bold text-ui-text-bright shadow-button-glow shadow-btn-purple-shadow"
-            onClick={addServer}
+            onClick={handleAddServer}
           >
             ADD SERVER NODE
           </button>
@@ -112,7 +145,7 @@ export function ControlsPanel({
             min="1"
             max="20"
             value={vnodeCount}
-            onChange={e => vnodeCountAtom.set(Number(e.target.value))}
+            onChange={handleVnodeCountChange}
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">
@@ -129,7 +162,7 @@ export function ControlsPanel({
             min="1"
             max="20"
             value={numRequests}
-            onChange={e => setNumRequests(Number(e.target.value))}
+            onChange={handleNumRequestsChange}
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">
