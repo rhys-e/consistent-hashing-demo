@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useCallback } from 'react';
 import { useExecutionStatus } from '../hooks/useExecutionStatus';
 import { useSelector, useAtom } from '../hooks/useStore';
-import { consoleLogStore, serversStore, dimensionsStore } from '../state/stores';
+import { consoleLogStore, serversStore, dimensionsStore, statsStore } from '../state/stores';
 import { vnodeCountAtom, speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
 import { EXECUTION_STATES } from '../hooks/useExecutionStatus';
 
@@ -13,6 +13,7 @@ export const AppProvider = ({ children }) => {
   const logsContext = useSelector(consoleLogStore);
   const { event: serversEvent, servers } = useSelector(serversStore);
   const dimensions = useSelector(dimensionsStore);
+  const { nodeStats, loadImbalance } = useSelector(statsStore);
 
   // Re-expose atoms
   const vnodeCount = useAtom(vnodeCountAtom);
@@ -27,11 +28,6 @@ export const AppProvider = ({ children }) => {
     consoleLogStore.trigger.clear();
   };
 
-  const resetLogs = useCallback(() => {
-    consoleLogStore.trigger.clear();
-    addLog('System reset to initial state', 'info');
-  }, [addLog]);
-
   useEffect(() => {
     // Log server changes
     if (serversEvent?.type === 'add') {
@@ -41,11 +37,7 @@ export const AppProvider = ({ children }) => {
     if (serversEvent?.type === 'remove') {
       addLog(`Removed server: ${serversEvent.payload}`, 'warning');
     }
-
-    if (serversEvent?.type === 'reset') {
-      resetLogs();
-    }
-  }, [serversEvent, resetLogs, addLog]);
+  }, [serversEvent, addLog]);
 
   useEffect(() => {
     // Log server changes
@@ -70,10 +62,7 @@ export const AppProvider = ({ children }) => {
     } else if (executionStatus.executionStatus === EXECUTION_STATES.STOPPED) {
       addLog('Simulation stopped', 'info');
     }
-    return () => {
-      resetLogs();
-    };
-  }, [executionStatus.executionStatus, addLog, resetLogs]);
+  }, [executionStatus.executionStatus, addLog]);
 
   const value = {
     // Execution Status
@@ -92,6 +81,10 @@ export const AppProvider = ({ children }) => {
     stores: {
       servers,
       dimensions,
+      stats: {
+        nodeStats,
+        loadImbalance,
+      },
     },
 
     // Atoms

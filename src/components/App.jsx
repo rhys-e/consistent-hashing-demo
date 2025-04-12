@@ -2,29 +2,18 @@ import React, { useState } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { useRingNodes } from '../hooks/useRingNodes';
-import { useStats } from '../hooks/useStats';
 import { useResponsive } from '../hooks/useResponsive';
 import { ConsoleLog } from './ConsoleLog';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
-import { useExecutionStatus } from '../hooks/useExecutionStatus';
+import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
 import { useSelector, useAtom } from '../hooks/useStore';
 import { vnodeCountAtom, speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
-import { dimensionsStore } from '../state/stores/dimensionsStore';
-import { serversStore } from '../state/stores/serversStore';
-import {
-  INITIAL_NUM_REQUESTS,
-  INITIAL_SPEED_MULTIPLIER,
-  INITIAL_VNODE_COUNT,
-} from '../constants/state';
+import { dimensionsStore, serversStore } from '../state/stores';
 
-export const sortNodes = nodeArray => {
-  return nodeArray.slice().sort((a, b) => a.position - b.position);
-};
-
-function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
+function AppComponent() {
   const dimensions = useSelector(dimensionsStore);
   const numRequests = useAtom(numRequestsAtom);
   const { servers } = useSelector(serversStore);
@@ -43,8 +32,6 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     status: true,
     console: true,
   });
-
-  const { stats, trackRequest, calculateDistribution, resetStats } = useStats();
 
   const ringNodes = useRingNodes();
 
@@ -105,18 +92,6 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     //addLog(`Removed server: ${id}`, 'warning');
   };
 
-  const resetAll = () => {
-    serversStore.trigger.reset();
-    vnodeCountAtom.set(initialVnodeCount);
-    speedMultiplierAtom.set(INITIAL_SPEED_MULTIPLIER);
-    numRequestsAtom.set(INITIAL_NUM_REQUESTS);
-    resetStats();
-    // clearLogs();
-    //addLog('System reset to initial state', 'info');
-  };
-
-  const loadImbalance = calculateDistribution();
-
   const togglePanel = panelName => {
     setCollapsedPanels(prev => ({
       ...prev,
@@ -165,7 +140,6 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
           <ControlsPanel
             collapsed={collapsedPanels.controls}
             togglePanel={() => togglePanel('controls')}
-            resetAll={resetAll}
             addServer={addServer}
             vnodeCount={vnodeCount}
             setVnodeCount={vnodeCountAtom.set}
@@ -178,10 +152,8 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
           <MetricsPanel
             collapsed={collapsedPanels.metrics}
             togglePanel={() => togglePanel('metrics')}
-            stats={stats}
             servers={servers}
             vnodeCount={vnodeCount}
-            loadImbalance={loadImbalance}
             ringNodes={ringNodes}
           />
         </div>

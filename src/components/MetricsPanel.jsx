@@ -1,15 +1,11 @@
 import React from 'react';
 import { ToggleIcon } from './ToggleIcon';
+import { useSelector } from '../hooks/useStore';
+import { statsStore } from '../state/stores';
 
-export function MetricsPanel({
-  collapsed,
-  togglePanel,
-  stats,
-  servers,
-  vnodeCount,
-  loadImbalance,
-  ringNodes,
-}) {
+export function MetricsPanel({ collapsed, togglePanel, servers, vnodeCount, ringNodes }) {
+  const { nodeStats, loadImbalance, totalRequests } = useSelector(statsStore);
+
   return (
     <div className="rounded-sm border border-cyber-border bg-panel-bg p-4 font-mono md:p-6">
       <div className="panel-header" onClick={togglePanel}>
@@ -39,7 +35,7 @@ export function MetricsPanel({
           </p>
           <p className="m-0 mb-2 flex justify-between">
             <span className="text-ui-text-secondary">REQUESTS_PROCESSED:</span>
-            <span className="text-ui-text-bright">{stats.requestsProcessed}</span>
+            <span className="text-ui-text-bright">{totalRequests}</span>
           </p>
           <p className="m-0 mb-2 flex justify-between">
             <span className="text-ui-text-secondary">LOAD_IMBALANCE:</span>
@@ -63,8 +59,8 @@ export function MetricsPanel({
             {servers
               .sort((a, b) => a.id.localeCompare(b.id))
               .map(server => {
-                const requests = stats.nodeStats[server.id] || 0;
-                const maxRequests = Math.max(...Object.values(stats.nodeStats), 1);
+                const requests = nodeStats[server.id] || 0;
+                const maxRequests = Math.max(...Object.values(nodeStats), 1);
                 const percentage = Math.round((requests / maxRequests) * 100) || 0;
 
                 return (

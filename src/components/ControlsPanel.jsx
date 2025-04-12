@@ -2,12 +2,17 @@ import React from 'react';
 import { ToggleIcon } from './ToggleIcon';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useAtom } from '../hooks/useStore';
-import { vnodeCountAtom, speedMultiplierAtom } from '../state/atoms';
+import { vnodeCountAtom, speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
+import { serversStore, statsStore, consoleLogStore } from '../state/stores';
+import {
+  INITIAL_VNODE_COUNT,
+  INITIAL_SPEED_MULTIPLIER,
+  INITIAL_NUM_REQUESTS,
+} from '../constants/state';
 
 export function ControlsPanel({
   collapsed,
   togglePanel,
-  resetAll,
   addServer,
   numRequests,
   setNumRequests,
@@ -19,7 +24,12 @@ export function ControlsPanel({
 
   const handleReset = () => {
     stop();
-    resetAll();
+    serversStore.trigger.reset();
+    vnodeCountAtom.set(INITIAL_VNODE_COUNT);
+    speedMultiplierAtom.set(INITIAL_SPEED_MULTIPLIER);
+    numRequestsAtom.set(INITIAL_NUM_REQUESTS);
+    statsStore.trigger.reset();
+    consoleLogStore.trigger.log({ message: 'System reset to initial state' });
   };
 
   return (

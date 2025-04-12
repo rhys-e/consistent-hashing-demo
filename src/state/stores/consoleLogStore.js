@@ -23,6 +23,14 @@ export const consoleLogStore = createStore({
         logs: updatedLogs.slice(Math.max(0, updatedLogs.length - maxLogCount)),
       };
     },
+    log: (context, { message, msgType = 'info', maxLogCount = 100 }) => {
+      const log = newLog(message, msgType);
+      const updatedLogs = [...context.logs, log];
+      return {
+        ...context,
+        logs: updatedLogs.slice(Math.max(0, updatedLogs.length - maxLogCount)),
+      };
+    },
     clear: () => ({ logs: [] }),
   },
 });
