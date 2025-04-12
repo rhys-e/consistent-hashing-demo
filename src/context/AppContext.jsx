@@ -1,52 +1,33 @@
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useContext } from 'react';
+import { userRequestStore } from '../state/stores/userRequestStore';
 import { useExecutionStatus } from '../hooks/useExecutionStatus';
-import { useSelector, useAtom } from '../hooks/useStore';
-import { virtualNodeStore, dimensionsStore, statsStore } from '../state/stores';
-import { speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
+import { useSystemLogging } from '../hooks/useSystemLogging';
+import { useSelector } from '../hooks/useStore';
 
 const AppContext = createContext();
 
-export const AppProvider = ({ children }) => {
-  // Re-expose hooks
+export function AppProvider({ children }) {
+  const userRequests = useSelector(userRequestStore);
   const executionStatus = useExecutionStatus();
-  const dimensions = useSelector(dimensionsStore);
-  const { nodes, numVirtualNodesPerNode } = useSelector(virtualNodeStore);
-  const { nodeStats, loadImbalance } = useSelector(statsStore);
+  const systemLogging = useSystemLogging();
 
-  // Re-expose atoms
-  const speedMultiplier = useAtom(speedMultiplierAtom);
-  const numRequests = useAtom(numRequestsAtom);
+  return (
+    <AppContext.Provider
+      value={{
+        userRequests,
+        executionStatus,
+        systemLogging,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+}
 
-  const value = {
-    // Execution Status
-    execution: {
-      ...executionStatus,
-    },
-
-    // Stores
-    stores: {
-      dimensions,
-      stats: {
-        nodeStats,
-        loadImbalance,
-      },
-    },
-
-    // Atoms
-    atoms: {
-      numVirtualNodesPerNode,
-      speedMultiplier,
-      numRequests,
-    },
-  };
-
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
-};
-
-export const useApp = () => {
+export function useApp() {
   const context = useContext(AppContext);
   if (!context) {
     throw new Error('useApp must be used within an AppProvider');
   }
   return context;
-};
+}

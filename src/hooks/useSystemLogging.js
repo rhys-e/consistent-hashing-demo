@@ -3,11 +3,13 @@ import { useSelector } from './useStore';
 import { virtualNodeStore } from '../state/stores/virtualNodeStore';
 import { useExecutionStatus, EXECUTION_STATES } from './useExecutionStatus';
 import { consoleLogStore } from '../state/stores/consoleLogStore';
+import { userRequestStore } from '../state/stores/userRequestStore';
 
 export const useSystemLogging = () => {
   const { logs } = useSelector(consoleLogStore);
   const { executionStatus } = useExecutionStatus();
   const { nodes, numVirtualNodesPerNode } = useSelector(virtualNodeStore);
+  const userRequests = useSelector(userRequestStore);
 
   const addLog = (message, type = 'info') => {
     consoleLogStore.trigger.add({ message, msgType: type, maxLogCount: 200 });

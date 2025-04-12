@@ -2,29 +2,26 @@ import { useEffect } from 'react';
 import { ToggleIcon } from './ToggleIcon';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useAtom } from '../hooks/useStore';
-import {
-  speedMultiplierAtom,
-  resetSpeedMultiplier,
-  resetNumRequests,
-  numRequestsAtom,
-} from '../state/atoms';
-import { virtualNodeStore, statsStore, consoleLogStore } from '../state/stores';
+import { speedMultiplierAtom, resetSpeedMultiplier } from '../state/atoms';
+import { virtualNodeStore, statsStore, consoleLogStore, userRequestStore } from '../state/stores';
 import { useSelector } from '../hooks/useStore';
+import { useApp } from '../context/AppContext';
 
 export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
   const { toggleRunning, stop, executionStatus } = useExecutionStatus();
   const speedMultiplier = useAtom(speedMultiplierAtom);
   const { event: virtualNodeEvent, numVirtualNodesPerNode } = useSelector(virtualNodeStore);
-  const numRequests = useAtom(numRequestsAtom);
+  const { addLog } = useApp();
+  const { numRequests } = useSelector(userRequestStore);
 
   const handleReset = () => {
     stop();
     virtualNodeStore.trigger.reset();
     resetSpeedMultiplier();
-    resetNumRequests();
+    userRequestStore.send({ type: 'reset' });
     statsStore.trigger.reset();
     consoleLogStore.trigger.clear();
-    consoleLogStore.trigger.log({ message: 'System reset to initial state' });
+    addLog('System reset');
   };
 
   const handleExecute = () => {
@@ -54,7 +51,12 @@ export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
 
   const handleNumRequestsChange = e => {
     const newNumRequests = Number(e.target.value);
-    numRequestsAtom.set(newNumRequests);
+    userRequestStore.send({ type: 'setNumRequests', numRequests: newNumRequests });
+  };
+
+  const handleSeedChange = seed => {
+    userRequestStore.send({ type: 'setSeed', seedNumber: seed });
+    addLog(`Hash cache seed updated to ${seed}`);
   };
 
   useEffect(() => {

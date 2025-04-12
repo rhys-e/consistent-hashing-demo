@@ -5,20 +5,23 @@ import { ConsoleLog } from './ConsoleLog';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
-import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
+import { EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
 import { useSelector, useAtom } from '../hooks/useStore';
-import { speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
-import { dimensionsStore, virtualNodeStore } from '../state/stores';
+import { speedMultiplierAtom } from '../state/atoms';
+import { dimensionsStore, virtualNodeStore, userRequestStore } from '../state/stores';
+import { useApp } from '../context/AppContext';
+import { useSystemLogging } from '../hooks/useSystemLogging';
 
 function AppComponent({ isMobile }) {
   const dimensions = useSelector(dimensionsStore);
-  const numRequests = useAtom(numRequestsAtom);
   const { nodes, numVirtualNodesPerNode, virtualNodes } = useSelector(virtualNodeStore);
+  const { numRequests } = useSelector(userRequestStore);
   const speedMultiplier = useAtom(speedMultiplierAtom);
   const NUM_STACKS = 5;
 
-  const { executionStatus } = useExecutionStatus();
+  const { executionStatus, send } = useApp();
+  const { addLog } = useSystemLogging();
 
   const [collapsedPanels, setCollapsedPanels] = useState({
     controls: false,

@@ -1,8 +1,9 @@
 import { useRef, useEffect } from 'react';
-import { useHashCache } from './useHashCache';
 import { useMachine } from '@xstate/react';
 import { simulationMachine } from '../state/machines';
 import { useExecutionStatus, EXECUTION_STATES } from './useExecutionStatus';
+import { userRequestStore } from '../state/stores';
+import { useSelector } from './useStore';
 
 const PARTICLE_SPEED = 0.002; // Speed per frame - consistent for all particles
 
@@ -15,8 +16,8 @@ export function useParticleSimulation({
   numRequests,
 }) {
   const { executionStatus } = useExecutionStatus();
+  const { hashCache: fixedRequests } = useSelector(userRequestStore);
   const runningState = executionStatus;
-  const { hashCache: fixedRequests } = useHashCache({ cacheSize: numRequests, seedNumber: 1000 });
 
   const [snapshot, send, ref] = useMachine(simulationMachine, {
     input: {
