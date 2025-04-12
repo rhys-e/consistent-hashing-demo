@@ -1,6 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ToggleIcon } from './ToggleIcon';
-export function ConsoleLog({ logs, collapsed, togglePanel }) {
+import { useApp } from '../context/AppContext';
+
+export function ConsoleLog({ collapsed, togglePanel }) {
+  const { logging } = useApp();
+  const { logs } = logging;
+
   const consoleRef = useRef(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
 

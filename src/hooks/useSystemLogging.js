@@ -30,7 +30,7 @@ export const useSystemLogging = () => {
       }
 
       if (snapshot.context.event?.type === 'reset') {
-        console.log('reset');
+        consoleLogStore.trigger.clear();
         addLog('System reset to initial state', 'info');
       }
     });
@@ -58,7 +58,7 @@ export const useSystemLogging = () => {
     } else if (executionStatus === EXECUTION_STATES.PAUSED) {
       addLog('Simulation paused', 'info');
     } else if (executionStatus === EXECUTION_STATES.STOPPED) {
-      addLog('Simulation stopped', 'info');
+      //addLog('Simulation stopped', 'info');
     }
   }, [executionStatus]);
 

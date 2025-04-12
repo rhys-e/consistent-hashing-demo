@@ -5,6 +5,7 @@ import { App } from './components/App.jsx';
 import { ThemeProvider } from './components/ThemeProvider.jsx';
 import theme from './themes';
 import './index.css';
+import { AppProvider } from './context/AppContext';
 
 if (import.meta.env.DEV) {
   scan({
@@ -54,14 +55,16 @@ const SVG_RADIUS_PERCENTAGE = theme.visualisation.svg.radiusPercentage;
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <App
-          SVG_WIDTH_PERCENTAGE={SVG_WIDTH_PERCENTAGE}
-          SVG_ASPECT_RATIO={SVG_ASPECT_RATIO}
-          SVG_RADIUS_PERCENTAGE={SVG_RADIUS_PERCENTAGE}
-          CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
-        />
-      </ThemeProvider>
+      <AppProvider>
+        <ThemeProvider theme={theme}>
+          <App
+            SVG_WIDTH_PERCENTAGE={SVG_WIDTH_PERCENTAGE}
+            SVG_ASPECT_RATIO={SVG_ASPECT_RATIO}
+            SVG_RADIUS_PERCENTAGE={SVG_RADIUS_PERCENTAGE}
+            CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
+          />
+        </ThemeProvider>
+      </AppProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

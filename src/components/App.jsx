@@ -14,7 +14,6 @@ import { useSelector, useAtom } from '../hooks/useStore';
 import { vnodeCountAtom, speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
 import { dimensionsStore } from '../state/stores/dimensionsStore';
 import { serversStore } from '../state/stores/serversStore';
-import { useSystemLogging } from '../hooks/useSystemLogging';
 import {
   INITIAL_NUM_REQUESTS,
   INITIAL_SPEED_MULTIPLIER,
@@ -45,7 +44,6 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     console: true,
   });
 
-  const { logs, addLog, clearLogs } = useSystemLogging();
   const { stats, trackRequest, calculateDistribution, resetStats } = useStats();
 
   const ringNodes = useRingNodes();
@@ -57,7 +55,7 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
       `Request processed by ${node.id}: Id=${completedParticle.data.id}, Pos=${completedParticle.data.ringStartPos.toFixed(2)}%, ` +
       `VnodeId='${node.vnodeId}', VNode=#${node.vnodeIndex + 1}/${vnodeCount}, VPos=${node.position.toFixed(2)}%`;
 
-    addLog(detailedMessage, 'success');
+    // addLog(detailedMessage, 'success');
   };
 
   const handleReroutedParticles = reroutedParticles => {
@@ -76,10 +74,10 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
 
     Object.keys(targetNodes).forEach(targetNodeId => {
       const percentage = Math.round((targetNodes[targetNodeId].length / numRequests) * 100);
-      addLog(
-        `Rerouted ${targetNodes[targetNodeId].length} requests to ${targetNodeId} (${percentage}%)`,
-        'warning'
-      );
+      // addLog(
+      //   `Rerouted ${targetNodes[targetNodeId].length} requests to ${targetNodeId} (${percentage}%)`,
+      //   'warning'
+      // );
     });
   };
 
@@ -113,7 +111,7 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
     speedMultiplierAtom.set(INITIAL_SPEED_MULTIPLIER);
     numRequestsAtom.set(INITIAL_NUM_REQUESTS);
     resetStats();
-    clearLogs();
+    // clearLogs();
     //addLog('System reset to initial state', 'info');
   };
 
@@ -152,7 +150,6 @@ function AppComponent({ initialVnodeCount = INITIAL_VNODE_COUNT }) {
 
           <div className="hidden md:block">
             <ConsoleLog
-              logs={logs}
               collapsed={collapsedPanels.console}
               togglePanel={() => togglePanel('console')}
             />
