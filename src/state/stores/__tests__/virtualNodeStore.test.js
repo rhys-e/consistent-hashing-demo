@@ -2,21 +2,24 @@ import { virtualNodeStore } from '../virtualNodeStore';
 import { INITIAL_VNODE_COUNT } from '../../../constants/state';
 
 const HASH_MAP = {
-  'Node A-v0': { normalised: 0.1, base64: 'nodeA0' },
-  'Node A-v1': { normalised: 0.15, base64: 'nodeA1' },
-  'Node A-v2': { normalised: 0.2, base64: 'nodeA2' },
-  'Node A-v3': { normalised: 0.25, base64: 'nodeA3' },
-  'Node A-v4': { normalised: 0.3, base64: 'nodeA4' },
-  'Node B-v0': { normalised: 0.4, base64: 'nodeB0' },
-  'Node B-v1': { normalised: 0.45, base64: 'nodeB1' },
-  'Node B-v2': { normalised: 0.5, base64: 'nodeB2' },
-  'Node B-v3': { normalised: 0.55, base64: 'nodeB3' },
-  'Node B-v4': { normalised: 0.6, base64: 'nodeB4' },
-  'Node C-v0': { normalised: 0.7, base64: 'nodeC0' },
-  'Node C-v1': { normalised: 0.75, base64: 'nodeC1' },
-  'Node C-v2': { normalised: 0.8, base64: 'nodeC2' },
-  'Node C-v3': { normalised: 0.85, base64: 'nodeC3' },
-  'Node C-v4': { normalised: 0.9, base64: 'nodeC4' },
+  // Initial nodes with 2 virtual nodes each
+  'Node A-v0': { normalised: 0.1, base64: 'hash1' },
+  'Node A-v1': { normalised: 0.2, base64: 'hash2' },
+  'Node B-v0': { normalised: 0.3, base64: 'hash3' },
+  'Node B-v1': { normalised: 0.4, base64: 'hash4' },
+  // Additional virtual nodes for tests (up to 4 per node)
+  'Node A-v2': { normalised: 0.5, base64: 'hash5' },
+  'Node A-v3': { normalised: 0.51, base64: 'hash5.1' },
+  'Node A-v4': { normalised: 0.52, base64: 'hash5.2' },
+  'Node B-v2': { normalised: 0.6, base64: 'hash6' },
+  'Node B-v3': { normalised: 0.61, base64: 'hash6.1' },
+  'Node B-v4': { normalised: 0.62, base64: 'hash6.2' },
+  // Node C with up to 4 virtual nodes
+  'Node C-v0': { normalised: 0.7, base64: 'hash7' },
+  'Node C-v1': { normalised: 0.8, base64: 'hash8' },
+  'Node C-v2': { normalised: 0.9, base64: 'hash9' },
+  'Node C-v3': { normalised: 0.91, base64: 'hash9.1' },
+  'Node C-v4': { normalised: 0.92, base64: 'hash9.2' },
 };
 
 jest.mock('../../../utils/hashString', () => ({
@@ -33,7 +36,18 @@ describe('virtualNodeStore', () => {
     virtualNodeStore.send({ type: 'reset' });
   });
 
-  it('should initialize with two nodes', () => {
+  it('should initialise with virtual nodes for initial nodes', async () => {
+    const state = virtualNodeStore.getSnapshot();
+    expect(state.context.nodes).toHaveLength(2); // Initial nodes A and B
+    expect(state.context.numVirtualNodesPerNode).toBe(INITIAL_VNODE_COUNT);
+
+    // Wait for initial virtual node population
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const updatedState = virtualNodeStore.getSnapshot();
+    expect(Object.keys(updatedState.context.virtualNodes)).toHaveLength(2 * INITIAL_VNODE_COUNT);
+  });
+
+  it('should initialise with two nodes', () => {
     const state = virtualNodeStore.getSnapshot();
     expect(state.context.nodes).toHaveLength(2);
     expect(state.context.nodes[0].id).toBe('Node A');

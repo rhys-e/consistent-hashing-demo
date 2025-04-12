@@ -67,6 +67,16 @@ export const virtualNodeStore = createStore({
     virtualNodesUpdated: () => {},
   },
   on: {
+    initialise: (context, _event, enqueue) => {
+      enqueue.effect(async () => {
+        const newVirtualNodes = await createVirtualNodesForNodes(
+          context.nodes,
+          context.numVirtualNodesPerNode
+        );
+        virtualNodeStore.send({ type: 'updateVirtualNodes', virtualNodes: newVirtualNodes });
+      });
+      return context;
+    },
     addNode: (context, _event, enqueue) => {
       // Find next available ID
       let newId = `Node ${String.fromCharCode(65)}`;
@@ -159,3 +169,6 @@ export const virtualNodeStore = createStore({
     },
   },
 });
+
+// Trigger initialization
+virtualNodeStore.send({ type: 'initialise' });

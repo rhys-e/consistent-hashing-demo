@@ -21,7 +21,7 @@ describe('userRequestStore', () => {
     userRequestStore.send({ type: 'reset' });
   });
 
-  it('should initialize with default values', async () => {
+  it('should initialise with default values', async () => {
     const state = userRequestStore.getSnapshot();
     expect(state.context.numRequests).toBe(INITIAL_NUM_REQUESTS);
 
