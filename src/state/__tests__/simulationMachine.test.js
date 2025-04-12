@@ -1,5 +1,5 @@
 import { createActor } from 'xstate';
-import { simulationMachine } from '../simulationMachine';
+import { simulationMachine } from '../machines/simulationMachine';
 
 describe('Simulation State Machine', () => {
   // Test configuration
