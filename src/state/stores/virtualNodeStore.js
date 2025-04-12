@@ -10,18 +10,20 @@ function generateRandomCyberColor() {
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
-const createInitialNodes = () => [
-  {
-    id: 'Node A',
-    color: CYBER_COLORS[0],
-  },
-  {
-    id: 'Node B',
-    color: CYBER_COLORS[1],
-  },
-];
+function createInitialNodes() {
+  return [
+    {
+      id: 'Node A',
+      color: CYBER_COLORS[0],
+    },
+    {
+      id: 'Node B',
+      color: CYBER_COLORS[1],
+    },
+  ];
+}
 
-const createVirtualNode = async (node, vnodeIndex) => {
+async function createVirtualNode(node, vnodeIndex) {
   const vnodeId = `${node.id}-v${vnodeIndex}`;
   const { normalised, base64 } = await hashString(vnodeId);
 
@@ -33,25 +35,25 @@ const createVirtualNode = async (node, vnodeIndex) => {
     vnodeId: vnodeId,
     vnodeIndex: vnodeIndex,
   };
-};
+}
 
-const createVirtualNodesForNode = async (node, numVirtualNodesPerNode) => {
+async function createVirtualNodesForNode(node, numVirtualNodesPerNode) {
   const virtualNodes = {};
   for (let i = 0; i < Math.max(1, numVirtualNodesPerNode); i++) {
     const virtualNode = await createVirtualNode(node, i);
     virtualNodes[virtualNode.position] = virtualNode;
   }
   return virtualNodes;
-};
+}
 
-const createVirtualNodesForNodes = async (nodes, numVirtualNodesPerNode) => {
+async function createVirtualNodesForNodes(nodes, numVirtualNodesPerNode) {
   const virtualNodes = {};
   for (const node of nodes) {
     const nodeVirtualNodes = await createVirtualNodesForNode(node, numVirtualNodesPerNode);
     Object.assign(virtualNodes, nodeVirtualNodes);
   }
   return virtualNodes;
-};
+}
 
 export const virtualNodeStore = createStore({
   context: {
