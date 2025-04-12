@@ -3,27 +3,23 @@ import { ToggleIcon } from './ToggleIcon';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useAtom } from '../hooks/useStore';
 import {
-  vnodeCountAtom,
   speedMultiplierAtom,
-  resetVnodeCount,
   resetSpeedMultiplier,
   resetNumRequests,
   numRequestsAtom,
 } from '../state/atoms';
-import { serversStore, statsStore, consoleLogStore } from '../state/stores';
+import { virtualNodeStore, statsStore, consoleLogStore } from '../state/stores';
 import { useSelector } from '../hooks/useStore';
 
 export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
   const { toggleRunning, stop, executionStatus } = useExecutionStatus();
   const speedMultiplier = useAtom(speedMultiplierAtom);
-  const vnodeCount = useAtom(vnodeCountAtom);
-  const { event: serversEvent } = useSelector(serversStore);
+  const { event: virtualNodeEvent, numVirtualNodesPerNode } = useSelector(virtualNodeStore);
   const numRequests = useAtom(numRequestsAtom);
 
   const handleReset = () => {
     stop();
-    serversStore.trigger.reset();
-    resetVnodeCount();
+    virtualNodeStore.trigger.reset();
     resetSpeedMultiplier();
     resetNumRequests();
     statsStore.trigger.reset();
@@ -43,15 +39,15 @@ export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
 
   const handleVnodeCountChange = e => {
     const newVnodeCount = Number(e.target.value);
-    vnodeCountAtom.set(newVnodeCount);
+    virtualNodeStore.trigger.setNumVirtualNodesPerNode({ count: newVnodeCount });
     consoleLogStore.trigger.log({ message: `Virtual node count set to ${newVnodeCount}` });
   };
 
   const handleAddServer = () => {
-    serversStore.trigger.add();
+    virtualNodeStore.trigger.addNode();
     if (executionStatus === EXECUTION_STATES.RUNNING) {
       consoleLogStore.trigger.log({
-        message: `Server configuration updated: ${servers.length} nodes active`,
+        message: `Server configuration updated: ${virtualNodeStore.context.nodes.length} nodes active`,
       });
     }
   };
@@ -62,10 +58,10 @@ export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
   };
 
   useEffect(() => {
-    if (serversEvent?.type === 'add') {
-      consoleLogStore.trigger.log({ message: `Added new server: ${serversEvent.payload.id}` });
+    if (virtualNodeEvent?.type === 'add') {
+      consoleLogStore.trigger.log({ message: `Added new server: ${virtualNodeEvent.payload.id}` });
     }
-  }, [serversEvent]);
+  }, [virtualNodeEvent]);
 
   return (
     <div
@@ -138,13 +134,13 @@ export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
 
         <div className="mb-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
           <label className="mb-3 block text-ui-text-bright">
-            <span className="text-body-text">VNODE_COUNT:</span> {vnodeCount}
+            <span className="text-body-text">VNODE_COUNT:</span> {numVirtualNodesPerNode}
           </label>
           <input
             type="range"
             min="1"
             max="20"
-            value={vnodeCount}
+            value={numVirtualNodesPerNode}
             onChange={handleVnodeCountChange}
             className="w-full"
           />

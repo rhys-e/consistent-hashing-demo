@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
-import { useRingNodes } from '../hooks/useRingNodes';
-import { useResponsive } from '../hooks/useResponsive';
 import { ConsoleLog } from './ConsoleLog';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
@@ -10,16 +8,14 @@ import { MetricsPanel } from './MetricsPanel';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
 import { useSelector, useAtom } from '../hooks/useStore';
-import { vnodeCountAtom, speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
-import { dimensionsStore, serversStore } from '../state/stores';
+import { speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
+import { dimensionsStore, virtualNodeStore } from '../state/stores';
 
-function AppComponent() {
+function AppComponent({ isMobile }) {
   const dimensions = useSelector(dimensionsStore);
   const numRequests = useAtom(numRequestsAtom);
-  const { servers } = useSelector(serversStore);
+  const { nodes, numVirtualNodesPerNode, virtualNodes } = useSelector(virtualNodeStore);
   const speedMultiplier = useAtom(speedMultiplierAtom);
-  const vnodeCount = useAtom(vnodeCountAtom);
-  const { isMobile } = useResponsive({ breakpoint: 950 });
   const NUM_STACKS = 5;
 
   const { executionStatus } = useExecutionStatus();
@@ -33,14 +29,12 @@ function AppComponent() {
     console: true,
   });
 
-  const ringNodes = useRingNodes();
-
   const handleRequestCompleted = (node, completedParticle) => {
     trackRequest(node.id);
 
     const detailedMessage =
       `Request processed by ${node.id}: Id=${completedParticle.data.id}, Pos=${completedParticle.data.ringStartPos.toFixed(2)}%, ` +
-      `VnodeId='${node.vnodeId}', VNode=#${node.vnodeIndex + 1}/${vnodeCount}, VPos=${node.position.toFixed(2)}%`;
+      `VnodeId='${node.vnodeId}', VNode=#${node.vnodeIndex + 1}/${numVirtualNodesPerNode}, VPos=${node.position.toFixed(2)}%`;
 
     // addLog(detailedMessage, 'success');
   };
@@ -69,9 +63,9 @@ function AppComponent() {
   };
 
   const { pCurPos, pRingInitialPos, hitsToRender, renderNodes } = useParticleSimulation({
-    ringNodes,
+    ringNodes: virtualNodes,
     speedMultiplier,
-    vnodeCount,
+    numVirtualNodesPerNode,
     reroutedCallback: handleReroutedParticles,
     requestCompletedCallback: handleRequestCompleted,
     numRequests,
@@ -83,12 +77,12 @@ function AppComponent() {
   });
 
   const addServer = () => {
-    serversStore.trigger.add();
+    virtualNodeStore.trigger.addNode();
     //addLog(`Added new server: ${servers[servers.length - 1].id}`, 'info');
   };
 
   const removeServer = id => {
-    serversStore.trigger.remove({ id });
+    virtualNodeStore.trigger.removeNode(id);
     //addLog(`Removed server: ${id}`, 'warning');
   };
 
@@ -140,10 +134,6 @@ function AppComponent() {
           <ControlsPanel
             collapsed={collapsedPanels.controls}
             togglePanel={() => togglePanel('controls')}
-            vnodeCount={vnodeCount}
-            setVnodeCount={vnodeCountAtom.set}
-            numRequests={numRequests}
-            setNumRequests={numRequestsAtom.set}
             dimensions={dimensions}
           />
 
@@ -151,9 +141,9 @@ function AppComponent() {
           <MetricsPanel
             collapsed={collapsedPanels.metrics}
             togglePanel={() => togglePanel('metrics')}
-            servers={servers}
-            vnodeCount={vnodeCount}
-            ringNodes={ringNodes}
+            nodes={nodes}
+            numVirtualNodesPerNode={numVirtualNodesPerNode}
+            virtualNodes={virtualNodes}
           />
         </div>
       </div>

@@ -47,7 +47,7 @@ class ErrorBoundary extends React.Component {
 }
 
 const CONTAINER_MAX_WIDTH = 1200;
-
+const MOBILE_BREAKPOINT = 950;
 const SVG_WIDTH_PERCENTAGE = theme.visualisation.svg.widthPercentage;
 const SVG_ASPECT_RATIO = theme.visualisation.svg.aspectRatio;
 const SVG_RADIUS_PERCENTAGE = theme.visualisation.svg.radiusPercentage;
@@ -62,6 +62,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             SVG_ASPECT_RATIO={SVG_ASPECT_RATIO}
             SVG_RADIUS_PERCENTAGE={SVG_RADIUS_PERCENTAGE}
             CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
+            MOBILE_BREAKPOINT={MOBILE_BREAKPOINT}
           />
         </ThemeProvider>
       </AppProvider>

@@ -23,10 +23,11 @@ export function withResponsiveDimensions(WrappedComponent) {
     SVG_WIDTH_PERCENTAGE,
     SVG_ASPECT_RATIO,
     SVG_RADIUS_PERCENTAGE,
+    MOBILE_BREAKPOINT,
     CONTAINER_MAX_WIDTH = 1200,
     ...props
   }) {
-    const { isMobile } = useResponsive(950);
+    const { isMobile } = useResponsive(MOBILE_BREAKPOINT);
 
     useEffect(() => {
       calculateDimensions(
@@ -46,6 +47,6 @@ export function withResponsiveDimensions(WrappedComponent) {
       isMobile,
     ]);
 
-    return <WrappedComponent {...props} />;
+    return <WrappedComponent {...props} isMobile={isMobile} />;
   };
 }

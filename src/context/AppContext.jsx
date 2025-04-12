@@ -1,28 +1,21 @@
 import { createContext, useContext, useEffect } from 'react';
 import { useExecutionStatus } from '../hooks/useExecutionStatus';
 import { useSelector, useAtom } from '../hooks/useStore';
-import { serversStore, dimensionsStore, statsStore } from '../state/stores';
-import { vnodeCountAtom, speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
+import { virtualNodeStore, dimensionsStore, statsStore } from '../state/stores';
+import { speedMultiplierAtom, numRequestsAtom } from '../state/atoms';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   // Re-expose hooks
   const executionStatus = useExecutionStatus();
-  const { event: serversEvent, servers } = useSelector(serversStore);
   const dimensions = useSelector(dimensionsStore);
+  const { nodes, numVirtualNodesPerNode } = useSelector(virtualNodeStore);
   const { nodeStats, loadImbalance } = useSelector(statsStore);
 
   // Re-expose atoms
-  const vnodeCount = useAtom(vnodeCountAtom);
   const speedMultiplier = useAtom(speedMultiplierAtom);
   const numRequests = useAtom(numRequestsAtom);
-
-  useEffect(() => {
-    if (serversEvent?.type === 'remove') {
-      // addLog(`Removed server: ${serversEvent.payload}`, 'warning');
-    }
-  }, [serversEvent]);
 
   const value = {
     // Execution Status
@@ -32,7 +25,6 @@ export const AppProvider = ({ children }) => {
 
     // Stores
     stores: {
-      servers,
       dimensions,
       stats: {
         nodeStats,
@@ -42,7 +34,7 @@ export const AppProvider = ({ children }) => {
 
     // Atoms
     atoms: {
-      vnodeCount,
+      numVirtualNodesPerNode,
       speedMultiplier,
       numRequests,
     },
