@@ -17,15 +17,16 @@ describe('Simulation State Machine', () => {
   const createInput = (overrides = {}) => ({
     dimensions,
     speed,
-    ringNodes: [
-      { id: 'node1', position: 0.1 },
-      { id: 'node2', position: 0.5 },
-      { id: 'node3', position: 0.9 },
-    ],
+
     fixedRequests: [
       { key: 'req1', position: 0.2 },
       { key: 'req2', position: 0.6 },
       { key: 'req3', position: 0.8 },
+    ],
+    virtualNodes: [
+      { id: 'node1', position: 0.1 },
+      { id: 'node2', position: 0.5 },
+      { id: 'node3', position: 0.9 },
     ],
     ...overrides,
   });
@@ -45,7 +46,7 @@ describe('Simulation State Machine', () => {
     expect(simulationService.getSnapshot().value).toBe('idle');
   });
 
-  test('should transition through spawning to running state on START', () => {
+  test('should transition through spawning to running state on START', async () => {
     simulationService.send({ type: 'START' });
     expect(simulationService.getSnapshot().value).toBe('running');
 
@@ -55,7 +56,7 @@ describe('Simulation State Machine', () => {
     expect(pRingInitialPos).toHaveLength(3);
   });
 
-  test('should handle particle updates', () => {
+  test('should handle particle updates', async () => {
     simulationService.send({ type: 'START' });
     const now = performance.now();
 
@@ -84,7 +85,7 @@ describe('Simulation State Machine', () => {
     expect(particleRefs[0].completed).toBe(false);
   });
 
-  test('should complete cycle when all particles are done', () => {
+  test('should complete cycle when all particles are done', async () => {
     simulationService.send({ type: 'START' });
 
     // Send enough TICK events to complete all particles
@@ -114,7 +115,7 @@ describe('Simulation State Machine', () => {
     expect(snapshot.context.particleRefs.every(p => !p.completed)).toBe(true);
   });
 
-  test('should pause and resume simulation', () => {
+  test('should pause and resume simulation', async () => {
     simulationService.send({ type: 'START' });
     simulationService.send({ type: 'PAUSE' });
     expect(simulationService.getSnapshot().value).toBe('idle');

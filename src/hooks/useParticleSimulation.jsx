@@ -54,8 +54,8 @@ export function useParticleSimulation({
   }, [send, fixedRequests, virtualNodes, dimensions, runningState]);
 
   const animate = time => {
-    requestRef.current = requestAnimationFrame(animate);
     send({ type: 'TICK', time });
+    requestRef.current = requestAnimationFrame(animate);
   };
 
   const start = () => {

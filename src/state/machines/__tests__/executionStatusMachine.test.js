@@ -57,47 +57,47 @@ describe('Execution Status Machine', () => {
       const { result } = renderHook(() => useExecutionStatus());
 
       // Initial state
-      expect(result.current.executionStatus).toBe('stopped');
+      expect(result.current.value).toBe('stopped');
 
       // Start simulation
       act(() => {
         result.current.start();
       });
-      expect(result.current.executionStatus).toBe('running');
+      expect(result.current.value).toBe('running');
 
       // Pause simulation
       act(() => {
         result.current.pause();
       });
-      expect(result.current.executionStatus).toBe('paused');
+      expect(result.current.value).toBe('paused');
 
       // Resume simulation
       act(() => {
         result.current.resume();
       });
-      expect(result.current.executionStatus).toBe('running');
+      expect(result.current.value).toBe('running');
 
       // Stop simulation
       act(() => {
         result.current.stop();
       });
-      expect(result.current.executionStatus).toBe('stopped');
+      expect(result.current.value).toBe('stopped');
     });
 
-    test('should handle toggleRunning correctly', () => {
+    test('should handle toggleExecutionStatus correctly', () => {
       const { result } = renderHook(() => useExecutionStatus());
 
       // Toggle from stopped to running
-      act(() => result.current.toggleRunning());
-      expect(result.current.executionStatus).toBe('running');
+      act(() => result.current.toggleExecutionStatus());
+      expect(result.current.value).toBe('running');
 
       // Toggle from running to paused
-      act(() => result.current.toggleRunning());
-      expect(result.current.executionStatus).toBe('paused');
+      act(() => result.current.toggleExecutionStatus());
+      expect(result.current.value).toBe('paused');
 
       // Toggle from paused to running
-      act(() => result.current.toggleRunning());
-      expect(result.current.executionStatus).toBe('running');
+      act(() => result.current.toggleExecutionStatus());
+      expect(result.current.value).toBe('running');
     });
   });
 });
