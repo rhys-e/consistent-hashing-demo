@@ -1,6 +1,5 @@
-import { createMachine, assign, not, enqueueActions } from 'xstate';
+import { createMachine, assign, emit } from 'xstate';
 import { particleMachine } from './particleMachine';
-import { toXY } from '../../utils/geometryUtils';
 
 export const simulationMachine = createMachine({
   /** @xstate-layout N4IgpgJg5mDOIC5SwJYFsCuAbAhgFxQHsA7AYgFUAFAEQEEAVAUQG0AGAXUVAAdDUCSXEAA9EANgDMAVgB0AFikTWADmWSJARikAmAOwAaEAE9EG7QF9zh1JlwDiMlBCxhSAZXq0ASvTackILz8RMRCoggaCjIAnLGx2pFyyrpSylKGJgg60TJi0dpicnLaKiqKltbo2Pghjs6uXoxu5ACyLBxCQSj2YaZRcfGJyanpxogSumIy0tESchrRrPkTYhUgNtX2MrDcOADuxCjEUKR+nXzdIb0RrLqsMlK6ykvRUhoS2lJyEhmI2kW5fJiR66ApJKRSNYbOy1ABOGGIh2OpHoAEkAMIAaTOAS6PQC4UeOTmEjET0+t1YrA0vwQEjUMWKZI0ukiK10UKqMJIMnhiKOJzRWOYGn8PAu+NA4Qk9JkykWIOUkS0yh+YwQemU8lYYm0n3y2gk0Tk0U5thqPL5SJOlG8QoAMowAPpUOhMag48XBQQE8a3GSsTSGlnaNKqUaZDTKbTyRQaF7SCEJVZWdZci0OK0C0i28hudpiwISq6+iL9AYJIrDNK00P3OQ6vVSA1Gk1mza1ADGRk7LnRhDQ3BceFcnqL3tCpfjdweTxebw+XzVmXpWqKBSVELyiwsa2IhAgcCE0Iz5wn1wAtDT1caYnGtNE1MpiroOamT1snC4z5cfVLEHIBjqm8xIspIYgQWILKvu23IODs+zWj+koiKYGjArkrLPpIJp3Kw2i0tIEjyEychQZESzRnIsEZryCJIbixZ-qhdKqDIoaLBoCyRDoSjLuMujEs2cwLEshqTDRWzdr2YD9oOw5gMhJb-ggSoaOxJJLrE6EQoRkiMgUurRGSYjJLulhAA */
@@ -10,18 +9,26 @@ export const simulationMachine = createMachine({
     cycleCount: 0,
     particleRefs: [],
     hits: [],
-    pCurPos: [],
-    pRingInitialPos: [],
     dimensions: input.dimensions,
     virtualNodes: input.virtualNodes,
     userRequests: input.userRequests,
     speed: input.speed,
     lastTickTime: null,
-    renderNodes: input.virtualNodes,
   }),
   on: {
     UPDATE: {
       actions: 'updateContext',
+    },
+    PARTICLE_COMPLETED: {
+      actions: [
+        emit(({ context, event }) => ({
+          type: 'particleCompleted',
+          data: {
+            ...event.data,
+            targetNode: findTargetNode(context.virtualNodes, event.ringEndPos),
+          },
+        })),
+      ],
     },
   },
   states: {
@@ -50,25 +57,6 @@ export const simulationMachine = createMachine({
             actions: ['forwardTickToParticles'],
           },
         ],
-        PARTICLE_UPDATED: {
-          guard: not('allParticlesCompleted'),
-          actions: [
-            'updateParticles',
-            enqueueActions(({ check, enqueue, event, context }) => {
-              if (check({ type: 'isParticleCompleted' })) {
-                enqueue.emit({
-                  type: 'particleCompleted',
-                  data: {
-                    id: context.pRingInitialPos[event.key].id,
-                    ringStartPos: context.pRingInitialPos[event.key].ringStartPos,
-                    ringEndPos: event.pos,
-                  },
-                });
-                enqueue('updateHits');
-              }
-            }),
-          ],
-        },
         PAUSE: {
           target: 'idle',
           actions: 'pauseParticles',
@@ -76,7 +64,16 @@ export const simulationMachine = createMachine({
       },
     },
     cycleComplete: {
-      entry: 'incrementCycleCount',
+      entry: [
+        'incrementCycleCount',
+        emit(({ context }) => ({
+          type: 'cycleCompleted',
+          data: {
+            cycleCount: context.cycleCount,
+            virtualNodes: context.virtualNodes,
+          },
+        })),
+      ],
       always: 'spawning',
     },
   },
@@ -110,70 +107,27 @@ export const simulationMachine = createMachine({
     })),
     spawnParticles: assign(({ context, spawn, self }) => {
       const requests = context.userRequests || [];
-      const particlesConfig = requests.map((reqData, index) => {
-        return {
-          parentRef: self,
-          id: reqData.key,
-          key: index,
-          ringStartPos: reqData.position,
-          ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
-          dimensions: context.dimensions,
-          center: { x: context.dimensions.svgWidth / 2, y: context.dimensions.svgHeight / 2 },
-          speed: context.speed,
-        };
-      });
+      const particlesConfig = requests.map((reqData, index) => ({
+        parentRef: self,
+        id: reqData.key,
+        key: index,
+        ringStartPos: reqData.position,
+        ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
+        dimensions: context.dimensions,
+        center: { x: context.dimensions.svgWidth / 2, y: context.dimensions.svgHeight / 2 },
+        speed: context.speed,
+      }));
 
-      const particleRefs = particlesConfig.map(particleConfig => {
-        const actorRef = spawn(particleMachine, {
+      const particleRefs = particlesConfig.map(particleConfig =>
+        spawn(particleMachine, {
           id: `particle-${particleConfig.id}`,
           input: particleConfig,
-        });
-        return {
-          ref: actorRef,
-          completed: false,
-        };
-      });
-
-      const pRingInitialPos = particlesConfig.map(particleConfig => {
-        const [ringStartX, ringStartY] = toXY(
-          particleConfig.ringStartPos,
-          context.dimensions.svgWidth,
-          context.dimensions.svgHeight,
-          context.dimensions.svgRadius
-        );
-
-        return {
-          id: particleConfig.id,
-          ringStartPos: particleConfig.ringStartPos,
-          x: ringStartX,
-          y: ringStartY,
-        };
-      });
+        })
+      );
 
       return {
         particleRefs,
-        pCurPos: [],
-        pRingInitialPos,
         hits: context.hits,
-        renderNodes: context.virtualNodes,
-      };
-    }),
-    updateParticles: assign(({ context: ctx, event }) => {
-      const pCurPos = [...ctx.pCurPos];
-      const particleRefs = [...ctx.particleRefs];
-      const phase = ctx.particleRefs[event.key].ref.getSnapshot().value;
-      particleRefs[event.key].completed = phase === 'completed';
-
-      pCurPos[event.key] = {
-        phase,
-        pos: event.pos,
-        x: event.x,
-        y: event.y,
-      };
-
-      return {
-        pCurPos,
-        particleRefs,
       };
     }),
     incrementCycleCount: assign({
@@ -182,7 +136,7 @@ export const simulationMachine = createMachine({
     forwardTickToParticles: ({ context, event }) => {
       const lastTickTime = context.lastTickTime || event.time - 16.667; // 1 frame ago if we don't have a lastTickTime
       context.particleRefs
-        .filter(p => !p.completed)
+        .filter(p => p.getSnapshot().status !== 'done')
         .forEach(({ ref }) => {
           ref.send({ ...event, deltaTime: event.time - lastTickTime });
         });
@@ -194,8 +148,8 @@ export const simulationMachine = createMachine({
     },
   },
   guards: {
-    allParticlesCompleted: ({ context }) => context.particleRefs.every(p => p.completed),
-    isParticleCompleted: ({ context, event }) => context.particleRefs[event.key].completed,
+    allParticlesCompleted: ({ context }) =>
+      context.particleRefs.every(p => p.getSnapshot().status === 'done'),
   },
 });
 

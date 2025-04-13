@@ -3,18 +3,11 @@ import * as d3 from 'd3';
 import { angleScale, toXY } from '../utils/geometryUtils';
 import theme from '../themes';
 import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
-
-const sortNodes = nodeMap => {
-  return Object.values(nodeMap)
-    .slice()
-    .sort((a, b) => a.position - b.position);
-};
+import { useApp } from '../context/AppContext';
+import { PreviewIndicator } from './PreviewIndicator';
+import { UserRequestParticle } from './UserRequestParticle';
 
 export function HashRingVisualisation({
-  ringNodes,
-  dimensions,
-  pCurPos,
-  pRingInitialPos,
   onRemoveServer,
   onAddServerAtPosition,
   hitsToRender,
@@ -22,9 +15,12 @@ export function HashRingVisualisation({
   togglePanel,
 }) {
   const { executionStatus } = useExecutionStatus();
-  const width = dimensions.svgWidth;
-  const height = dimensions.svgHeight;
-  const radius = dimensions.svgRadius;
+  const {
+    particleRefs,
+    userRequests,
+    nodes: { virtualNodes, virtualNodesMap },
+    dimensions: { svgWidth: width, svgHeight: height, svgRadius: radius },
+  } = useApp();
 
   const handleNodeClick = useCallback(
     node => {
@@ -34,10 +30,10 @@ export function HashRingVisualisation({
   );
 
   const segments = useMemo(() => {
-    if (!ringNodes || Object.keys(ringNodes).length < 2) return [];
+    if (!virtualNodes || virtualNodes.length < 2) return [];
 
     const segments = [];
-    const sortedNodes = sortNodes(ringNodes);
+    const sortedNodes = virtualNodes;
 
     for (let i = 0; i < sortedNodes.length; i++) {
       const current = sortedNodes[i];
@@ -85,19 +81,19 @@ export function HashRingVisualisation({
     }
 
     return segments;
-  }, [ringNodes, width, height, radius]);
+  }, [virtualNodes, width, height, radius]);
 
   const nodeElements = useMemo(() => {
     const nodeElements = [];
 
-    if (!ringNodes) return [];
+    if (!virtualNodes) return [];
 
     const serverVnodeCounts = {};
-    Object.values(ringNodes).forEach(node => {
+    virtualNodes.forEach(node => {
       serverVnodeCounts[node.id] = (serverVnodeCounts[node.id] || 0) + 1;
     });
 
-    Object.values(ringNodes).forEach((node, i) => {
+    virtualNodes.forEach((node, i) => {
       const [x, y] = toXY(node.position, width, height, radius);
 
       nodeElements.push(
@@ -109,7 +105,7 @@ export function HashRingVisualisation({
           fill={node.color}
           stroke={theme.hashRing.node.strokeColor}
           strokeWidth={theme.hashRing.node.strokeWidth}
-          filter={Object.keys(ringNodes).length < 50 ? theme.hashRing.node.glowFilter : undefined}
+          filter={virtualNodes.length < 50 ? theme.hashRing.node.glowFilter : undefined}
           onClick={() => handleNodeClick(node)}
           onMouseEnter={() =>
             setTooltip({
@@ -126,7 +122,7 @@ export function HashRingVisualisation({
     });
 
     return nodeElements;
-  }, [width, height, radius, handleNodeClick, ringNodes]);
+  }, [width, height, radius, handleNodeClick, virtualNodes]);
 
   const [tooltip, setTooltip] = useState({
     visible: false,
@@ -306,90 +302,11 @@ export function HashRingVisualisation({
         {nodeElements}
 
         {/* Render particles */}
-        {pCurPos &&
-          pCurPos
-            .map((particle, i) => {
-              if (particle.phase === 'completed') {
-                return null;
-              }
-              // Check if particle is in initial animation or regular movement
-              if (particle.phase === 'initial') {
-                return (
-                  <circle
-                    key={`particle-${i}`}
-                    cx={particle.x}
-                    cy={particle.y}
-                    r={theme.hashRing.particle.size}
-                    fill={theme.hashRing.particle.color}
-                    stroke={theme.hashRing.particle.strokeColor}
-                    strokeWidth={theme.hashRing.particle.strokeWidth}
-                    filter="url(#particleGlow)"
-                    className="particle-dot animate-particle-blink"
-                  />
-                );
-              } else if (particle.phase === 'ring') {
-                // Calculate a point slightly behind the particle for the trail
-                const trailLength = theme.hashRing.particle.trailLength || 0.01;
-                const trailPos = (particle.pos - trailLength + 1) % 1;
-                const [trailX, trailY] = toXY(trailPos, width, height, radius);
-                const gradientId = `particleTrailGradient-${i}`;
-
-                return (
-                  <React.Fragment key={`particle-fragment-${i}`}>
-                    <defs>
-                      <linearGradient
-                        id={gradientId}
-                        gradientUnits="userSpaceOnUse"
-                        x1={trailX}
-                        y1={trailY}
-                        x2={particle.x}
-                        y2={particle.y}
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor={theme.hashRing.particle.color}
-                          stopOpacity="0"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor={theme.hashRing.particle.color}
-                          stopOpacity={theme.hashRing.particle.trailOpacity}
-                        />
-                      </linearGradient>
-                    </defs>
-
-                    <g key={`particle-${i}`} className="particle-group">
-                      {/* Particle trail with directional gradient */}
-                      <line
-                        x1={trailX}
-                        y1={trailY}
-                        x2={particle.x}
-                        y2={particle.y}
-                        stroke={`url(#${gradientId})`}
-                        strokeWidth={theme.hashRing.particle.trailWidth}
-                        className="particle-trail animate-particle-blink"
-                        style={{
-                          opacity: theme.hashRing.particle.trailOpacity,
-                        }}
-                      />
-
-                      {/* Particle dot */}
-                      <circle
-                        cx={particle.x}
-                        cy={particle.y}
-                        r={theme.hashRing.particle.size}
-                        fill={theme.hashRing.particle.color}
-                        stroke={theme.hashRing.particle.strokeColor}
-                        strokeWidth={theme.hashRing.particle.strokeWidth}
-                        filter="url(#particleGlow)"
-                        className="particle-dot animate-particle-blink"
-                      />
-                    </g>
-                  </React.Fragment>
-                );
-              }
-            })
-            .filter(Boolean)}
+        {particleRefs
+          //.filter(ref => !ref.completed) - todo: fix this
+          .map(ref => (
+            <UserRequestParticle key={ref.id} particleRef={ref} />
+          ))}
 
         {/* hit effects */}
         {hitsToRender &&
@@ -423,29 +340,15 @@ export function HashRingVisualisation({
             .filter(Boolean)}
 
         {/* Preview indicator for next particle */}
-        {pRingInitialPos &&
-          pRingInitialPos.length > 0 &&
-          pRingInitialPos.map(particle => {
-            return (
-              <g className="preview-indicator" key={`preview-${particle.id}`}>
-                <path
-                  d={`M ${width / 2} ${height / 2} L ${particle.x} ${particle.y}`}
-                  stroke={theme.hashRing.previewIndicator.pathColor}
-                  strokeWidth={theme.hashRing.previewIndicator.pathWidth}
-                  strokeDasharray={theme.hashRing.previewIndicator.pathDashArray}
-                  opacity={theme.hashRing.previewIndicator.opacity}
-                  className="preview-path animate-dash"
-                />
-                <circle
-                  cx={particle.x}
-                  cy={particle.y}
-                  r={theme.hashRing.previewIndicator.dotSize}
-                  fill={theme.hashRing.previewIndicator.dotColor}
-                  className="preview-dot animate-blink"
-                />
-              </g>
-            );
-          })}
+        {userRequests.map(request => (
+          <PreviewIndicator
+            key={`preview-${request.key}`}
+            userRequest={request}
+            width={width}
+            height={height}
+            radius={radius}
+          />
+        ))}
 
         {tooltip.visible && (
           <foreignObject

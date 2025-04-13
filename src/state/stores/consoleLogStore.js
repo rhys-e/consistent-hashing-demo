@@ -13,14 +13,15 @@ function newLog(message, type = 'info') {
 export const consoleLogStore = createStore({
   context: {
     logs: [newLog('System initialised')],
+    maxLogCount: 100,
   },
   on: {
-    log: (context, { message, msgType = 'info', maxLogCount = 100 }) => {
+    log: (context, { message, msgType = 'info' }) => {
       const log = newLog(message, msgType);
       const updatedLogs = [...context.logs, log];
       return {
         ...context,
-        logs: updatedLogs.slice(Math.max(0, updatedLogs.length - maxLogCount)),
+        logs: updatedLogs.slice(Math.max(0, updatedLogs.length - context.maxLogCount)),
       };
     },
     clear: () => ({ logs: [] }),

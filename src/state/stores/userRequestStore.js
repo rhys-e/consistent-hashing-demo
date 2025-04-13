@@ -33,7 +33,7 @@ async function populateHashCache(hashCache, cacheSize, prng) {
 
 export const userRequestStore = createStore({
   context: {
-    hashCache: [],
+    userReqCache: [],
     prng: seedrandom(1),
     numRequests: INITIAL_NUM_REQUESTS,
   },
@@ -51,7 +51,7 @@ export const userRequestStore = createStore({
     },
     setNumRequests: (context, { numRequests }, enqueue) => {
       enqueue.effect(async () => {
-        const newCache = await populateHashCache(context.hashCache, numRequests, context.prng);
+        const newCache = await populateHashCache(context.userReqCache, numRequests, context.prng);
         userRequestStore.send({ type: 'updateCache', cache: newCache });
       });
 
@@ -65,7 +65,7 @@ export const userRequestStore = createStore({
       enqueue.emit.cacheUpdated({ cache });
       return {
         ...context,
-        hashCache: cache,
+        userReqCache: cache,
       };
     },
     setSeed: (context, { seedNumber }, enqueue) => {

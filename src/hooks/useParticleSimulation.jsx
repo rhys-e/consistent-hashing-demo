@@ -7,8 +7,8 @@ export function useParticleSimulation({
   userRequests,
   virtualNodes,
   speedMultiplier,
-  requestCompletedCallback,
-  reroutedCallback,
+  onUserRequestCompleted,
+  onCycleCompleted,
   dimensions,
 }) {
   const [snapshot, send, ref] = useMachine(simulationMachine, {
@@ -23,14 +23,11 @@ export function useParticleSimulation({
   const requestRef = useRef(null);
 
   useEffect(() => {
-    const subscription = ref.on('particleCompleted', event => {
-      const targetNode = snapshot.context.renderNodes.find(
-        node => node.position === event.data.ringEndPos
-      );
-      requestCompletedCallback(targetNode, event);
-    });
-    return subscription.unsubscribe;
-  }, [ref, requestCompletedCallback, snapshot.context.renderNodes]);
+    const subscriptions = [];
+    subscriptions.push(ref.on('particleCompleted', event => onUserRequestCompleted(event)));
+    subscriptions.push(ref.on('cycleCompleted', event => onCycleCompleted(event)));
+    return () => subscriptions.forEach(subscription => subscription.unsubscribe());
+  }, [ref, onUserRequestCompleted, onCycleCompleted]);
 
   const animate = useCallback(
     time => {
@@ -63,10 +60,7 @@ export function useParticleSimulation({
   );
 
   return {
-    pCurPos: snapshot.context.pCurPos,
-    pRingInitialPos: snapshot.context.pRingInitialPos,
     hitsToRender: snapshot.context.hits,
-    renderNodes: snapshot.context.renderNodes,
     particleRefs: snapshot.context.particleRefs,
     start,
     pause,

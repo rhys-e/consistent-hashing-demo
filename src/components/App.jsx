@@ -5,8 +5,7 @@ import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
 import { EXECUTION_STATES } from '../hooks/useExecutionStatus';
-import { useSelector, useAtom } from '../hooks/useStore';
-import { speedMultiplierAtom } from '../state/atoms';
+import { useSelector } from '../hooks/useStore';
 import { dimensionsStore, virtualNodeStore, userRequestStore } from '../state/stores';
 import { useApp } from '../context/AppContext';
 
@@ -14,7 +13,6 @@ export function App({ isMobile }) {
   const dimensions = useSelector(dimensionsStore);
   const { nodes, numVirtualNodesPerNode, virtualNodes } = useSelector(virtualNodeStore);
   const { numRequests } = useSelector(userRequestStore);
-  const speedMultiplier = useAtom(speedMultiplierAtom);
   const NUM_STACKS = 5;
 
   const { executionStatus, send } = useApp();
@@ -27,16 +25,6 @@ export function App({ isMobile }) {
     status: true,
     console: true,
   });
-
-  const handleRequestCompleted = (node, completedParticle) => {
-    trackRequest(node.id);
-
-    const detailedMessage =
-      `Request processed by ${node.id}: Id=${completedParticle.data.id}, Pos=${completedParticle.data.ringStartPos.toFixed(2)}%, ` +
-      `VnodeId='${node.vnodeId}', VNode=#${node.vnodeIndex + 1}/${numVirtualNodesPerNode}, VPos=${node.position.toFixed(2)}%`;
-
-    // addLog(detailedMessage, 'success');
-  };
 
   const handleReroutedParticles = reroutedParticles => {
     if (executionStatus !== EXECUTION_STATES.RUNNING) {
@@ -61,30 +49,6 @@ export function App({ isMobile }) {
     });
   };
 
-  // const { pCurPos, pRingInitialPos, hitsToRender, renderNodes } = useParticleSimulation({
-  //   ringNodes: virtualNodes,
-  //   speedMultiplier,
-  //   numVirtualNodesPerNode,
-  //   reroutedCallback: handleReroutedParticles,
-  //   requestCompletedCallback: handleRequestCompleted,
-  //   numRequests,
-  //   dimensions: {
-  //     SVG_WIDTH: dimensions.svgWidth,
-  //     SVG_HEIGHT: dimensions.svgHeight,
-  //     SVG_RADIUS: dimensions.svgRadius,
-  //   },
-  // });
-
-  const addServer = () => {
-    virtualNodeStore.trigger.addNode();
-    //addLog(`Added new server: ${servers[servers.length - 1].id}`, 'info');
-  };
-
-  const removeServer = id => {
-    virtualNodeStore.trigger.removeNode(id);
-    //addLog(`Removed server: ${id}`, 'warning');
-  };
-
   const togglePanel = panelName => {
     setCollapsedPanels(prev => ({
       ...prev,
@@ -105,15 +69,9 @@ export function App({ isMobile }) {
           style={{ width: isMobile ? '100%' : `${dimensions.svgWidth}px` }}
         >
           <HashRingVisualisation
-            dimensions={dimensions}
-            ringNodes={{}}
-            pCurPos={[]}
-            pRingInitialPos={[]}
-            onRemoveServer={removeServer}
             hitsToRender={[]}
             collapsedPanels={collapsedPanels}
             togglePanel={togglePanel}
-            onAddServer={addServer}
           />
 
           <div className="hidden md:block">

@@ -56,11 +56,6 @@ export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
     userRequestStore.send({ type: 'setNumRequests', numRequests: newNumRequests });
   };
 
-  const handleSeedChange = seed => {
-    userRequestStore.send({ type: 'setSeed', seedNumber: seed });
-    addLog(`Hash cache seed updated to ${seed}`);
-  };
-
   useEffect(() => {
     if (virtualNodeEvent?.type === 'add') {
       consoleLogStore.trigger.log({ message: `Added new server: ${virtualNodeEvent.payload.id}` });

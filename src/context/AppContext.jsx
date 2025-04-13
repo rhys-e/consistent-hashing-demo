@@ -4,6 +4,7 @@ import {
   virtualNodeStore,
   dimensionsStore,
   consoleLogStore,
+  statsStore,
 } from '../state/stores';
 import { useExecutionStatus } from '../hooks/useExecutionStatus';
 import { useSelector } from '@xstate/store/react';
@@ -19,7 +20,7 @@ function AppProvider({ children, isMobile }) {
   const dimensions = useSelector(dimensionsStore, state => state.context);
 
   if (
-    userRequestsState.context.hashCache.length === 0 ||
+    userRequestsState.context.userReqCache.length === 0 ||
     Object.keys(virtualNodesState.context.virtualNodes).length === 0 ||
     dimensions.svgWidth === 0
   ) {
@@ -42,23 +43,38 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
   const speedMultiplier = useSelector(speedMultiplierAtom, state => state);
 
   const { virtualNodes, numVirtualNodesPerNode } = virtualNodesState.context;
-  const userRequests = userRequestsState.context.hashCache;
+  const userRequests = userRequestsState.context.userReqCache;
 
   const addLog = (message, type = 'info') => {
     consoleLogStore.trigger.log({ message, msgType: type, maxLogCount: 200 });
   };
 
-  const particleSimulation = useParticleSimulation({
+  const onUserRequestCompleted = event => {
+    console.log('user request completed', event);
+    const { targetNode, id, ringStartPos } = event.data;
+    statsStore.trigger.incrementNodeStats({ nodeId: targetNode.id });
+
+    const detailedMessage =
+      `Request processed by ${targetNode.id}: Id=${id}, Pos=${ringStartPos.toFixed(2)}%, ` +
+      `VnodeId='${targetNode.vnodeId}', VNode=#${targetNode.vnodeIndex + 1}/${numVirtualNodesPerNode}, VPos=${targetNode.position.toFixed(2)}%`;
+    addLog(detailedMessage, 'success');
+  };
+
+  const onCycleCompleted = event => {
+    console.log('cycle completed', event);
+    // update the simulation with the new user requests and virtual nodes before the next cycle starts
+    update({ userRequests, virtualNodes });
+  };
+
+  const { start, pause, resume, update, particleRefs } = useParticleSimulation({
     userRequests,
     virtualNodes,
     speedMultiplier,
     numVirtualNodesPerNode,
-    reroutedCallback: () => {},
-    requestCompletedCallback: () => {},
     dimensions,
+    onUserRequestCompleted,
+    onCycleCompleted,
   });
-
-  const { start, pause, resume, update } = particleSimulation;
 
   useEffect(() => {
     const subscriptions = [];
@@ -68,18 +84,7 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
       })
     );
     subscriptions.push(
-      userRequestStore.subscribe(userRequests => {
-        update({ userRequests: userRequests.context.hashCache });
-      })
-    );
-    subscriptions.push(
-      virtualNodeStore.subscribe(virtualNodes => {
-        update({ virtualNodes: virtualNodes.context.virtualNodes });
-      })
-    );
-    subscriptions.push(
       virtualNodeStore.on('nodeAdded', event => {
-        console.log(event);
         addLog(`Added new node: ${event.node.id}, nodes active: ${event.total}`);
       })
     );
@@ -96,7 +101,6 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
     );
     subscriptions.push(
       virtualNodeStore.on('vnodeCountChanged', event => {
-        console.log(event);
         addLog(`Virtual node count set to ${event.count}, total: ${event.total}`);
       })
     );
@@ -106,13 +110,13 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
   }, [update]);
 
   const executionStatus = useExecutionStatus({
-    onExecutionStatusChange: ({ prevExecutionStatus }, { STOPPED, RUNNING, PAUSED }) => {
-      if (prevExecutionStatus === STOPPED) {
+    onExecutionStatusChange: ({ newExecutionStatus }, { STOPPED, RUNNING, PAUSED }) => {
+      if (newExecutionStatus === RUNNING) {
         start();
-      } else if (prevExecutionStatus === RUNNING) {
+      } else if (newExecutionStatus === PAUSED) {
         pause();
-      } else if (prevExecutionStatus === PAUSED) {
-        resume();
+      } else if (newExecutionStatus === STOPPED) {
+        stop();
       }
     },
   });
@@ -122,8 +126,10 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
       value={{
         userRequests,
         executionStatus,
-        particleSimulation,
+        particleRefs,
         isMobile,
+        dimensions,
+        nodes: virtualNodesState.context,
       }}
     >
       {children}

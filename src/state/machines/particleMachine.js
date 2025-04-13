@@ -1,33 +1,21 @@
 import { createMachine, assign, sendTo } from 'xstate';
-import { toXY } from '../../utils/geometryUtils';
 export const particleMachine = createMachine({
   id: 'particle',
   initial: 'initial',
-  context: ({ input }) => {
-    const [ringStartX, ringStartY] = toXY(
-      input.ringStartPos,
-      input.dimensions.svgWidth,
-      input.dimensions.svgHeight,
-      input.dimensions.svgRadius
-    );
-    return {
-      key: input.key,
-      parentRef: input.parentRef,
-      dimensions: input.dimensions,
-      speed: input.speed,
-      center: input.center,
-      initialFrames: 0,
-      ringFrames: 0,
-      ringStartPos: input.ringStartPos,
-      ringEndPos: input.ringEndPos,
-      ringStartX,
-      ringStartY,
-      currentPos: input.ringStartPos,
-      currentX: input.center.x,
-      currentY: input.center.y,
-      initialAnimationProgress: 0,
-    };
-  },
+  context: ({ input }) => ({
+    id: input.id,
+    key: input.key,
+    parentRef: input.parentRef,
+    dimensions: input.dimensions,
+    speed: input.speed,
+    center: input.center,
+    initialFrames: 0,
+    ringFrames: 0,
+    ringStartPos: input.ringStartPos,
+    ringEndPos: input.ringEndPos,
+    currentPos: input.ringStartPos,
+    initialAnimationProgress: 0,
+  }),
   states: {
     initial: {
       on: {
@@ -35,10 +23,9 @@ export const particleMachine = createMachine({
           {
             target: 'ring',
             guard: 'isInitialAnimationDone',
-            actions: 'sendUpdate',
           },
           {
-            actions: ['incrementInitialAnimationProgress', 'sendUpdate'],
+            actions: ['incrementInitialAnimationProgress'],
           },
         ],
       },
@@ -58,7 +45,6 @@ export const particleMachine = createMachine({
                   epsilon: 1e-8,
                 },
               },
-              'sendUpdate',
             ],
           },
         ],
@@ -66,23 +52,21 @@ export const particleMachine = createMachine({
     },
     completed: {
       type: 'final',
-      entry: ['sendUpdate'],
+      entry: sendTo(
+        ({ context }) => context.parentRef,
+        ({ context }) => ({
+          type: 'PARTICLE_COMPLETED',
+          data: {
+            id: context.id,
+            ringStartPos: context.ringStartPos,
+            ringEndPos: context.ringEndPos,
+          },
+        })
+      ),
     },
   },
 }).provide({
   actions: {
-    sendUpdate: sendTo(
-      ({ context: ctx }) => ctx.parentRef,
-      ({ context: ctx }) => {
-        return {
-          type: 'PARTICLE_UPDATED',
-          key: ctx.key,
-          pos: ctx.currentPos,
-          x: ctx.currentX,
-          y: ctx.currentY,
-        };
-      }
-    ),
     incrementInitialAnimationProgress: assign(({ context: ctx, event }) => {
       if (ctx.initialAnimationProgress < 1) {
         const deltaTime = event.deltaTime;
@@ -91,14 +75,8 @@ export const particleMachine = createMachine({
         const initialAnimationSpeed = frameAdjustedSpeed * 5;
 
         const newProgress = ctx.initialAnimationProgress + initialAnimationSpeed;
-        // linear interpolation from center to ring
-        const t = newProgress;
-        const x = ctx.center.x + (ctx.ringStartX - ctx.center.x) * t;
-        const y = ctx.center.y + (ctx.ringStartY - ctx.center.y) * t;
 
         return {
-          currentX: x,
-          currentY: y,
           initialAnimationProgress: newProgress,
           initialFrames: ctx.initialFrames + 1,
         };
@@ -126,29 +104,13 @@ export const particleMachine = createMachine({
 
       const reachedTarget = distTravelled + epsilon >= distNeeded;
       if (!reachedTarget) {
-        const [x, y] = toXY(
-          nextPos,
-          ctx.dimensions.svgWidth,
-          ctx.dimensions.svgHeight,
-          ctx.dimensions.svgRadius
-        );
         return {
-          currentX: x,
-          currentY: y,
           currentPos: nextPos,
           ringFrames: ctx.ringFrames + 1,
         };
       } else {
-        const [ringEndX, ringEndY] = toXY(
-          ctx.ringEndPos,
-          ctx.dimensions.svgWidth,
-          ctx.dimensions.svgHeight,
-          ctx.dimensions.svgRadius
-        );
         return {
           currentPos: ctx.ringEndPos,
-          currentX: ringEndX,
-          currentY: ringEndY,
         };
       }
     }),
