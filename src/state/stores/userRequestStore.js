@@ -42,6 +42,13 @@ export const userRequestStore = createStore({
     numRequestsUpdated: () => {},
   },
   on: {
+    initialise: (context, _event, enqueue) => {
+      enqueue.effect(async () => {
+        const newCache = await populateHashCache([], context.numRequests, context.prng);
+        userRequestStore.send({ type: 'updateCache', cache: newCache });
+      });
+      return context;
+    },
     setNumRequests: (context, { numRequests }, enqueue) => {
       enqueue.effect(async () => {
         const newCache = await populateHashCache(context.hashCache, numRequests, context.prng);
@@ -87,3 +94,5 @@ export const userRequestStore = createStore({
     },
   },
 });
+
+userRequestStore.send({ type: 'initialise' });

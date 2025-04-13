@@ -8,7 +8,7 @@ import { useSelector } from './useStore';
 const PARTICLE_SPEED = 0.002; // Speed per frame - consistent for all particles
 
 export function useParticleSimulation({
-  ringNodes,
+  virtualNodes,
   speedMultiplier,
   requestCompletedCallback,
   reroutedCallback,
@@ -21,10 +21,10 @@ export function useParticleSimulation({
 
   const [snapshot, send, ref] = useMachine(simulationMachine, {
     input: {
-      dimensions: dimensions,
+      dimensions,
       speed: { particleSpeed: PARTICLE_SPEED, speedMultiplier },
       fixedRequests,
-      ringNodes: Object.values(ringNodes),
+      virtualNodes: Object.values(virtualNodes),
     },
   });
 
@@ -43,45 +43,43 @@ export function useParticleSimulation({
   }, [ref, requestCompletedCallback, snapshot.context.renderNodes]);
 
   useEffect(() => {
-    let payload = { fixedRequests, ringNodes: Object.values(ringNodes), dimensions };
+    let payload = { fixedRequests, virtualNodes: Object.values(virtualNodes), dimensions };
     if (runningState === EXECUTION_STATES.INIT) {
-      payload.renderNodes = Object.values(ringNodes);
+      payload.renderNodes = Object.values(virtualNodes);
     }
     send({
       type: 'UPDATE',
       payload,
     });
-  }, [send, fixedRequests, ringNodes, dimensions, runningState]);
+  }, [send, fixedRequests, virtualNodes, dimensions, runningState]);
 
-  // Effect to start the simulation
-  useEffect(() => {
-    function animate(time) {
-      requestRef.current = requestAnimationFrame(animate);
-      send({ type: 'TICK', time });
-    }
+  const animate = time => {
+    requestRef.current = requestAnimationFrame(animate);
+    send({ type: 'TICK', time });
+  };
 
-    if (runningState === EXECUTION_STATES.RUNNING) {
-      if (!requestRef.current) {
-        send({ type: 'START' });
-        animate(performance.now());
-      } else {
-        send({ type: 'RESUME' });
-        animate(performance.now());
-      }
-    } else if (runningState === EXECUTION_STATES.PAUSED) {
-      send({ type: 'PAUSE' });
-      cancelAnimationFrame(requestRef.current);
-    }
+  const start = () => {
+    send({ type: 'START' });
+    animate(performance.now());
+  };
 
-    return () => {
-      cancelAnimationFrame(requestRef.current);
-    };
-  }, [send, runningState]);
+  const pause = () => {
+    send({ type: 'PAUSE' });
+    cancelAnimationFrame(requestRef.current);
+  };
+
+  const resume = () => {
+    send({ type: 'RESUME' });
+    animate(performance.now());
+  };
 
   return {
     pCurPos: snapshot.context.pCurPos,
     pRingInitialPos: snapshot.context.pRingInitialPos,
     hitsToRender: snapshot.context.hits,
     renderNodes: snapshot.context.renderNodes,
+    start,
+    pause,
+    resume,
   };
 }

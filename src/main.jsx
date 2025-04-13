@@ -55,15 +55,15 @@ const SVG_RADIUS_PERCENTAGE = theme.visualisation.svg.radiusPercentage;
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <AppProvider>
+      <AppProvider
+        SVG_WIDTH_PERCENTAGE={SVG_WIDTH_PERCENTAGE}
+        SVG_ASPECT_RATIO={SVG_ASPECT_RATIO}
+        SVG_RADIUS_PERCENTAGE={SVG_RADIUS_PERCENTAGE}
+        CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
+        MOBILE_BREAKPOINT={MOBILE_BREAKPOINT}
+      >
         <ThemeProvider theme={theme}>
-          <App
-            SVG_WIDTH_PERCENTAGE={SVG_WIDTH_PERCENTAGE}
-            SVG_ASPECT_RATIO={SVG_ASPECT_RATIO}
-            SVG_RADIUS_PERCENTAGE={SVG_RADIUS_PERCENTAGE}
-            CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
-            MOBILE_BREAKPOINT={MOBILE_BREAKPOINT}
-          />
+          <App />
         </ThemeProvider>
       </AppProvider>
     </ErrorBoundary>

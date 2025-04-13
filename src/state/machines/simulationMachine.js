@@ -13,11 +13,11 @@ export const simulationMachine = createMachine({
     pCurPos: [],
     pRingInitialPos: [],
     dimensions: input.dimensions,
-    ringNodes: input.ringNodes,
+    virtualNodes: input.virtualNodes,
     fixedRequests: input.fixedRequests,
     speed: input.speed,
     lastTickTime: null,
-    renderNodes: input.ringNodes,
+    renderNodes: input.virtualNodes,
   }),
   on: {
     UPDATE: {
@@ -36,7 +36,7 @@ export const simulationMachine = createMachine({
       },
     },
     spawning: {
-      entry: ['sortRingNodes', 'spawnParticles'],
+      entry: ['spawnParticles'],
       always: 'running',
     },
     running: {
@@ -108,9 +108,6 @@ export const simulationMachine = createMachine({
       ...context,
       ...event.payload,
     })),
-    sortRingNodes: assign(({ context }) => ({
-      ringNodes: context.ringNodes.sort((a, b) => a.position - b.position),
-    })),
     spawnParticles: assign(({ context, spawn, self }) => {
       const requests = context.fixedRequests || [];
       const particlesConfig = requests.map((reqData, index) => {
@@ -119,9 +116,9 @@ export const simulationMachine = createMachine({
           id: reqData.key,
           key: index,
           ringStartPos: reqData.position,
-          ringEndPos: findTargetNode(context.ringNodes, reqData.position).position,
+          ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
           dimensions: context.dimensions,
-          center: { x: context.dimensions.SVG_WIDTH / 2, y: context.dimensions.SVG_HEIGHT / 2 },
+          center: { x: context.dimensions.svgWidth / 2, y: context.dimensions.svgHeight / 2 },
           speed: context.speed,
         };
       });
@@ -140,9 +137,9 @@ export const simulationMachine = createMachine({
       const pRingInitialPos = particlesConfig.map(particleConfig => {
         const [ringStartX, ringStartY] = toXY(
           particleConfig.ringStartPos,
-          context.dimensions.SVG_WIDTH,
-          context.dimensions.SVG_HEIGHT,
-          context.dimensions.SVG_RADIUS
+          context.dimensions.svgWidth,
+          context.dimensions.svgHeight,
+          context.dimensions.svgRadius
         );
 
         return {
@@ -158,7 +155,7 @@ export const simulationMachine = createMachine({
         pCurPos: [],
         pRingInitialPos,
         hits: context.hits,
-        renderNodes: context.ringNodes,
+        renderNodes: context.virtualNodes,
       };
     }),
     updateParticles: assign(({ context: ctx, event }) => {

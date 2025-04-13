@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ToggleIcon } from './ToggleIcon';
-import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
+import { EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useAtom } from '../hooks/useStore';
 import { speedMultiplierAtom, resetSpeedMultiplier } from '../state/atoms';
 import { virtualNodeStore, statsStore, consoleLogStore, userRequestStore } from '../state/stores';
@@ -8,10 +8,12 @@ import { useSelector } from '../hooks/useStore';
 import { useApp } from '../context/AppContext';
 
 export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
-  const { toggleRunning, stop, executionStatus } = useExecutionStatus();
+  const {
+    executionStatus: { value: executionStatus, toggleExecutionStatus },
+    addLog,
+  } = useApp();
   const speedMultiplier = useAtom(speedMultiplierAtom);
   const { event: virtualNodeEvent, numVirtualNodesPerNode } = useSelector(virtualNodeStore);
-  const { addLog } = useApp();
   const { numRequests } = useSelector(userRequestStore);
 
   const handleReset = () => {
@@ -27,10 +29,10 @@ export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
   const handleExecute = () => {
     if (executionStatus === EXECUTION_STATES.RUNNING) {
       consoleLogStore.trigger.log({ message: 'Simulation paused' });
-      toggleRunning();
+      toggleExecutionStatus();
     } else {
       consoleLogStore.trigger.log({ message: 'Simulation started' });
-      toggleRunning();
+      toggleExecutionStatus();
     }
   };
 

@@ -44,7 +44,15 @@ describe('virtualNodeStore', () => {
     // Wait for initial virtual node population
     await new Promise(resolve => setTimeout(resolve, 0));
     const updatedState = virtualNodeStore.getSnapshot();
-    expect(Object.keys(updatedState.context.virtualNodes)).toHaveLength(2 * INITIAL_VNODE_COUNT);
+
+    // Check both map and array
+    const expectedCount = 2 * INITIAL_VNODE_COUNT;
+    expect(Object.keys(updatedState.context.virtualNodesMap)).toHaveLength(expectedCount);
+    expect(updatedState.context.virtualNodes).toHaveLength(expectedCount);
+
+    // Verify array is sorted
+    const positions = updatedState.context.virtualNodes.map(vnode => vnode.position);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
   it('should initialise with two nodes', () => {
@@ -68,6 +76,15 @@ describe('virtualNodeStore', () => {
     expect(state.context.nodes).toHaveLength(3);
     expect(state.context.nodes[2].id).toBe('Node C');
 
+    // Verify both map and array are updated
+    const expectedCount = 3 * INITIAL_VNODE_COUNT;
+    expect(Object.keys(state.context.virtualNodesMap)).toHaveLength(expectedCount);
+    expect(state.context.virtualNodes).toHaveLength(expectedCount);
+
+    // Verify array is still sorted
+    const positions = state.context.virtualNodes.map(vnode => vnode.position);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+
     expect(nodeAddedEvent).toBeDefined();
     expect(nodeAddedEvent.node.id).toBe('Node C');
 
@@ -86,6 +103,15 @@ describe('virtualNodeStore', () => {
     const state = virtualNodeStore.getSnapshot();
     expect(state.context.nodes).toHaveLength(1);
     expect(state.context.nodes[0].id).toBe('Node A');
+
+    // Verify both map and array are updated
+    const expectedCount = INITIAL_VNODE_COUNT;
+    expect(Object.keys(state.context.virtualNodesMap)).toHaveLength(expectedCount);
+    expect(state.context.virtualNodes).toHaveLength(expectedCount);
+
+    // Verify array is still sorted
+    const positions = state.context.virtualNodes.map(vnode => vnode.position);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
 
     expect(nodeRemovedEvent).toBeDefined();
     expect(nodeRemovedEvent.id).toBe('Node B');
@@ -114,6 +140,15 @@ describe('virtualNodeStore', () => {
     const state = virtualNodeStore.getSnapshot();
     expect(state.context.numVirtualNodesPerNode).toBe(newCount);
 
+    // Verify both map and array are updated
+    const expectedCount = state.context.nodes.length * newCount;
+    expect(Object.keys(state.context.virtualNodesMap)).toHaveLength(expectedCount);
+    expect(state.context.virtualNodes).toHaveLength(expectedCount);
+
+    // Verify array is still sorted
+    const positions = state.context.virtualNodes.map(vnode => vnode.position);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+
     expect(vnodeCountChangedEvent).toBeDefined();
     expect(vnodeCountChangedEvent.count).toBe(newCount);
 
@@ -127,7 +162,9 @@ describe('virtualNodeStore', () => {
     });
 
     virtualNodeStore.send({ type: 'addNode' });
+    await new Promise(resolve => setTimeout(resolve, 0));
     virtualNodeStore.send({ type: 'setNumVirtualNodesPerNode', count: 5 });
+    await new Promise(resolve => setTimeout(resolve, 0));
     virtualNodeStore.send({ type: 'reset' });
     await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -136,6 +173,15 @@ describe('virtualNodeStore', () => {
     expect(state.context.nodes[0].id).toBe('Node A');
     expect(state.context.nodes[1].id).toBe('Node B');
     expect(state.context.numVirtualNodesPerNode).toBe(INITIAL_VNODE_COUNT);
+
+    // Verify both map and array are reset
+    const expectedCount = 2 * INITIAL_VNODE_COUNT;
+    expect(Object.keys(state.context.virtualNodesMap)).toHaveLength(expectedCount);
+    expect(state.context.virtualNodes).toHaveLength(expectedCount);
+
+    // Verify array is still sorted
+    const positions = state.context.virtualNodes.map(vnode => vnode.position);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
 
     expect(nodesChangedEvent).toBeDefined();
     expect(nodesChangedEvent.nodes).toHaveLength(2);
@@ -147,14 +193,15 @@ describe('virtualNodeStore', () => {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     const state = virtualNodeStore.getSnapshot();
-    const virtualNodes = state.context.virtualNodes;
+    const { virtualNodesMap, virtualNodes } = state.context;
 
     const totalVirtualNodeCount =
       state.context.nodes.length * Math.max(1, state.context.numVirtualNodesPerNode);
-    expect(Object.keys(virtualNodes)).toHaveLength(totalVirtualNodeCount);
+    expect(Object.keys(virtualNodesMap)).toHaveLength(totalVirtualNodeCount);
+    expect(virtualNodes).toHaveLength(totalVirtualNodeCount);
 
     state.context.nodes.forEach(node => {
-      const nodeVirtualNodes = Object.values(virtualNodes).filter(vnode => vnode.id === node.id);
+      const nodeVirtualNodes = Object.values(virtualNodesMap).filter(vnode => vnode.id === node.id);
       expect(nodeVirtualNodes).toHaveLength(Math.max(1, state.context.numVirtualNodesPerNode));
     });
   });
@@ -165,13 +212,16 @@ describe('virtualNodeStore', () => {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     const state = virtualNodeStore.getSnapshot();
-    const virtualNodes = state.context.virtualNodes;
+    const { virtualNodesMap, virtualNodes } = state.context;
 
     const updatedVirtualNodeCount =
       state.context.nodes.length * Math.max(1, state.context.numVirtualNodesPerNode);
-    expect(Object.keys(virtualNodes)).toHaveLength(updatedVirtualNodeCount);
+    expect(Object.keys(virtualNodesMap)).toHaveLength(updatedVirtualNodeCount);
+    expect(virtualNodes).toHaveLength(updatedVirtualNodeCount);
 
-    const newNodeVirtualNodes = Object.values(virtualNodes).filter(vnode => vnode.id === 'Node C');
+    const newNodeVirtualNodes = Object.values(virtualNodesMap).filter(
+      vnode => vnode.id === 'Node C'
+    );
     expect(newNodeVirtualNodes).toHaveLength(Math.max(1, state.context.numVirtualNodesPerNode));
   });
 });

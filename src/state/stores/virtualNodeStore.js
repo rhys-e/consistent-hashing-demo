@@ -38,27 +38,44 @@ async function createVirtualNode(node, vnodeIndex) {
 }
 
 async function createVirtualNodesForNode(node, numVirtualNodesPerNode) {
-  const virtualNodes = {};
+  const virtualNodesMap = {};
+  const virtualNodes = [];
+
   for (let i = 0; i < Math.max(1, numVirtualNodesPerNode); i++) {
     const virtualNode = await createVirtualNode(node, i);
-    virtualNodes[virtualNode.position] = virtualNode;
+    virtualNodesMap[virtualNode.position] = virtualNode;
+    virtualNodes.push(virtualNode);
   }
-  return virtualNodes;
+
+  // Sort array by position
+  virtualNodes.sort((a, b) => a.position - b.position);
+
+  return { virtualNodesMap, virtualNodes };
 }
 
 async function createVirtualNodesForNodes(nodes, numVirtualNodesPerNode) {
-  const virtualNodes = {};
+  const virtualNodesMap = {};
+  const virtualNodes = [];
+
   for (const node of nodes) {
-    const nodeVirtualNodes = await createVirtualNodesForNode(node, numVirtualNodesPerNode);
-    Object.assign(virtualNodes, nodeVirtualNodes);
+    const { virtualNodesMap: nodeVirtualNodesMap, virtualNodes: nodeVirtualNodes } =
+      await createVirtualNodesForNode(node, numVirtualNodesPerNode);
+
+    Object.assign(virtualNodesMap, nodeVirtualNodesMap);
+    virtualNodes.push(...nodeVirtualNodes);
   }
-  return virtualNodes;
+
+  // Sort the combined array
+  virtualNodes.sort((a, b) => a.position - b.position);
+
+  return { virtualNodesMap, virtualNodes };
 }
 
 export const virtualNodeStore = createStore({
   context: {
     nodes: createInitialNodes(),
-    virtualNodes: {},
+    virtualNodesMap: {},
+    virtualNodes: [],
     numVirtualNodesPerNode: INITIAL_VNODE_COUNT,
   },
   emits: {
@@ -71,11 +88,15 @@ export const virtualNodeStore = createStore({
   on: {
     initialise: (context, _event, enqueue) => {
       enqueue.effect(async () => {
-        const newVirtualNodes = await createVirtualNodesForNodes(
+        const { virtualNodesMap, virtualNodes } = await createVirtualNodesForNodes(
           context.nodes,
           context.numVirtualNodesPerNode
         );
-        virtualNodeStore.send({ type: 'updateVirtualNodes', virtualNodes: newVirtualNodes });
+        virtualNodeStore.send({
+          type: 'updateVirtualNodes',
+          virtualNodesMap,
+          virtualNodes,
+        });
       });
       return context;
     },
@@ -96,13 +117,21 @@ export const virtualNodeStore = createStore({
       };
 
       enqueue.effect(async () => {
-        const newVirtualNodes = { ...context.virtualNodes };
-        const nodeVirtualNodes = await createVirtualNodesForNode(
-          newNode,
-          context.numVirtualNodesPerNode
-        );
-        Object.assign(newVirtualNodes, nodeVirtualNodes);
-        virtualNodeStore.send({ type: 'updateVirtualNodes', virtualNodes: newVirtualNodes });
+        const newVirtualNodesMap = { ...context.virtualNodesMap };
+        const newVirtualNodes = [...context.virtualNodes];
+
+        const { virtualNodesMap: nodeVirtualNodesMap, virtualNodes: nodeVirtualNodes } =
+          await createVirtualNodesForNode(newNode, context.numVirtualNodesPerNode);
+
+        Object.assign(newVirtualNodesMap, nodeVirtualNodesMap);
+        newVirtualNodes.push(...nodeVirtualNodes);
+        newVirtualNodes.sort((a, b) => a.position - b.position);
+
+        virtualNodeStore.send({
+          type: 'updateVirtualNodes',
+          virtualNodesMap: newVirtualNodesMap,
+          virtualNodes: newVirtualNodes,
+        });
       });
 
       enqueue.emit.nodeAdded({ node: newNode });
@@ -116,15 +145,21 @@ export const virtualNodeStore = createStore({
       if (context.nodes.length === 1) return context;
 
       enqueue.effect(async () => {
-        const newVirtualNodes = { ...context.virtualNodes };
-        // Remove all virtual nodes for this node
-        Object.keys(newVirtualNodes).forEach(key => {
-          if (newVirtualNodes[key].id === id) {
-            delete newVirtualNodes[key];
+        const newVirtualNodesMap = { ...context.virtualNodesMap };
+        const newVirtualNodes = context.virtualNodes.filter(vnode => vnode.id !== id);
+
+        // Remove all virtual nodes for this node from the map
+        Object.keys(newVirtualNodesMap).forEach(key => {
+          if (newVirtualNodesMap[key].id === id) {
+            delete newVirtualNodesMap[key];
           }
         });
 
-        virtualNodeStore.send({ type: 'updateVirtualNodes', virtualNodes: newVirtualNodes });
+        virtualNodeStore.send({
+          type: 'updateVirtualNodes',
+          virtualNodesMap: newVirtualNodesMap,
+          virtualNodes: newVirtualNodes,
+        });
       });
 
       enqueue.emit.nodeRemoved({ id });
@@ -136,8 +171,15 @@ export const virtualNodeStore = createStore({
     },
     setNumVirtualNodesPerNode: (context, { count }, enqueue) => {
       enqueue.effect(async () => {
-        const newVirtualNodes = await createVirtualNodesForNodes(context.nodes, count);
-        virtualNodeStore.send({ type: 'updateVirtualNodes', virtualNodes: newVirtualNodes });
+        const { virtualNodesMap, virtualNodes } = await createVirtualNodesForNodes(
+          context.nodes,
+          count
+        );
+        virtualNodeStore.send({
+          type: 'updateVirtualNodes',
+          virtualNodesMap,
+          virtualNodes,
+        });
       });
 
       enqueue.emit.vnodeCountChanged({ count });
@@ -147,18 +189,26 @@ export const virtualNodeStore = createStore({
         numVirtualNodesPerNode: count,
       };
     },
-    updateVirtualNodes: (context, { virtualNodes }, enqueue) => {
-      enqueue.emit.virtualNodesUpdated({ virtualNodes });
+    updateVirtualNodes: (context, { virtualNodesMap, virtualNodes }, enqueue) => {
+      enqueue.emit.virtualNodesUpdated({ virtualNodesMap, virtualNodes });
       return {
         ...context,
+        virtualNodesMap,
         virtualNodes,
       };
     },
     reset: (context, _event, enqueue) => {
       const initialNodes = createInitialNodes();
       enqueue.effect(async () => {
-        const newVirtualNodes = await createVirtualNodesForNodes(initialNodes, INITIAL_VNODE_COUNT);
-        virtualNodeStore.send({ type: 'updateVirtualNodes', virtualNodes: newVirtualNodes });
+        const { virtualNodesMap, virtualNodes } = await createVirtualNodesForNodes(
+          initialNodes,
+          INITIAL_VNODE_COUNT
+        );
+        virtualNodeStore.send({
+          type: 'updateVirtualNodes',
+          virtualNodesMap,
+          virtualNodes,
+        });
       });
 
       enqueue.emit.nodesChanged({ nodes: initialNodes });
@@ -172,5 +222,4 @@ export const virtualNodeStore = createStore({
   },
 });
 
-// Trigger initialization
 virtualNodeStore.send({ type: 'initialise' });

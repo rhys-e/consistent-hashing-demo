@@ -13,7 +13,7 @@ import { dimensionsStore, virtualNodeStore, userRequestStore } from '../state/st
 import { useApp } from '../context/AppContext';
 import { useSystemLogging } from '../hooks/useSystemLogging';
 
-function AppComponent({ isMobile }) {
+export function App({ isMobile }) {
   const dimensions = useSelector(dimensionsStore);
   const { nodes, numVirtualNodesPerNode, virtualNodes } = useSelector(virtualNodeStore);
   const { numRequests } = useSelector(userRequestStore);
@@ -65,19 +65,19 @@ function AppComponent({ isMobile }) {
     });
   };
 
-  const { pCurPos, pRingInitialPos, hitsToRender, renderNodes } = useParticleSimulation({
-    ringNodes: virtualNodes,
-    speedMultiplier,
-    numVirtualNodesPerNode,
-    reroutedCallback: handleReroutedParticles,
-    requestCompletedCallback: handleRequestCompleted,
-    numRequests,
-    dimensions: {
-      SVG_WIDTH: dimensions.svgWidth,
-      SVG_HEIGHT: dimensions.svgHeight,
-      SVG_RADIUS: dimensions.svgRadius,
-    },
-  });
+  // const { pCurPos, pRingInitialPos, hitsToRender, renderNodes } = useParticleSimulation({
+  //   ringNodes: virtualNodes,
+  //   speedMultiplier,
+  //   numVirtualNodesPerNode,
+  //   reroutedCallback: handleReroutedParticles,
+  //   requestCompletedCallback: handleRequestCompleted,
+  //   numRequests,
+  //   dimensions: {
+  //     SVG_WIDTH: dimensions.svgWidth,
+  //     SVG_HEIGHT: dimensions.svgHeight,
+  //     SVG_RADIUS: dimensions.svgRadius,
+  //   },
+  // });
 
   const addServer = () => {
     virtualNodeStore.trigger.addNode();
@@ -110,11 +110,11 @@ function AppComponent({ isMobile }) {
         >
           <HashRingVisualisation
             dimensions={dimensions}
-            ringNodes={renderNodes}
-            pCurPos={pCurPos}
-            pRingInitialPos={pRingInitialPos}
+            ringNodes={{}}
+            pCurPos={[]}
+            pRingInitialPos={[]}
             onRemoveServer={removeServer}
-            hitsToRender={hitsToRender}
+            hitsToRender={[]}
             collapsedPanels={collapsedPanels}
             togglePanel={togglePanel}
             onAddServer={addServer}
@@ -161,5 +161,3 @@ function AppComponent({ isMobile }) {
     </div>
   );
 }
-
-export const App = withResponsiveDimensions(AppComponent);

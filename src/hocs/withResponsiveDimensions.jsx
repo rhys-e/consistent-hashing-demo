@@ -27,7 +27,7 @@ export function withResponsiveDimensions(WrappedComponent) {
     CONTAINER_MAX_WIDTH = 1200,
     ...props
   }) {
-    const { isMobile } = useResponsive(MOBILE_BREAKPOINT);
+    const { isMobile } = useResponsive({ breakpoint: MOBILE_BREAKPOINT });
 
     useEffect(() => {
       calculateDimensions(

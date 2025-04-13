@@ -6,9 +6,9 @@ export const particleMachine = createMachine({
   context: ({ input }) => {
     const [ringStartX, ringStartY] = toXY(
       input.ringStartPos,
-      input.dimensions.SVG_WIDTH,
-      input.dimensions.SVG_HEIGHT,
-      input.dimensions.SVG_RADIUS
+      input.dimensions.svgWidth,
+      input.dimensions.svgHeight,
+      input.dimensions.svgRadius
     );
     return {
       key: input.key,
@@ -128,9 +128,9 @@ export const particleMachine = createMachine({
       if (!reachedTarget) {
         const [x, y] = toXY(
           nextPos,
-          ctx.dimensions.SVG_WIDTH,
-          ctx.dimensions.SVG_HEIGHT,
-          ctx.dimensions.SVG_RADIUS
+          ctx.dimensions.svgWidth,
+          ctx.dimensions.svgHeight,
+          ctx.dimensions.svgRadius
         );
         return {
           currentX: x,
@@ -141,9 +141,9 @@ export const particleMachine = createMachine({
       } else {
         const [ringEndX, ringEndY] = toXY(
           ctx.ringEndPos,
-          ctx.dimensions.SVG_WIDTH,
-          ctx.dimensions.SVG_HEIGHT,
-          ctx.dimensions.SVG_RADIUS
+          ctx.dimensions.svgWidth,
+          ctx.dimensions.svgHeight,
+          ctx.dimensions.svgRadius
         );
         return {
           currentPos: ctx.ringEndPos,
