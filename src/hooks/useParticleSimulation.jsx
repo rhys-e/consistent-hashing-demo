@@ -1,30 +1,22 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useMachine } from '@xstate/react';
 import { simulationMachine } from '../state/machines';
-import { useExecutionStatus, EXECUTION_STATES } from './useExecutionStatus';
-import { userRequestStore } from '../state/stores';
-import { useSelector } from './useStore';
-
-const PARTICLE_SPEED = 0.002; // Speed per frame - consistent for all particles
+import { PARTICLE_SPEED } from '../constants/state';
 
 export function useParticleSimulation({
+  userRequests,
   virtualNodes,
   speedMultiplier,
   requestCompletedCallback,
   reroutedCallback,
   dimensions,
-  numRequests,
 }) {
-  const { executionStatus } = useExecutionStatus();
-  const { hashCache: fixedRequests } = useSelector(userRequestStore);
-  const runningState = executionStatus;
-
   const [snapshot, send, ref] = useMachine(simulationMachine, {
     input: {
       dimensions,
       speed: { particleSpeed: PARTICLE_SPEED, speedMultiplier },
-      fixedRequests,
-      virtualNodes: Object.values(virtualNodes),
+      userRequests,
+      virtualNodes,
     },
   });
 
@@ -37,49 +29,48 @@ export function useParticleSimulation({
       );
       requestCompletedCallback(targetNode, event);
     });
-    return () => {
-      subscription.unsubscribe();
-    };
+    return subscription.unsubscribe;
   }, [ref, requestCompletedCallback, snapshot.context.renderNodes]);
 
-  useEffect(() => {
-    let payload = { fixedRequests, virtualNodes: Object.values(virtualNodes), dimensions };
-    if (runningState === EXECUTION_STATES.INIT) {
-      payload.renderNodes = Object.values(virtualNodes);
-    }
-    send({
-      type: 'UPDATE',
-      payload,
-    });
-  }, [send, fixedRequests, virtualNodes, dimensions, runningState]);
+  const animate = useCallback(
+    time => {
+      send({ type: 'TICK', time });
+      requestRef.current = requestAnimationFrame(animate);
+    },
+    [send]
+  );
 
-  const animate = time => {
-    send({ type: 'TICK', time });
-    requestRef.current = requestAnimationFrame(animate);
-  };
-
-  const start = () => {
+  const start = useCallback(() => {
     send({ type: 'START' });
     animate(performance.now());
-  };
+  }, [send, animate]);
 
-  const pause = () => {
+  const pause = useCallback(() => {
     send({ type: 'PAUSE' });
     cancelAnimationFrame(requestRef.current);
-  };
+  }, [send]);
 
-  const resume = () => {
+  const resume = useCallback(() => {
     send({ type: 'RESUME' });
     animate(performance.now());
-  };
+  }, [send, animate]);
+
+  const update = useCallback(
+    payload => {
+      send({ type: 'UPDATE', payload });
+    },
+    [send]
+  );
 
   return {
     pCurPos: snapshot.context.pCurPos,
     pRingInitialPos: snapshot.context.pRingInitialPos,
     hitsToRender: snapshot.context.hits,
     renderNodes: snapshot.context.renderNodes,
+    particleRefs: snapshot.context.particleRefs,
     start,
     pause,
     resume,
+    update,
   };
 }

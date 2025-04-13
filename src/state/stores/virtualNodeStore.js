@@ -82,7 +82,7 @@ export const virtualNodeStore = createStore({
     nodeAdded: () => {},
     nodeRemoved: () => {},
     vnodeCountChanged: () => {},
-    nodesChanged: () => {},
+    nodesReset: () => {},
     virtualNodesUpdated: () => {},
   },
   on: {
@@ -134,7 +134,7 @@ export const virtualNodeStore = createStore({
         });
       });
 
-      enqueue.emit.nodeAdded({ node: newNode });
+      enqueue.emit.nodeAdded({ node: newNode, total: context.nodes.length + 1 });
 
       return {
         ...context,
@@ -162,7 +162,7 @@ export const virtualNodeStore = createStore({
         });
       });
 
-      enqueue.emit.nodeRemoved({ id });
+      enqueue.emit.nodeRemoved({ id, total: context.nodes.length - 1 });
 
       return {
         ...context,
@@ -182,7 +182,7 @@ export const virtualNodeStore = createStore({
         });
       });
 
-      enqueue.emit.vnodeCountChanged({ count });
+      enqueue.emit.vnodeCountChanged({ count, total: count * context.nodes.length });
 
       return {
         ...context,
@@ -211,7 +211,7 @@ export const virtualNodeStore = createStore({
         });
       });
 
-      enqueue.emit.nodesChanged({ nodes: initialNodes });
+      enqueue.emit.nodesReset({ nodes: initialNodes });
 
       return {
         ...context,

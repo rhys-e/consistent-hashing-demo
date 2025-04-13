@@ -14,7 +14,7 @@ export const simulationMachine = createMachine({
     pRingInitialPos: [],
     dimensions: input.dimensions,
     virtualNodes: input.virtualNodes,
-    fixedRequests: input.fixedRequests,
+    userRequests: input.userRequests,
     speed: input.speed,
     lastTickTime: null,
     renderNodes: input.virtualNodes,
@@ -109,7 +109,7 @@ export const simulationMachine = createMachine({
       ...event.payload,
     })),
     spawnParticles: assign(({ context, spawn, self }) => {
-      const requests = context.fixedRequests || [];
+      const requests = context.userRequests || [];
       const particlesConfig = requests.map((reqData, index) => {
         return {
           parentRef: self,

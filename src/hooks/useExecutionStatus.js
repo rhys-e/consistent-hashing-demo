@@ -11,6 +11,7 @@ export const EXECUTION_STATES = {
 
 export const useExecutionStatus = ({ onExecutionStatusChange } = {}) => {
   const [state, send, ref] = useMachine(executionStatusMachine);
+  const snapshot = ref.getSnapshot();
 
   const start = () => send({ type: 'START' });
   const pause = () => send({ type: 'PAUSE' });
@@ -30,13 +31,16 @@ export const useExecutionStatus = ({ onExecutionStatusChange } = {}) => {
 
   useEffect(() => {
     const subscription = ref.subscribe(state => {
-      console.log('state', state);
-      onExecutionStatusChange?.(state.value, EXECUTION_STATES);
+      onExecutionStatusChange?.(
+        {
+          prevExecutionStatus: snapshot.value,
+          newExecutionStatus: state.value,
+        },
+        EXECUTION_STATES
+      );
     });
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [ref, onExecutionStatusChange]);
+    return subscription.unsubscribe;
+  }, [ref, onExecutionStatusChange, snapshot.value]);
 
   return {
     start,

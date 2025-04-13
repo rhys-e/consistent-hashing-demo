@@ -156,9 +156,9 @@ describe('virtualNodeStore', () => {
   });
 
   it('should reset to initial state', async () => {
-    let nodesChangedEvent = null;
-    const subscription = virtualNodeStore.on('nodesChanged', event => {
-      nodesChangedEvent = event;
+    let nodesResetEvent = null;
+    const subscription = virtualNodeStore.on('nodesReset', event => {
+      nodesResetEvent = event;
     });
 
     virtualNodeStore.send({ type: 'addNode' });
@@ -183,8 +183,8 @@ describe('virtualNodeStore', () => {
     const positions = state.context.virtualNodes.map(vnode => vnode.position);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
 
-    expect(nodesChangedEvent).toBeDefined();
-    expect(nodesChangedEvent.nodes).toHaveLength(2);
+    expect(nodesResetEvent).toBeDefined();
+    expect(nodesResetEvent.nodes).toHaveLength(2);
 
     subscription.unsubscribe();
   });

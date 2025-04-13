@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
 import { HashRingVisualisation } from './HashRingVisualisation';
-import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { ConsoleLog } from './ConsoleLog';
 import { Header } from './Header';
 import { ControlsPanel } from './ControlsPanel';
 import { MetricsPanel } from './MetricsPanel';
 import { EXECUTION_STATES } from '../hooks/useExecutionStatus';
-import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
 import { useSelector, useAtom } from '../hooks/useStore';
 import { speedMultiplierAtom } from '../state/atoms';
 import { dimensionsStore, virtualNodeStore, userRequestStore } from '../state/stores';
 import { useApp } from '../context/AppContext';
-import { useSystemLogging } from '../hooks/useSystemLogging';
 
 export function App({ isMobile }) {
   const dimensions = useSelector(dimensionsStore);
@@ -21,7 +18,6 @@ export function App({ isMobile }) {
   const NUM_STACKS = 5;
 
   const { executionStatus, send } = useApp();
-  const { addLog } = useSystemLogging();
 
   const [collapsedPanels, setCollapsedPanels] = useState({
     controls: false,
