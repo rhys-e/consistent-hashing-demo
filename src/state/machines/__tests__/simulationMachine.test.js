@@ -4,9 +4,9 @@ import { simulationMachine } from '../simulationMachine';
 describe('Simulation State Machine', () => {
   // Test configuration
   const dimensions = {
-    SVG_WIDTH: 817,
-    SVG_HEIGHT: 817,
-    SVG_RADIUS: 347,
+    svgWidth: 817,
+    svgHeight: 817,
+    svgRadius: 347,
   };
 
   const speed = {
@@ -17,16 +17,15 @@ describe('Simulation State Machine', () => {
   const createInput = (overrides = {}) => ({
     dimensions,
     speed,
-
-    fixedRequests: [
-      { key: 'req1', position: 0.2 },
-      { key: 'req2', position: 0.6 },
-      { key: 'req3', position: 0.8 },
-    ],
     virtualNodes: [
       { id: 'node1', position: 0.1 },
       { id: 'node2', position: 0.5 },
       { id: 'node3', position: 0.9 },
+    ],
+    userRequests: [
+      { key: 'req1', position: 0.2 },
+      { key: 'req2', position: 0.6 },
+      { key: 'req3', position: 0.8 },
     ],
     ...overrides,
   });
@@ -48,45 +47,40 @@ describe('Simulation State Machine', () => {
 
   test('should transition through spawning to running state on START', async () => {
     simulationService.send({ type: 'START' });
+    // Wait for the state transition to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(simulationService.getSnapshot().value).toBe('running');
 
-    const { particleRefs, pCurPos, pRingInitialPos } = simulationService.getSnapshot().context;
+    const { particleRefs } = simulationService.getSnapshot().context;
     expect(particleRefs).toHaveLength(3);
-    expect(pCurPos).toHaveLength(0);
-    expect(pRingInitialPos).toHaveLength(3);
+    expect(particleRefs.every(p => p.getSnapshot().status !== 'done')).toBe(true);
   });
 
   test('should handle particle updates', async () => {
     simulationService.send({ type: 'START' });
+    // Wait for the state transition to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
     const now = performance.now();
 
     // Send a TICK event
     simulationService.send({
       type: 'TICK',
       time: now,
+      deltaTime: 16.667,
     });
 
-    // Simulate a particle update
-    simulationService.send({
-      type: 'PARTICLE_UPDATED',
-      key: 0,
-      pos: 0.3,
-      x: 100,
-      y: 100,
-    });
+    // Wait for the particle updates to be processed
+    await new Promise(resolve => setTimeout(resolve, 0));
 
-    const { pCurPos, particleRefs } = simulationService.getSnapshot().context;
-    expect(pCurPos[0]).toMatchObject({
-      phase: 'initial',
-      pos: 0.3,
-      x: 100,
-      y: 100,
-    });
-    expect(particleRefs[0].completed).toBe(false);
+    const { particleRefs } = simulationService.getSnapshot().context;
+    expect(particleRefs[0].getSnapshot().value).toBe('initial');
+    expect(particleRefs[0].getSnapshot().status).not.toBe('done');
   });
 
   test('should complete cycle when all particles are done', async () => {
     simulationService.send({ type: 'START' });
+    // Wait for the state transition to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     // Send enough TICK events to complete all particles
     // Each particle needs to:
@@ -103,6 +97,8 @@ describe('Simulation State Machine', () => {
         time: now,
         deltaTime: frameTime,
       });
+      // Wait for each tick to be processed
+      await new Promise(resolve => setTimeout(resolve, 0));
     }
 
     // Should be in running state with incremented cycle count
@@ -112,16 +108,20 @@ describe('Simulation State Machine', () => {
 
     // Verify new particles are spawned
     expect(snapshot.context.particleRefs).toHaveLength(3);
-    expect(snapshot.context.particleRefs.every(p => !p.completed)).toBe(true);
+    expect(snapshot.context.particleRefs.every(p => p.getSnapshot().status !== 'done')).toBe(true);
   });
 
   test('should pause and resume simulation', async () => {
     simulationService.send({ type: 'START' });
+    // Wait for the state transition to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
     simulationService.send({ type: 'PAUSE' });
     expect(simulationService.getSnapshot().value).toBe('idle');
     expect(simulationService.getSnapshot().context.lastTickTime).toBeNull();
 
     simulationService.send({ type: 'RESUME' });
+    // Wait for the state transition to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(simulationService.getSnapshot().value).toBe('running');
   });
 

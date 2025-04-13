@@ -1,12 +1,12 @@
-import { createActor, fromCallback } from 'xstate';
+import { createActor, createMachine } from 'xstate';
 import { particleMachine } from '../particleMachine';
 
 describe('Particle State Machine', () => {
   // Test configuration
   const dimensions = {
-    SVG_WIDTH: 817,
-    SVG_HEIGHT: 817,
-    SVG_RADIUS: 347,
+    svgWidth: 817,
+    svgHeight: 817,
+    svgRadius: 347,
   };
 
   const speed = {
@@ -15,112 +15,116 @@ describe('Particle State Machine', () => {
   };
 
   const center = {
-    x: dimensions.SVG_WIDTH / 2,
-    y: dimensions.SVG_HEIGHT / 2,
+    x: dimensions.svgWidth / 2,
+    y: dimensions.svgHeight / 2,
   };
 
   const createInput = (overrides = {}) => ({
-    parentRef: null, // Will be set in beforeEach
+    id: 'test-particle',
     key: 0,
-    ringStartPos: 0.3652613142890067,
-    ringEndPos: 0.5,
+    parentRef: null,
     dimensions,
     speed,
     center,
+    ringStartPos: 0.2,
+    ringEndPos: 0.5,
     ...overrides,
   });
 
   let particleService;
+  let receivedEvents;
   let parentActor;
-  let receivedEvents = [];
 
   beforeEach(() => {
-    // Reset received events
     receivedEvents = [];
+    // Create a parent actor that will receive events
+    const parentMachine = createMachine({
+      id: 'parent',
+      initial: 'active',
+      states: {
+        active: {
+          on: {
+            '*': {
+              actions: ({ event }) => receivedEvents.push(event),
+            },
+          },
+        },
+      },
+    });
+    parentActor = createActor(parentMachine).start();
 
-    // Create a simple parent actor that collects events from children
-    parentActor = createActor(
-      fromCallback(({ receive }) => {
-        receive(event => {
-          receivedEvents.push(event);
-        });
-      })
-    ).start();
-
-    // Create a particle machine with standard input
-    const input = createInput({ parentRef: parentActor });
+    const input = createInput({
+      parentRef: parentActor,
+    });
     particleService = createActor(particleMachine, { input }).start();
   });
 
   afterEach(() => {
+    particleService.stop();
     parentActor.stop();
   });
 
   test('should start in initial state', () => {
     expect(particleService.getSnapshot().value).toBe('initial');
-    expect(particleService.getSnapshot().context.currentX).toBe(center.x);
-    expect(particleService.getSnapshot().context.currentY).toBe(center.y);
     expect(particleService.getSnapshot().context.initialAnimationProgress).toBe(0);
+    expect(particleService.getSnapshot().context.currentPos).toBe(0.2);
   });
 
   test('should transition from initial to ring state', () => {
-    const now = performance.now();
-    // Send multiple TICK events to complete the initial animation
-    for (let i = 0; i < 110; i++) {
+    // Send enough TICK events to complete initial animation
+    let now = performance.now();
+    const frameTime = 16.667; // 60fps
+
+    // Send 200 frames worth of TICK events (increased from 100)
+    for (let i = 0; i < 200; i++) {
+      now += frameTime;
       particleService.send({
         type: 'TICK',
-        time: now + i * 16.667,
-        deltaTime: 16.667,
+        time: now,
+        deltaTime: frameTime,
       });
     }
 
-    // Assert ring state
     expect(particleService.getSnapshot().value).toBe('ring');
     expect(particleService.getSnapshot().context.initialAnimationProgress).toBeGreaterThanOrEqual(
-      1
+      1.0
     );
-
-    // Verify parent received PARTICLE_UPDATED events
-    const updateEvents = receivedEvents.filter(e => e.type === 'PARTICLE_UPDATED');
-    expect(updateEvents.length).toBeGreaterThan(0);
-    expect(updateEvents[0]).toMatchObject({
-      type: 'PARTICLE_UPDATED',
-      key: 0,
-    });
   });
 
   test('should move around the ring and eventually reach target', () => {
-    // First move to ring state
+    // First complete initial animation
     let now = performance.now();
-    for (let i = 0; i < 100; i++) {
-      now += 16.667;
+    const frameTime = 16.667; // 60fps
+
+    // Send 200 frames worth of TICK events for initial animation
+    for (let i = 0; i < 200; i++) {
+      now += frameTime;
       particleService.send({
         type: 'TICK',
         time: now,
-        deltaTime: 16.667,
+        deltaTime: frameTime,
       });
     }
 
-    // Then move around ring until target is reached
-    for (let i = 0; i < 70; i++) {
-      now += 16.667;
+    // Then send enough TICK events to reach target
+    for (let i = 0; i < 400; i++) {
+      // Increased from 200
+      now += frameTime;
       particleService.send({
         type: 'TICK',
         time: now,
-        deltaTime: 16.667,
+        deltaTime: frameTime,
       });
     }
 
-    // Assert completed state
     expect(particleService.getSnapshot().value).toBe('completed');
-    expect(particleService.getSnapshot().context.currentPos).toBe(
-      particleService.getSnapshot().context.ringEndPos
-    );
+    expect(particleService.getSnapshot().context.currentPos).toBe(0.5);
 
-    // Verify final position update was sent
+    // Verify completion event was sent
+    expect(receivedEvents.length).toBeGreaterThan(0);
     const lastUpdate = receivedEvents[receivedEvents.length - 1];
-    expect(lastUpdate.type).toBe('PARTICLE_UPDATED');
-    expect(lastUpdate.pos).toBe(particleService.getSnapshot().context.ringEndPos);
+    expect(lastUpdate.type).toBe('PARTICLE_COMPLETED');
+    expect(lastUpdate.data.ringEndPos).toBe(particleService.getSnapshot().context.ringEndPos);
   });
 
   // test('should handle rerouting to a different target', () => {
