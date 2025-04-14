@@ -5,6 +5,7 @@ import {
   dimensionsStore,
   consoleLogStore,
   statsStore,
+  hitsStore,
 } from '../state/stores';
 import { useExecutionStatus } from '../hooks/useExecutionStatus';
 import { useSelector } from '@xstate/store/react';
@@ -41,7 +42,7 @@ function AppProvider({ children, isMobile }) {
 
 function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile, children }) {
   const speedMultiplier = useSelector(speedMultiplierAtom, state => state);
-
+  const { hits } = useSelector(hitsStore, state => state.context);
   const { virtualNodes, numVirtualNodesPerNode } = virtualNodesState.context;
   const userRequests = userRequestsState.context.userReqCache;
 
@@ -51,8 +52,13 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
 
   const onUserRequestCompleted = event => {
     console.log('user request completed', event);
-    const { targetNode, id, ringStartPos } = event.data;
+    const { targetNode, id, ringStartPos, ringEndPos } = event.data;
     statsStore.trigger.incrementNodeStats({ nodeId: targetNode.id });
+
+    // Add hit effect at the target node's position
+    hitsStore.trigger.addHit({
+      pos: ringEndPos,
+    });
 
     const detailedMessage =
       `Request processed by ${targetNode.id}: Id=${id}, Pos=${ringStartPos.toFixed(2)}%, ` +
@@ -123,6 +129,7 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
         particleRefs,
         isMobile,
         dimensions,
+        hits,
         nodes: virtualNodesState.context,
       }}
     >

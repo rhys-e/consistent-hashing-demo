@@ -9,6 +9,7 @@ import { useHashRingSegments } from '../hooks/useHashRingSegments';
 import { ServerNode } from './ServerNode';
 import { HashRingTooltip } from './HashRingTooltip';
 import { useHashRingTooltip } from '../hooks/useHashRingTooltip';
+import { HashRingHit } from './HashRingHit';
 import {
   HashRingBackground,
   HashRingCircles,
@@ -18,10 +19,11 @@ import {
   HashRingHashValues,
 } from './HashRingDesignElements';
 
-export function HashRingVisualisation({ onRemoveServer, hitsToRender }) {
+export function HashRingVisualisation({ onRemoveServer }) {
   const {
     particleRefs,
     userRequests,
+    hits,
     nodes: { virtualNodes },
     dimensions: { svgWidth: width, svgHeight: height, svgRadius: radius },
   } = useApp();
@@ -31,7 +33,7 @@ export function HashRingVisualisation({ onRemoveServer, hitsToRender }) {
 
   const handleNodeClick = useCallback(
     node => {
-      onRemoveServer(node.id);
+      onRemoveServer?.(node.id);
     },
     [onRemoveServer]
   );
@@ -112,27 +114,15 @@ export function HashRingVisualisation({ onRemoveServer, hitsToRender }) {
           ))}
 
         {/* hit effects */}
-        {hitsToRender &&
-          hitsToRender
-            .map((hit, i) => {
-              if (hit.expired) return null;
-              const [x, y] = toXY(hit.pos, width, height, radius);
-              return (
-                <g key={`hit-${i}-${hit.completedAt}`} className="hit-effect">
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={theme.hashRing.hitEffect.width}
-                    fill="none"
-                    stroke={theme.hashRing.hitEffect.color}
-                    strokeWidth={theme.hashRing.hitEffect.strokeWidth}
-                    opacity={theme.hashRing.hitEffect.opacity}
-                    className="hit-pulse animate-pulse"
-                  />
-                </g>
-              );
-            })
-            .filter(Boolean)}
+        {hits.map(hit => (
+          <HashRingHit
+            key={`hit-${hit.id}`}
+            hit={hit}
+            width={width}
+            height={height}
+            radius={radius}
+          />
+        ))}
 
         {/* Preview indicator for next particle */}
         {userRequests.map(request => (

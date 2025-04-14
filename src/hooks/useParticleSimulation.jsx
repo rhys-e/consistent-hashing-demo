@@ -58,7 +58,6 @@ export function useParticleSimulation({
   );
 
   return {
-    hitsToRender: snapshot.context.hits,
     particleRefs: snapshot.context.particleRefs,
     start,
     pause,

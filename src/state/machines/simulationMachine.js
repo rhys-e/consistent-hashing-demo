@@ -8,7 +8,6 @@ export const simulationMachine = createMachine({
   context: ({ input }) => ({
     cycleCount: 0,
     particleRefs: [],
-    hits: [],
     virtualNodes: input.virtualNodes,
     userRequests: input.userRequests,
     speed: input.speed,
@@ -78,25 +77,6 @@ export const simulationMachine = createMachine({
   },
 }).provide({
   actions: {
-    updateHits: assign(({ context, event }) => {
-      const hits = [
-        {
-          pos: event.pos,
-          completedAt: performance.now(),
-          expired: false,
-        },
-        ...context.hits.map(hit => ({ ...hit, expired: true })),
-      ];
-
-      // remove hits older than 5 seconds
-      const now = performance.now();
-      const fiveSecondsAgo = now - 5000;
-      const filteredHits = hits.filter(hit => hit.completedAt > fiveSecondsAgo);
-
-      return {
-        hits: filteredHits,
-      };
-    }),
     pauseParticles: assign(() => ({
       lastTickTime: null,
     })),
@@ -112,7 +92,6 @@ export const simulationMachine = createMachine({
         key: index,
         ringStartPos: reqData.position,
         ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
-        dimensions: context.dimensions,
         speed: context.speed,
       }));
 
@@ -125,7 +104,6 @@ export const simulationMachine = createMachine({
 
       return {
         particleRefs,
-        hits: context.hits,
       };
     }),
     incrementCycleCount: assign({
