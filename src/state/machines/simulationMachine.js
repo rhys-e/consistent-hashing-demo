@@ -23,7 +23,7 @@ export const simulationMachine = createMachine({
           type: 'particleCompleted',
           data: {
             ...event.data,
-            targetNode: findTargetNode(context.virtualNodes, event.ringEndPos),
+            targetNode: findTargetNode(context.virtualNodes, event.data.ringStartPos),
           },
         })),
       ],
