@@ -16,7 +16,7 @@ async function generateRequest(prng) {
 }
 
 async function populateHashCache(hashCache, cacheSize, prng) {
-  const promises = Array.from({ length: cacheSize - hashCache.length }, () =>
+  const promises = Array.from({ length: Math.max(cacheSize - hashCache.length, 0) }, () =>
     generateRequest(prng)
   );
   const results = await Promise.allSettled(promises);

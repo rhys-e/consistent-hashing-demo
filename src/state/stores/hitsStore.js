@@ -3,17 +3,17 @@ import { createStore } from '@xstate/store';
 export const hitsStore = createStore({
   context: {
     hits: [],
+    id: 0,
   },
   emits: {
     hitsUpdated: () => {},
   },
   on: {
     addHit: (context, { pos }, enqueue) => {
-      const id = Math.random().toString(36).substring(2, 9);
+      const id = context.id;
       const newHit = { id, pos };
 
       const updatedHits = [newHit, ...context.hits];
-      console.log('updatedHits', updatedHits);
 
       // Remove this specific hit after 5 seconds
       enqueue.effect(() => {
@@ -28,6 +28,7 @@ export const hitsStore = createStore({
 
       return {
         ...context,
+        id: context.id + 1,
         hits: updatedHits,
       };
     },
