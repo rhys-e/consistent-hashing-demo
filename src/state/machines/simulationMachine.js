@@ -41,8 +41,12 @@ export const simulationMachine = createMachine({
       },
     },
     spawning: {
-      entry: ['spawnParticles'],
-      always: 'running',
+      on: {
+        TICK: {
+          target: 'running',
+          actions: 'spawnParticles',
+        },
+      },
     },
     running: {
       on: {
@@ -52,7 +56,7 @@ export const simulationMachine = createMachine({
             target: 'cycleComplete',
           },
           {
-            actions: ['forwardTickToParticles'],
+            actions: 'forwardTickToParticles',
           },
         ],
         PAUSE: {

@@ -65,8 +65,7 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
     addLog(detailedMessage, 'success');
   };
 
-  const onCycleCompleted = event => {
-    console.log('cycle completed', event);
+  const onCycleCompleted = () => {
     // update the simulation with the new user requests and virtual nodes before the next cycle starts
     update({ userRequests, virtualNodes });
   };
