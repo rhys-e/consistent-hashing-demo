@@ -1,5 +1,4 @@
 import React, { useCallback } from 'react';
-import { toXY } from '../utils/geometryUtils';
 import theme from '../themes';
 import { useApp } from '../context/AppContext';
 import { PreviewIndicator } from './PreviewIndicator';
@@ -18,12 +17,14 @@ import {
   HashRingOrigin,
   HashRingHashValues,
 } from './HashRingDesignElements';
+import { EXECUTION_STATES } from '../hooks/useExecutionStatus';
 
 export function HashRingVisualisation({ onRemoveServer }) {
   const {
     particleRefs,
     userRequests,
     hits,
+    executionStatus: { value: executionStatus },
     nodes: { virtualNodes },
     dimensions: { svgWidth: width, svgHeight: height, svgRadius: radius },
   } = useApp();
@@ -125,15 +126,17 @@ export function HashRingVisualisation({ onRemoveServer }) {
         ))}
 
         {/* Preview indicator for next particle */}
-        {userRequests.map(request => (
-          <PreviewIndicator
-            key={`preview-${request.key}`}
-            userRequest={request}
-            width={width}
-            height={height}
-            radius={radius}
-          />
-        ))}
+        {(executionStatus === EXECUTION_STATES.RUNNING ||
+          executionStatus === EXECUTION_STATES.PAUSED) &&
+          userRequests.map(request => (
+            <PreviewIndicator
+              key={`preview-${request.key}`}
+              userRequest={request}
+              width={width}
+              height={height}
+              radius={radius}
+            />
+          ))}
 
         <HashRingTooltip
           visible={tooltip.visible}
