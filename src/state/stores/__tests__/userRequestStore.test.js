@@ -1,28 +1,26 @@
 import { userRequestStore } from '../userRequestStore';
 import { INITIAL_NUM_REQUESTS } from '../../../constants/state';
 
-const HASH_MAP = {
-  user_id_1234: { normalised: 0.1, base64: 'hash1' },
-  user_id_5678: { normalised: 0.2, base64: 'hash2' },
-  user_id_9012: { normalised: 0.3, base64: 'hash3' },
-};
-
 jest.mock('../../../utils/hashString', () => ({
   hashString: async str => {
-    if (!HASH_MAP[str]) {
-      throw new Error(`No fixed hash value defined for ${str}`);
-    }
-    return HASH_MAP[str];
+    const charCodeSum = str.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const normalised = (charCodeSum % 1000) / 1000;
+    return { normalised, base64: `hash_${charCodeSum}` };
   },
 }));
 
+const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
+
 describe('userRequestStore', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     userRequestStore.send({ type: 'reset' });
+    await flushPromises();
   });
 
   it('should initialise with default values', async () => {
-    await new Promise(resolve => setTimeout(resolve, 0));
+    userRequestStore.send({ type: 'initialise' });
+    await flushPromises();
+
     const updatedState = userRequestStore.getSnapshot();
     expect(updatedState.context.userReqCache).toHaveLength(INITIAL_NUM_REQUESTS);
   });
@@ -39,7 +37,7 @@ describe('userRequestStore', () => {
       numRequests: newNumRequests,
     });
 
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await flushPromises();
 
     const state = userRequestStore.getSnapshot();
     expect(state.context.numRequests).toBe(newNumRequests);
@@ -62,7 +60,7 @@ describe('userRequestStore', () => {
       seedNumber: 42,
     });
 
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await flushPromises();
 
     const state = userRequestStore.getSnapshot();
     expect(state.context.userReqCache).toHaveLength(INITIAL_NUM_REQUESTS);
@@ -80,21 +78,19 @@ describe('userRequestStore', () => {
       cacheUpdatedEvent = event;
     });
 
-    // First change some values
     userRequestStore.send({
       type: 'setNumRequests',
       numRequests: 5,
     });
+
     userRequestStore.send({
       type: 'setSeed',
       seedNumber: 42,
     });
 
-    // Then reset
     userRequestStore.send({ type: 'reset' });
 
-    await new Promise(resolve => setTimeout(resolve, 0));
-
+    await flushPromises();
     const state = userRequestStore.getSnapshot();
     expect(state.context.numRequests).toBe(INITIAL_NUM_REQUESTS);
     expect(state.context.userReqCache).toHaveLength(INITIAL_NUM_REQUESTS);

@@ -47,11 +47,10 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
   const userRequests = userRequestsState.context.userReqCache;
 
   const addLog = (message, type = 'info') => {
-    consoleLogStore.trigger.log({ message, msgType: type, maxLogCount: 200 });
+    consoleLogStore.trigger.log({ message, msgType: type });
   };
 
   const onUserRequestCompleted = event => {
-    console.log('user request completed', event);
     const { targetNode, id, ringStartPos, ringEndPos } = event.data;
     statsStore.trigger.incrementNodeStats({ nodeId: targetNode.id });
 

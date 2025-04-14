@@ -15,8 +15,8 @@ async function generateRequest(prng) {
   return { key, position: normalised };
 }
 
-async function populateHashCache(hashCache, cacheSize, prng) {
-  const promises = Array.from({ length: Math.max(cacheSize - hashCache.length, 0) }, () =>
+async function populateHashCache(backgroundCache, targetSize, prng) {
+  const promises = Array.from({ length: Math.max(targetSize - backgroundCache.length, 0) }, () =>
     generateRequest(prng)
   );
   const results = await Promise.allSettled(promises);
@@ -24,15 +24,12 @@ async function populateHashCache(hashCache, cacheSize, prng) {
     .filter(result => result.status === 'fulfilled')
     .map(result => result.value);
 
-  if (hashCache.length < cacheSize) {
-    hashCache = [...hashCache, ...fulfilled];
-  }
-  hashCache.length = cacheSize;
-  return hashCache;
+  return [...backgroundCache, ...fulfilled];
 }
 
 export const userRequestStore = createStore({
   context: {
+    backgroundCache: [],
     userReqCache: [],
     prng: seedrandom(1),
     numRequests: INITIAL_NUM_REQUESTS,
@@ -44,15 +41,19 @@ export const userRequestStore = createStore({
   on: {
     initialise: (context, _event, enqueue) => {
       enqueue.effect(async () => {
-        const newCache = await populateHashCache([], context.numRequests, context.prng);
-        userRequestStore.send({ type: 'updateCache', cache: newCache });
+        const newBackgroundCache = await populateHashCache([], context.numRequests, context.prng);
+        userRequestStore.send({ type: 'updateCache', backgroundCache: newBackgroundCache });
       });
       return context;
     },
     setNumRequests: (context, { numRequests }, enqueue) => {
       enqueue.effect(async () => {
-        const newCache = await populateHashCache(context.userReqCache, numRequests, context.prng);
-        userRequestStore.send({ type: 'updateCache', cache: newCache });
+        const newBackgroundCache = await populateHashCache(
+          context.backgroundCache,
+          numRequests,
+          context.prng
+        );
+        userRequestStore.send({ type: 'updateCache', backgroundCache: newBackgroundCache });
       });
 
       enqueue.emit.numRequestsUpdated({ numRequests });
@@ -61,18 +62,21 @@ export const userRequestStore = createStore({
         numRequests,
       };
     },
-    updateCache: (context, { cache }, enqueue) => {
-      enqueue.emit.cacheUpdated({ cache });
+    updateCache: (context, { backgroundCache }, enqueue) => {
+      const userReqCache = backgroundCache.slice(0, context.numRequests);
+
+      enqueue.emit.cacheUpdated({ cache: userReqCache });
       return {
         ...context,
-        userReqCache: cache,
+        backgroundCache,
+        userReqCache,
       };
     },
     setSeed: (context, { seedNumber }, enqueue) => {
       const newPrng = seedrandom(seedNumber);
       enqueue.effect(async () => {
-        const newCache = await populateHashCache([], context.numRequests, newPrng);
-        userRequestStore.send({ type: 'updateCache', cache: newCache });
+        const newBackgroundCache = await populateHashCache([], context.numRequests, newPrng);
+        userRequestStore.send({ type: 'updateCache', backgroundCache: newBackgroundCache });
       });
 
       return {
@@ -82,8 +86,8 @@ export const userRequestStore = createStore({
     },
     reset: (context, _, enqueue) => {
       enqueue.effect(async () => {
-        const newCache = await populateHashCache([], INITIAL_NUM_REQUESTS, context.prng);
-        userRequestStore.send({ type: 'updateCache', cache: newCache });
+        const newBackgroundCache = await populateHashCache([], INITIAL_NUM_REQUESTS, context.prng);
+        userRequestStore.send({ type: 'updateCache', backgroundCache: newBackgroundCache });
       });
 
       enqueue.emit.numRequestsUpdated({ numRequests: INITIAL_NUM_REQUESTS });
