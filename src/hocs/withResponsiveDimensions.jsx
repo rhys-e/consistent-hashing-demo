@@ -30,15 +30,18 @@ export function withResponsiveDimensions(WrappedComponent) {
     const { isMobile } = useResponsive({ breakpoint: MOBILE_BREAKPOINT });
 
     useEffect(() => {
-      calculateDimensions(
-        isMobile,
-        SVG_WIDTH_PERCENTAGE,
-        SVG_ASPECT_RATIO,
-        SVG_RADIUS_PERCENTAGE,
-        CONTAINER_MAX_WIDTH
-      );
-      window.addEventListener('resize', calculateDimensions);
-      return () => window.removeEventListener('resize', calculateDimensions);
+      function updateDimensions() {
+        calculateDimensions(
+          isMobile,
+          SVG_WIDTH_PERCENTAGE,
+          SVG_ASPECT_RATIO,
+          SVG_RADIUS_PERCENTAGE,
+          CONTAINER_MAX_WIDTH
+        );
+      }
+      updateDimensions();
+      window.addEventListener('resize', updateDimensions);
+      return () => window.removeEventListener('resize', updateDimensions);
     }, [
       SVG_WIDTH_PERCENTAGE,
       SVG_ASPECT_RATIO,

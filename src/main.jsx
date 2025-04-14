@@ -2,7 +2,6 @@ import { scan } from 'react-scan';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './components/App.jsx';
-import { ThemeProvider } from './components/ThemeProvider.jsx';
 import theme from './themes';
 import './index.css';
 import { AppProvider } from './context/AppContext';
@@ -62,9 +61,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
         MOBILE_BREAKPOINT={MOBILE_BREAKPOINT}
       >
-        <ThemeProvider theme={theme}>
-          <App />
-        </ThemeProvider>
+        <App />
       </AppProvider>
     </ErrorBoundary>
   </React.StrictMode>
