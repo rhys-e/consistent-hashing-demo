@@ -1,26 +1,33 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import * as d3 from 'd3';
-import { angleScale, toXY } from '../utils/geometryUtils';
+import React, { useCallback } from 'react';
+import { toXY } from '../utils/geometryUtils';
 import theme from '../themes';
-import { useExecutionStatus, EXECUTION_STATES } from '../hooks/useExecutionStatus';
 import { useApp } from '../context/AppContext';
 import { PreviewIndicator } from './PreviewIndicator';
 import { UserRequestParticle } from './UserRequestParticle';
+import { HashRingSegment } from './HashRingSegment';
+import { useHashRingSegments } from '../hooks/useHashRingSegments';
+import { ServerNode } from './ServerNode';
+import { HashRingTooltip } from './HashRingTooltip';
+import { useHashRingTooltip } from '../hooks/useHashRingTooltip';
+import {
+  HashRingBackground,
+  HashRingCircles,
+  HashRingCrosshair,
+  HashRingRadialLines,
+  HashRingOrigin,
+  HashRingHashValues,
+} from './HashRingDesignElements';
 
-export function HashRingVisualisation({
-  onRemoveServer,
-  onAddServerAtPosition,
-  hitsToRender,
-  collapsedPanels,
-  togglePanel,
-}) {
-  const { executionStatus } = useExecutionStatus();
+export function HashRingVisualisation({ onRemoveServer, hitsToRender }) {
   const {
     particleRefs,
     userRequests,
-    nodes: { virtualNodes, virtualNodesMap },
+    nodes: { virtualNodes },
     dimensions: { svgWidth: width, svgHeight: height, svgRadius: radius },
   } = useApp();
+
+  const segments = useHashRingSegments(virtualNodes, width, height, radius);
+  const { tooltip, handleNodeMouseEnter, handleNodeMouseLeave } = useHashRingTooltip(virtualNodes);
 
   const handleNodeClick = useCallback(
     node => {
@@ -28,127 +35,6 @@ export function HashRingVisualisation({
     },
     [onRemoveServer]
   );
-
-  const segments = useMemo(() => {
-    if (!virtualNodes || virtualNodes.length < 2) return [];
-
-    const segments = [];
-    const sortedNodes = virtualNodes;
-
-    for (let i = 0; i < sortedNodes.length; i++) {
-      const current = sortedNodes[i];
-      // The node that owns this segment is the NEXT node clockwise
-      const nextNodeIndex = (i + 1) % sortedNodes.length;
-      const nextNode = sortedNodes[nextNodeIndex];
-
-      // Calculate if this segment wraps around the circle
-      const wrapsAround = nextNode.position < current.position;
-
-      // Get the exact node coordinates
-      const [startX, startY] = toXY(current.position, width, height, radius);
-      const [endX, endY] = toXY(nextNode.position, width, height, radius);
-
-      // Pre-calculate the arc path data
-      const startAngle = angleScale(current.position);
-      let endAngle = angleScale(nextNode.position);
-
-      // Handle wrap-around case
-      if (wrapsAround) {
-        endAngle = angleScale(nextNode.position + 1);
-      }
-
-      // Calculate the arc path
-      const arcPath = d3
-        .arc()
-        .innerRadius(radius - theme.hashRing.segment.width / 2)
-        .outerRadius(radius + theme.hashRing.segment.width / 2)
-        .startAngle(startAngle)
-        .endAngle(endAngle)
-        .cornerRadius(0)();
-
-      segments.push({
-        start: current.position,
-        end: nextNode.position,
-        wrapsAround: wrapsAround,
-        color: nextNode.color,
-        id: nextNode.id,
-        startX: startX,
-        startY: startY,
-        endX: endX,
-        endY: endY,
-        arcPath: arcPath,
-      });
-    }
-
-    return segments;
-  }, [virtualNodes, width, height, radius]);
-
-  const nodeElements = useMemo(() => {
-    const nodeElements = [];
-
-    if (!virtualNodes) return [];
-
-    const serverVnodeCounts = {};
-    virtualNodes.forEach(node => {
-      serverVnodeCounts[node.id] = (serverVnodeCounts[node.id] || 0) + 1;
-    });
-
-    virtualNodes.forEach((node, i) => {
-      const [x, y] = toXY(node.position, width, height, radius);
-
-      nodeElements.push(
-        <circle
-          key={`vnode-${node.id}-${i}`}
-          cx={x}
-          cy={y}
-          r={theme.hashRing.node.size}
-          fill={node.color}
-          stroke={theme.hashRing.node.strokeColor}
-          strokeWidth={theme.hashRing.node.strokeWidth}
-          filter={virtualNodes.length < 50 ? theme.hashRing.node.glowFilter : undefined}
-          onClick={() => handleNodeClick(node)}
-          onMouseEnter={() =>
-            setTooltip({
-              visible: true,
-              x: x,
-              y: y - 20,
-              content: `${node.id}: vnode ${node.vnodeIndex + 1} of ${serverVnodeCounts[node.id] || '?'} [${(node.position * 100).toFixed(1)}%]`,
-            })
-          }
-          onMouseLeave={() => setTooltip({ visible: false })}
-          className="node-element cursor-pointer"
-        />
-      );
-    });
-
-    return nodeElements;
-  }, [width, height, radius, handleNodeClick, virtualNodes]);
-
-  const [tooltip, setTooltip] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-    content: '',
-  });
-
-  const handleRingClick = event => {
-    if (!onAddServerAtPosition) return;
-
-    // Calculate click position relative to SVG center
-    const svgRect = event.currentTarget.getBoundingClientRect();
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    const clickX = event.clientX - svgRect.left - centerX;
-    const clickY = event.clientY - svgRect.top - centerY;
-
-    // Convert to angle then normalize to [0,1)
-    let angle = Math.atan2(clickY, clickX);
-    if (angle < 0) angle += 2 * Math.PI;
-    const position = angle / (2 * Math.PI);
-
-    onAddServerAtPosition(position);
-  };
 
   return (
     <div className="relative">
@@ -181,129 +67,42 @@ export function HashRingVisualisation({
             <feGaussianBlur stdDeviation={theme.hashRing.particle.glowDeviation} result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
-
-          {segments.map((segment, i) => (
-            <radialGradient
-              key={`gradient-${i}`}
-              id={`segmentGradient-${i}`}
-              cx="50%"
-              cy="50%"
-              r="50%"
-              fx="50%"
-              fy="50%"
-              gradientUnits="objectBoundingBox"
-            >
-              <stop
-                offset="0%"
-                stopColor={segment.color}
-                stopOpacity={theme.hashRing.segment.gradientInnerOpacity}
-              />
-              <stop
-                offset="100%"
-                stopColor={segment.color}
-                stopOpacity={theme.hashRing.segment.gradientOuterOpacity}
-              />
-            </radialGradient>
-          ))}
         </defs>
 
-        {/* background rect with grid */}
-        <rect width={width} height={height} fill="url(#ringGradient)" className="ring-bg" />
-        <rect width={width} height={height} fill="url(#grid)" className="ring-grid" />
+        <HashRingBackground width={width} height={height} />
+        <HashRingCircles width={width} height={height} radius={radius} />
 
-        {/* background circle with gradient */}
-        <circle
-          cx={width / 2}
-          cy={height / 2}
-          r={radius + 30}
-          fill="none"
-          stroke={theme.hashRing.ring.outerCircleColor}
-          strokeWidth={theme.hashRing.ring.outerCircleWidth}
-          strokeDasharray={theme.hashRing.ring.outerCircleDashArray}
-          className="ring-outer-circle"
-        />
-
-        <circle
-          cx={width / 2}
-          cy={height / 2}
-          r={radius + 15}
-          fill="none"
-          stroke={theme.hashRing.ring.innerCircleColor}
-          strokeWidth={theme.hashRing.ring.innerCircleWidth}
-          strokeDasharray={theme.hashRing.ring.innerCircleDashArray}
-          className="ring-inner-circle"
-        />
-
-        {/* boundary markers on segments */}
+        {/* Render segments using the singular component */}
         {segments.map((segment, i) => (
-          <g key={`segment-${i}`} className="segment">
-            <path
-              d={segment.arcPath}
-              transform={`translate(${width / 2}, ${height / 2})`}
-              fill={`url(#segmentGradient-${i})`}
-              stroke={segment.color}
-              strokeWidth={theme.hashRing.segment.strokeWidth}
-              strokeOpacity={theme.hashRing.segment.strokeOpacity}
-              className="segment-path"
-            />
-
-            {/* Segment boundary line */}
-            <line
-              x1={width / 2}
-              y1={height / 2}
-              x2={segment.startX}
-              y2={segment.startY}
-              stroke={segment.color}
-              strokeWidth={theme.hashRing.segment.boundaryLineWidth}
-              strokeOpacity={theme.hashRing.segment.boundaryLineOpacity}
-              strokeDasharray={theme.hashRing.segment.boundaryLineDashArray}
-              className="segment-line"
-            />
-          </g>
+          <HashRingSegment
+            key={`segment-${i}`}
+            segment={segment}
+            index={i}
+            width={width}
+            height={height}
+          />
         ))}
 
-        <circle
-          cx={width / 2}
-          cy={height / 2}
-          r={radius}
-          fill="none"
-          stroke={theme.hashRing.ring.outlineColor}
-          strokeWidth={theme.hashRing.ring.outlineWidth}
-          style={{ cursor: 'crosshair' }}
-          onClick={handleRingClick}
-          className="ring-outline"
-        />
+        <HashRingCrosshair width={width} height={height} radius={radius} />
+        <HashRingHashValues width={width} height={height} radius={radius} />
 
-        {/* Add hash values around the circle */}
-        {Array.from({ length: 8 }).map((_, i) => {
-          const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
-          const hashPos = i / 8;
-          const x = width / 2 + (radius + 25) * Math.cos(angle);
-          const y = height / 2 + (radius + 25) * Math.sin(angle);
-
-          return (
-            <g key={`hash-${i}`}>
-              <text
-                x={x}
-                y={y}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill={theme.hashRing.ring.hashTextColor}
-                fontSize={theme.hashRing.ring.hashTextSize}
-                fontFamily={theme.typography.fontFamily.mono}
-                className="hash-text"
-              >
-                {(hashPos * 100).toFixed(0)}%
-              </text>
-            </g>
-          );
-        })}
-
-        {nodeElements}
+        {/* Render server nodes using the singular component */}
+        {virtualNodes.map((node, i) => (
+          <ServerNode
+            key={`vnode-${node.id}-${i}`}
+            node={node}
+            width={width}
+            height={height}
+            radius={radius}
+            onClick={handleNodeClick}
+            onMouseEnter={handleNodeMouseEnter}
+            onMouseLeave={handleNodeMouseLeave}
+          />
+        ))}
 
         {/* Render particles */}
         {particleRefs
-          //.filter(ref => !ref.completed) - todo: fix this
+          .filter(ref => ref.getSnapshot().status !== 'done')
           .map(ref => (
             <UserRequestParticle key={ref.id} particleRef={ref} />
           ))}
@@ -326,14 +125,6 @@ export function HashRingVisualisation({
                     opacity={theme.hashRing.hitEffect.opacity}
                     className="hit-pulse animate-pulse"
                   />
-                  {/* <circle
-                  cx={x}
-                  cy={y}
-                  r={theme.hashRing.hitEffect.innerDotSize}
-                  fill={theme.hashRing.hitEffect.color}
-                  opacity={theme.hashRing.hitEffect.innerDotOpacity}
-                  className="hit-dot animate-hit-dot-blink"
-                /> */}
                 </g>
               );
             })
@@ -350,185 +141,18 @@ export function HashRingVisualisation({
           />
         ))}
 
-        {tooltip.visible && (
-          <foreignObject
-            x={Math.min(
-              Math.max(tooltip.x - theme.hashRing.tooltip.width / 2, 10),
-              width - theme.hashRing.tooltip.width - 10
-            )}
-            y={Math.min(
-              Math.max(tooltip.y - theme.hashRing.tooltip.height, 10),
-              height - theme.hashRing.tooltip.height - 10
-            )}
-            width={theme.hashRing.tooltip.width}
-            height={theme.hashRing.tooltip.height}
-          >
-            <div className="absolute flex h-full w-full items-center justify-center rounded-sm border border-tooltip-border bg-tooltip-bg p-1 text-center font-mono text-tooltip-text">
-              {tooltip.content}
-            </div>
-          </foreignObject>
-        )}
+        <HashRingTooltip
+          visible={tooltip.visible}
+          x={tooltip.x}
+          y={tooltip.y}
+          content={tooltip.content}
+          width={width}
+          height={height}
+        />
 
-        <g>
-          {/* Central origin point with pulsing effect */}
-          <circle
-            cx={width / 2}
-            cy={height / 2}
-            r={15}
-            fill="rgba(241, 250, 140, 0.15)"
-            stroke="#44475a"
-            strokeWidth={1.5}
-          >
-            <animate attributeName="r" values="15;18;15" dur="3s" repeatCount="indefinite" />
-            <animate
-              attributeName="fill-opacity"
-              values="0.15;0.25;0.15"
-              dur="3s"
-              repeatCount="indefinite"
-            />
-          </circle>
-
-          {/* Central dot */}
-          <circle
-            cx={width / 2}
-            cy={height / 2}
-            r={5}
-            fill="#f1fa8c"
-            opacity={0.7}
-            filter="url(#particleGlow)"
-          >
-            <animate attributeName="r" values="4;6;4" dur="3s" repeatCount="indefinite" />
-          </circle>
-
-          {/* Optional: Radial lines for tech effect */}
-          {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-            const angleRad = (angle * Math.PI) / 180;
-            const innerX = width / 2 + Math.cos(angleRad) * 20;
-            const innerY = height / 2 + Math.sin(angleRad) * 20;
-            const outerX = width / 2 + Math.cos(angleRad) * 35;
-            const outerY = height / 2 + Math.sin(angleRad) * 35;
-
-            return (
-              <line
-                key={`radial-${i}`}
-                x1={innerX}
-                y1={innerY}
-                x2={outerX}
-                y2={outerY}
-                stroke="#44475a"
-                strokeWidth={1}
-                strokeDasharray="2,3"
-                opacity={0.6}
-              />
-            );
-          })}
-
-          {/* Origin label */}
-          <text
-            x={width / 2}
-            y={height / 2 - 25}
-            textAnchor="middle"
-            fill="#f8f8f2"
-            fontSize={10}
-            fontFamily="'Share Tech Mono', monospace"
-            letterSpacing="1px"
-          >
-            REQUEST ORIGIN
-          </text>
-        </g>
+        <HashRingOrigin width={width} height={height} />
+        <HashRingRadialLines width={width} height={height} />
       </svg>
-
-      {/* Legend */}
-      <div
-        className="legend"
-        style={{
-          position: 'absolute',
-          bottom: theme.hashRing.legend.bottom,
-          right: theme.hashRing.legend.right,
-          width: theme.hashRing.legend.width,
-          padding: theme.hashRing.legend.padding,
-          backgroundColor: theme.hashRing.legend.backgroundColor,
-          border: `${theme.hashRing.legend.borderWidth}px solid ${theme.hashRing.legend.borderColor}`,
-          borderRadius: theme.hashRing.legend.borderRadius,
-          color: theme.hashRing.legend.textColor,
-          fontFamily: theme.typography.fontFamily.mono,
-          fontSize: theme.hashRing.legend.fontSize,
-          zIndex: 10,
-          display: collapsedPanels.legend ? 'none' : 'block',
-        }}
-      >
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-bold">Legend</h3>
-          <button onClick={() => togglePanel('legend')} className="text-xs hover:text-blue-400">
-            Hide
-          </button>
-        </div>
-        <div className="grid grid-cols-1 gap-1">
-          <div className="flex items-center">
-            <div
-              className="mr-2 h-3 w-3 rounded-full"
-              style={{ backgroundColor: theme.hashRing.node.defaultColor }}
-            ></div>
-            <span>Server Node</span>
-          </div>
-          <div className="flex items-center">
-            <div
-              className="mr-2 h-3 w-3 rounded-full"
-              style={{ backgroundColor: theme.hashRing.particle.color }}
-            ></div>
-            <span>Request</span>
-          </div>
-          <div className="flex items-center">
-            <div
-              className="mr-2 h-3 w-3 border"
-              style={{
-                borderColor: theme.hashRing.segment.strokeColor,
-                backgroundColor: 'rgba(255,255,255,0.1)',
-              }}
-            ></div>
-            <span>Server Segment</span>
-          </div>
-          <div className="flex items-center">
-            <div
-              className="mr-2 h-3 w-3 rounded-full"
-              style={{ backgroundColor: theme.hashRing.hitEffect.color }}
-            ></div>
-            <span>Request Hit</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Status Indicator */}
-      <div
-        className={`absolute z-10 border border-status-border bg-status-bg font-mono text-status-text ${collapsedPanels.status ? 'hidden' : 'flex'} items-center gap-2`}
-        style={{
-          top: theme.hashRing.statusIndicator.top,
-          right: theme.hashRing.statusIndicator.right,
-          padding: theme.hashRing.statusIndicator.padding,
-          borderRadius: theme.hashRing.statusIndicator.borderRadius,
-        }}
-      >
-        <div className="flex w-full items-center justify-between">
-          <div className="flex items-center">
-            <div
-              className="mr-2 h-3 w-3 rounded-full"
-              style={{
-                backgroundColor:
-                  executionStatus === EXECUTION_STATES.RUNNING
-                    ? theme.hashRing.statusIndicator.activeColor
-                    : theme.hashRing.statusIndicator.inactiveColor,
-              }}
-            ></div>
-            <span>{executionStatus === EXECUTION_STATES.RUNNING ? 'Active' : 'Paused'}</span>
-          </div>
-          <button
-            onClick={() => togglePanel('status')}
-            className="ml-4 text-xs hover:text-blue-400"
-          >
-            Hide
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
