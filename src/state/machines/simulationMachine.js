@@ -88,13 +88,12 @@ export const simulationMachine = createMachine({
       ...event.payload,
     })),
     spawnParticles: assign(({ context, spawn, self }) => ({
-      particleRefs: context.userRequests.map((reqData, index) =>
+      particleRefs: context.userRequests.map(reqData =>
         spawn(particleMachine, {
           id: `particle-${reqData.key}`,
           input: {
             parentRef: self,
             id: reqData.key,
-            key: index,
             ringStartPos: reqData.position,
             ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
             speed: context.speed,

@@ -4,7 +4,6 @@ export const particleMachine = createMachine({
   initial: 'initial',
   context: ({ input }) => ({
     id: input.id,
-    key: input.key,
     parentRef: input.parentRef,
     speed: input.speed,
     initialFrames: 0,
@@ -23,7 +22,7 @@ export const particleMachine = createMachine({
             guard: 'isInitialAnimationDone',
           },
           {
-            actions: ['incrementInitialAnimationProgress'],
+            actions: 'incrementInitialAnimationProgress',
           },
         ],
       },
