@@ -1,4 +1,4 @@
-import { createMachine, assign, emit } from 'xstate';
+import { createMachine, assign, emit, enqueueActions } from 'xstate';
 import { particleMachine } from './particleMachine';
 
 export const simulationMachine = createMachine({
@@ -15,18 +15,10 @@ export const simulationMachine = createMachine({
   }),
   on: {
     UPDATE: {
-      actions: 'updateContext',
+      actions: ['updateContext', 'updateChildContext'],
     },
     PARTICLE_COMPLETED: {
-      actions: [
-        emit(({ context, event }) => ({
-          type: 'particleCompleted',
-          data: {
-            ...event.data,
-            targetNode: findTargetNode(context.virtualNodes, event.data.ringStartPos),
-          },
-        })),
-      ],
+      actions: 'particleCompleted',
     },
   },
   states: {
@@ -66,16 +58,7 @@ export const simulationMachine = createMachine({
       },
     },
     cycleComplete: {
-      entry: [
-        'incrementCycleCount',
-        emit(({ context }) => ({
-          type: 'cycleCompleted',
-          data: {
-            cycleCount: context.cycleCount,
-            virtualNodes: context.virtualNodes,
-          },
-        })),
-      ],
+      entry: ['incrementCycleCount', 'cycleCompleted'],
       always: 'spawning',
     },
   },
@@ -84,9 +67,33 @@ export const simulationMachine = createMachine({
     pauseParticles: assign({
       lastTickTime: null,
     }),
+    cycleCompleted: emit(({ context }) => ({
+      type: 'cycleCompleted',
+      data: {
+        cycleCount: context.cycleCount,
+        virtualNodes: context.virtualNodes,
+      },
+    })),
+    particleCompleted: emit(({ context, event }) => ({
+      type: 'particleCompleted',
+      data: {
+        ...event.data,
+        targetNode: findTargetNode(context.virtualNodes, event.data.ringStartPos),
+      },
+    })),
     updateContext: assign(({ event }) => ({
       ...event.payload,
     })),
+    updateChildContext: enqueueActions(({ enqueue, context }) =>
+      context.particleRefs
+        .filter(ref => ref.getSnapshot().status !== 'done')
+        .forEach(ref => {
+          enqueue.sendTo(ref, {
+            type: 'UPDATE',
+            payload: { speed: context.speed },
+          });
+        })
+    ),
     spawnParticles: assign(({ context, spawn, self }) => ({
       particleRefs: context.userRequests.map(reqData =>
         spawn(particleMachine, {
@@ -104,19 +111,21 @@ export const simulationMachine = createMachine({
     incrementCycleCount: assign({
       cycleCount: ({ context }) => context.cycleCount + 1,
     }),
-    forwardTickToParticles: ({ context, event }) => {
-      const lastTickTime = context.lastTickTime || event.time - 16.667; // 1 frame ago if we don't have a lastTickTime
+    forwardTickToParticles: enqueueActions(({ enqueue, context, event }) => {
       context.particleRefs
         .filter(p => p.getSnapshot().status !== 'done')
-        .forEach(({ ref }) => {
-          ref.send({ ...event, deltaTime: event.time - lastTickTime });
-        });
+        .forEach(ref =>
+          enqueue.sendTo(ref, {
+            type: 'TICK',
+            // 1 frame ago if we don't have a lastTickTime
+            deltaTime: event.time - (context.lastTickTime || event.time - 16.667),
+          })
+        );
 
-      return {
-        ...context,
+      enqueue.assign({
         lastTickTime: event.time,
-      };
-    },
+      });
+    }),
   },
   guards: {
     allParticlesCompleted: ({ context }) =>

@@ -1,18 +1,17 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useMachine } from '@xstate/react';
 import { simulationMachine } from '../state/machines';
-import { PARTICLE_SPEED } from '../constants/state';
 
 export function useParticleSimulation({
   userRequests,
   virtualNodes,
-  speedMultiplier,
+  speed,
   onUserRequestCompleted,
   onCycleCompleted,
 }) {
   const [snapshot, send, ref] = useMachine(simulationMachine, {
     input: {
-      speed: { particleSpeed: PARTICLE_SPEED, speedMultiplier },
+      speed,
       userRequests,
       virtualNodes,
     },

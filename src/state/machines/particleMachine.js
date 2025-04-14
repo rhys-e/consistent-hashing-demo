@@ -13,6 +13,11 @@ export const particleMachine = createMachine({
     currentPos: input.ringStartPos,
     initialAnimationProgress: 0,
   }),
+  on: {
+    UPDATE: {
+      actions: 'updateContext',
+    },
+  },
   states: {
     initial: {
       on: {
@@ -49,21 +54,25 @@ export const particleMachine = createMachine({
     },
     completed: {
       type: 'final',
-      entry: sendTo(
-        ({ context }) => context.parentRef,
-        ({ context }) => ({
-          type: 'PARTICLE_COMPLETED',
-          data: {
-            id: context.id,
-            ringStartPos: context.ringStartPos,
-            ringEndPos: context.ringEndPos,
-          },
-        })
-      ),
+      entry: 'particleCompleted',
     },
   },
 }).provide({
   actions: {
+    particleCompleted: sendTo(
+      ({ context }) => context.parentRef,
+      ({ context }) => ({
+        type: 'PARTICLE_COMPLETED',
+        data: {
+          id: context.id,
+          ringStartPos: context.ringStartPos,
+          ringEndPos: context.ringEndPos,
+        },
+      })
+    ),
+    updateContext: assign(({ event }) => ({
+      ...event.payload,
+    })),
     incrementInitialAnimationProgress: assign(({ context: ctx, event }) => {
       if (ctx.initialAnimationProgress < 1) {
         const deltaTime = event.deltaTime;

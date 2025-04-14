@@ -12,6 +12,8 @@ import { useSelector } from '@xstate/store/react';
 import { useParticleSimulation } from '../hooks/useParticleSimulation';
 import { speedMultiplierAtom } from '../state/atoms';
 import { withResponsiveDimensions } from '../hocs/withResponsiveDimensions';
+import { PARTICLE_SPEED as particleSpeed } from '../constants/state';
+
 const AppContext = createContext();
 
 function AppProvider({ children, isMobile }) {
@@ -73,7 +75,7 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
   const { start, pause, resume, update, particleRefs } = useParticleSimulation({
     userRequests,
     virtualNodes,
-    speedMultiplier,
+    speed: { speedMultiplier, particleSpeed },
     numVirtualNodesPerNode,
     onUserRequestCompleted,
     onCycleCompleted,
@@ -81,6 +83,11 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
 
   useEffect(() => {
     const subscriptions = [];
+    subscriptions.push(
+      speedMultiplierAtom.subscribe(newSpeedMultiplier => {
+        update({ speed: { speedMultiplier: newSpeedMultiplier, particleSpeed } });
+      })
+    );
     subscriptions.push(
       virtualNodeStore.on('nodeAdded', event => {
         addLog(`Added new node: ${event.node.id}, nodes active: ${event.total}`);
