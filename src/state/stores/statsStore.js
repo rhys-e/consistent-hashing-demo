@@ -6,7 +6,7 @@ const calculateLoadImbalance = nodeStats => {
   const values = Object.values(nodeStats);
   const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
   const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
-  return Math.sqrt(variance);
+  return (Math.sqrt(variance) / mean) * 100;
 };
 
 const statsStore = createStore({
