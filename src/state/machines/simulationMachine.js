@@ -77,35 +77,27 @@ export const simulationMachine = createMachine({
   },
 }).provide({
   actions: {
-    pauseParticles: assign(() => ({
+    pauseParticles: assign({
       lastTickTime: null,
-    })),
-    updateContext: assign(({ context, event }) => ({
-      ...context,
+    }),
+    updateContext: assign(({ event }) => ({
       ...event.payload,
     })),
-    spawnParticles: assign(({ context, spawn, self }) => {
-      const requests = context.userRequests || [];
-      const particlesConfig = requests.map((reqData, index) => ({
-        parentRef: self,
-        id: reqData.key,
-        key: index,
-        ringStartPos: reqData.position,
-        ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
-        speed: context.speed,
-      }));
-
-      const particleRefs = particlesConfig.map(particleConfig =>
+    spawnParticles: assign(({ context, spawn, self }) => ({
+      particleRefs: context.userRequests.map((reqData, index) =>
         spawn(particleMachine, {
-          id: `particle-${particleConfig.id}`,
-          input: particleConfig,
+          id: `particle-${reqData.key}`,
+          input: {
+            parentRef: self,
+            id: reqData.key,
+            key: index,
+            ringStartPos: reqData.position,
+            ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
+            speed: context.speed,
+          },
         })
-      );
-
-      return {
-        particleRefs,
-      };
-    }),
+      ),
+    })),
     incrementCycleCount: assign({
       cycleCount: ({ context }) => context.cycleCount + 1,
     }),

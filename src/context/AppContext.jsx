@@ -46,8 +46,6 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
   const { virtualNodes, numVirtualNodesPerNode } = virtualNodesState.context;
   const userRequests = userRequestsState.context.userReqCache;
 
-  console.log('userRequests', userRequests);
-
   const addLog = (message, type = 'info') => {
     consoleLogStore.trigger.log({ message, msgType: type, maxLogCount: 200 });
   };
