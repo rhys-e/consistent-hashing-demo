@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useResponsive } from '../hooks/useResponsive';
+import { useState, useLayoutEffect } from 'react';
 import { dimensionsStore } from '../state/stores/dimensionsStore';
 
 function calculateDimensions(
@@ -27,27 +26,32 @@ export function withResponsiveDimensions(WrappedComponent) {
     CONTAINER_MAX_WIDTH = 1200,
     ...props
   }) {
-    const { isMobile } = useResponsive({ breakpoint: MOBILE_BREAKPOINT });
+    const [isMobile, setIsMobile] = useState(false);
 
-    useEffect(() => {
-      function updateDimensions() {
+    useLayoutEffect(() => {
+      function updateSize() {
+        const newIsMobile = window.innerWidth < MOBILE_BREAKPOINT;
+        setIsMobile(newIsMobile);
         calculateDimensions(
-          isMobile,
+          newIsMobile,
           SVG_WIDTH_PERCENTAGE,
           SVG_ASPECT_RATIO,
           SVG_RADIUS_PERCENTAGE,
           CONTAINER_MAX_WIDTH
         );
       }
-      updateDimensions();
-      window.addEventListener('resize', updateDimensions);
-      return () => window.removeEventListener('resize', updateDimensions);
+
+      // Set initial value
+      updateSize();
+
+      window.addEventListener('resize', updateSize);
+      return () => window.removeEventListener('resize', updateSize);
     }, [
       SVG_WIDTH_PERCENTAGE,
       SVG_ASPECT_RATIO,
       SVG_RADIUS_PERCENTAGE,
       CONTAINER_MAX_WIDTH,
-      isMobile,
+      MOBILE_BREAKPOINT,
     ]);
 
     return <WrappedComponent {...props} isMobile={isMobile} />;
