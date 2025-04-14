@@ -9,7 +9,6 @@ export const simulationMachine = createMachine({
     cycleCount: 0,
     particleRefs: [],
     hits: [],
-    dimensions: input.dimensions,
     virtualNodes: input.virtualNodes,
     userRequests: input.userRequests,
     speed: input.speed,
@@ -114,7 +113,6 @@ export const simulationMachine = createMachine({
         ringStartPos: reqData.position,
         ringEndPos: findTargetNode(context.virtualNodes, reqData.position).position,
         dimensions: context.dimensions,
-        center: { x: context.dimensions.svgWidth / 2, y: context.dimensions.svgHeight / 2 },
         speed: context.speed,
       }));
 

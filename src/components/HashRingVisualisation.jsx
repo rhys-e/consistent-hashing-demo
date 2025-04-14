@@ -104,7 +104,11 @@ export function HashRingVisualisation({ onRemoveServer, hitsToRender }) {
         {particleRefs
           .filter(ref => ref.getSnapshot().status !== 'done')
           .map(ref => (
-            <UserRequestParticle key={ref.id} particleRef={ref} />
+            <UserRequestParticle
+              key={ref.id}
+              particleRef={ref}
+              dimensions={{ width, height, radius }}
+            />
           ))}
 
         {/* hit effects */}

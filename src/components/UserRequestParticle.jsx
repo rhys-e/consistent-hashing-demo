@@ -3,25 +3,20 @@ import { toXY } from '../utils/geometryUtils';
 import theme from '../themes';
 import { useSelector } from '@xstate/react';
 
-export function UserRequestParticle({ particleRef }) {
+export function UserRequestParticle({ particleRef, dimensions: { width, height, radius } }) {
   const state = useSelector(particleRef, state => state);
   const {
-    context: {
-      key,
-      initialAnimationProgress,
-      center,
-      currentPos,
-      ringStartPos,
-      dimensions: { svgWidth, svgHeight, svgRadius },
-    },
+    context: { key, initialAnimationProgress, currentPos, ringStartPos },
     value: phase,
   } = state;
 
   // Check if particle is in initial animation or regular movement
   if (phase === 'initial') {
-    const [ringStartX, ringStartY] = toXY(ringStartPos, svgWidth, svgHeight, svgRadius);
-    const x = center.x + (ringStartX - center.x) * initialAnimationProgress;
-    const y = center.y + (ringStartY - center.y) * initialAnimationProgress;
+    const [ringStartX, ringStartY] = toXY(ringStartPos, width, height, radius);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const x = centerX + (ringStartX - centerX) * initialAnimationProgress;
+    const y = centerY + (ringStartY - centerY) * initialAnimationProgress;
     return (
       <circle
         cx={x}
@@ -35,11 +30,11 @@ export function UserRequestParticle({ particleRef }) {
       />
     );
   } else if (phase === 'ring') {
-    const [x, y] = toXY(currentPos, svgWidth, svgHeight, svgRadius);
+    const [x, y] = toXY(currentPos, width, height, radius);
     // Calculate a point slightly behind the particle for the trail
     const trailLength = theme.hashRing.particle.trailLength || 0.01;
     const trailPos = (currentPos - trailLength + 1) % 1;
-    const [trailX, trailY] = toXY(trailPos, svgWidth, svgHeight, svgRadius);
+    const [trailX, trailY] = toXY(trailPos, width, height, radius);
     const gradientId = `particleTrailGradient-${key}`;
 
     return (

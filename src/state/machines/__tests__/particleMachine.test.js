@@ -2,30 +2,16 @@ import { createActor, createMachine } from 'xstate';
 import { particleMachine } from '../particleMachine';
 
 describe('Particle State Machine', () => {
-  // Test configuration
-  const dimensions = {
-    svgWidth: 817,
-    svgHeight: 817,
-    svgRadius: 347,
-  };
-
   const speed = {
     particleSpeed: 0.002,
     speedMultiplier: 1.0,
-  };
-
-  const center = {
-    x: dimensions.svgWidth / 2,
-    y: dimensions.svgHeight / 2,
   };
 
   const createInput = (overrides = {}) => ({
     id: 'test-particle',
     key: 0,
     parentRef: null,
-    dimensions,
     speed,
-    center,
     ringStartPos: 0.2,
     ringEndPos: 0.5,
     ...overrides,

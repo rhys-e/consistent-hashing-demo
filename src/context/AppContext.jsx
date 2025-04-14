@@ -79,11 +79,6 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
   useEffect(() => {
     const subscriptions = [];
     subscriptions.push(
-      dimensionsStore.subscribe(dimensions => {
-        update({ dimensions: dimensions.context });
-      })
-    );
-    subscriptions.push(
       virtualNodeStore.on('nodeAdded', event => {
         addLog(`Added new node: ${event.node.id}, nodes active: ${event.total}`);
       })

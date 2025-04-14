@@ -2,20 +2,12 @@ import { createActor } from 'xstate';
 import { simulationMachine } from '../simulationMachine';
 
 describe('Simulation State Machine', () => {
-  // Test configuration
-  const dimensions = {
-    svgWidth: 817,
-    svgHeight: 817,
-    svgRadius: 347,
-  };
-
   const speed = {
     particleSpeed: 0.002,
     speedMultiplier: 1.0,
   };
 
   const createInput = (overrides = {}) => ({
-    dimensions,
     speed,
     virtualNodes: [
       { id: 'node1', position: 0.1 },
