@@ -110,8 +110,13 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
   }, [update]);
 
   const executionStatus = useExecutionStatus({
-    onExecutionStatusChange: ({ newExecutionStatus }, { STOPPED, RUNNING, PAUSED }) => {
-      if (newExecutionStatus === RUNNING) {
+    onExecutionStatusChange: (
+      { prevExecutionStatus, newExecutionStatus },
+      { STOPPED, RUNNING, PAUSED }
+    ) => {
+      if (prevExecutionStatus === PAUSED && newExecutionStatus === RUNNING) {
+        resume();
+      } else if (newExecutionStatus === RUNNING) {
         start();
       } else if (newExecutionStatus === PAUSED) {
         pause();

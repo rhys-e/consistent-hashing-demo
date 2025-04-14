@@ -11,7 +11,6 @@ export const EXECUTION_STATES = {
 
 export const useExecutionStatus = ({ onExecutionStatusChange } = {}) => {
   const [state, send, ref] = useMachine(executionStatusMachine);
-  const snapshot = ref.getSnapshot();
 
   const start = () => send({ type: 'START' });
   const pause = () => send({ type: 'PAUSE' });
@@ -19,7 +18,6 @@ export const useExecutionStatus = ({ onExecutionStatusChange } = {}) => {
   const stop = () => send({ type: 'STOP' });
 
   const toggleExecutionStatus = () => {
-    console.log('executionStatus', state.value);
     if (state.value === EXECUTION_STATES.STOPPED) {
       start();
     } else if (state.value === EXECUTION_STATES.RUNNING) {
@@ -30,6 +28,7 @@ export const useExecutionStatus = ({ onExecutionStatusChange } = {}) => {
   };
 
   useEffect(() => {
+    let snapshot = ref.getSnapshot();
     const subscription = ref.subscribe(state => {
       onExecutionStatusChange?.(
         {
@@ -38,9 +37,10 @@ export const useExecutionStatus = ({ onExecutionStatusChange } = {}) => {
         },
         EXECUTION_STATES
       );
+      snapshot = ref.getSnapshot();
     });
     return subscription.unsubscribe;
-  }, [ref, onExecutionStatusChange, snapshot.value]);
+  }, [ref, onExecutionStatusChange]);
 
   return {
     start,
