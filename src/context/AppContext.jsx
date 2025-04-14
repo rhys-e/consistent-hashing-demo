@@ -71,7 +71,6 @@ function AppWrapper({ userRequestsState, virtualNodesState, dimensions, isMobile
     virtualNodes,
     speedMultiplier,
     numVirtualNodesPerNode,
-    dimensions,
     onUserRequestCompleted,
     onCycleCompleted,
   });

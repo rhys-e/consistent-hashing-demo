@@ -9,11 +9,9 @@ export function useParticleSimulation({
   speedMultiplier,
   onUserRequestCompleted,
   onCycleCompleted,
-  dimensions,
 }) {
   const [snapshot, send, ref] = useMachine(simulationMachine, {
     input: {
-      dimensions,
       speed: { particleSpeed: PARTICLE_SPEED, speedMultiplier },
       userRequests,
       virtualNodes,
