@@ -22,7 +22,7 @@
   },
   "author": "rhys-e",
   "dependencies": {
-    "@xstate/react": "5.0.5",
+    "@xstate/react": "6.0.0",
     "d3": "7.9.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
