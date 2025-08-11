@@ -24,10 +24,10 @@
   "dependencies": {
     "@xstate/react": "6.0.0",
     "d3": "7.9.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "seedrandom": "3.0.5",
-    "xstate": "5.20.1"
+    "xstate": "5.20.2"
   },
   "devDependencies": {
     "@babel/core": "7.28.0",
@@ -43,7 +43,7 @@
     "autoprefixer": "10.4.21",
     "babel-jest": "30.0.5",
     "babel-plugin-react-compiler": "19.0.0-beta-ebf51a3-20250411",
-    "eslint": "9.32.0",
+    "eslint": "9.33.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-compiler": "19.0.0-beta-ebf51a3-20250411",
@@ -51,7 +51,7 @@
     "globals": "16.3.0",
     "husky": "9.1.7",
     "jest": "30.0.5",
-    "lint-staged": "16.1.2",
+    "lint-staged": "16.1.5",
     "postcss": "8.5.6",
     "prettier": "3.6.2",
     "prettier-plugin-tailwindcss": "0.6.14",
