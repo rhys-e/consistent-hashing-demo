@@ -30,7 +30,7 @@
     "xstate": "5.25.0"
   },
   "devDependencies": {
-    "@babel/core": "7.28.5",
+    "@babel/core": "7.29.6",
     "@babel/preset-env": "7.28.5",
     "@storybook/addon-essentials": "8.6.14",
     "@storybook/addon-interactions": "8.6.14",
