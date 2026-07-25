@@ -427,9 +427,7 @@
   }
 
   .node-element {
-    transition:
-      r 0.3s ease-out,
-      fill 0.3s ease-out;
+    transition: r 0.3s ease-out;
   }
 
   .node-element:hover {

@@ -58,6 +58,22 @@ export default [
       // React Hooks rules
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+
+      // Function style rules
+      'func-style': [
+        'error',
+        'declaration',
+        {
+          allowArrowFunctions: true,
+        },
+      ],
+      'prefer-arrow-callback': [
+        'error',
+        {
+          allowNamedFunctions: false,
+          allowUnboundThis: true,
+        },
+      ],
     },
   },
 ];

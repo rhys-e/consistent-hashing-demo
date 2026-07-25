@@ -1,22 +1,60 @@
-import React from 'react';
 import { ToggleIcon } from './ToggleIcon';
-import { STATE_MACHINE } from '../utils/stateUtils';
+import { EXECUTION_STATES } from '../hooks/useExecutionStatus';
+import { useAtom } from '../hooks/useStore';
+import { speedMultiplierAtom, resetSpeedMultiplier } from '../state/atoms';
+import { statsStore, consoleLogStore, userRequestStore } from '../state/stores';
+import { useSelector } from '../hooks/useStore';
+import { useApp } from '../context/AppContext';
 
-export function ControlsPanel({
-  collapsed,
-  togglePanel,
-  runningState,
-  toggleRunning,
-  resetAll,
-  addServer,
-  speedMultiplier,
-  setSpeedMultiplier,
-  vnodeCount,
-  setVnodeCount,
-  numRequests,
-  setNumRequests,
-  dimensions,
-}) {
+export function ControlsPanel({ collapsed, togglePanel, dimensions }) {
+  const {
+    executionStatus: { value: executionStatus, stop, toggleExecutionStatus },
+    addLog,
+    nodes: { nodes, addNode, setNumVirtualNodesPerNode, reset: resetNodes, numVirtualNodesPerNode },
+  } = useApp();
+  const speedMultiplier = useAtom(speedMultiplierAtom);
+  const { numRequests } = useSelector(userRequestStore);
+
+  const handleReset = () => {
+    stop();
+    resetNodes();
+    resetSpeedMultiplier();
+    userRequestStore.send({ type: 'reset' });
+    statsStore.trigger.reset();
+    consoleLogStore.trigger.clear();
+    addLog('System reset');
+  };
+
+  const handleExecute = () => {
+    if (executionStatus === EXECUTION_STATES.RUNNING) {
+      consoleLogStore.trigger.log({ message: 'Simulation paused' });
+      toggleExecutionStatus();
+    } else {
+      consoleLogStore.trigger.log({ message: 'Simulation started' });
+      toggleExecutionStatus();
+    }
+  };
+
+  const handleVnodeCountChange = e => {
+    const newVnodeCount = Number(e.target.value);
+    setNumVirtualNodesPerNode(newVnodeCount);
+    consoleLogStore.trigger.log({ message: `Virtual node count set to ${newVnodeCount}` });
+  };
+
+  const handleAddServer = () => {
+    addNode({ executionStatus });
+    if (executionStatus === EXECUTION_STATES.RUNNING) {
+      consoleLogStore.trigger.log({
+        message: `Server configuration update queued: ${nodes.length + 1} nodes after cycle`,
+      });
+    }
+  };
+
+  const handleNumRequestsChange = e => {
+    const newNumRequests = Number(e.target.value);
+    userRequestStore.send({ type: 'setNumRequests', numRequests: newNumRequests });
+  };
+
   return (
     <div
       className="rounded-sm border border-cyber-border bg-panel-bg p-4 md:p-6"
@@ -39,18 +77,18 @@ export function ControlsPanel({
         <div className="mb-4 mt-4 flex gap-2">
           <button
             className={`btn flex-1 cursor-pointer rounded-sm border px-4 py-2 font-bold shadow-md transition-all ${
-              runningState === STATE_MACHINE.RUNNING
+              executionStatus === EXECUTION_STATES.RUNNING
                 ? 'border-btn-danger-border bg-btn-danger-bg text-ui-text-bright shadow-btn-danger-shadow'
                 : 'border-btn-success-border bg-btn-success-bg text-ui-text-bright shadow-btn-success-shadow'
             } `}
-            onClick={toggleRunning}
+            onClick={handleExecute}
           >
-            {runningState === STATE_MACHINE.RUNNING ? 'HALT' : 'EXECUTE'}
+            {executionStatus === EXECUTION_STATES.RUNNING ? 'HALT' : 'EXECUTE'}
           </button>
 
           <button
             className="btn flex-1 cursor-pointer rounded-sm border border-cyber-border bg-btn-neutral-bg px-4 py-2 font-bold text-ui-text-bright shadow-button-glow shadow-btn-neutral-shadow"
-            onClick={resetAll}
+            onClick={handleReset}
           >
             RESET
           </button>
@@ -59,7 +97,7 @@ export function ControlsPanel({
         <div className="mb-6">
           <button
             className="btn w-full cursor-pointer rounded-sm border border-btn-purple-border bg-btn-purple-bg px-4 py-2 font-bold text-ui-text-bright shadow-button-glow shadow-btn-purple-shadow"
-            onClick={addServer}
+            onClick={handleAddServer}
           >
             ADD SERVER NODE
           </button>
@@ -78,7 +116,7 @@ export function ControlsPanel({
             max="3"
             step="0.1"
             value={speedMultiplier}
-            onChange={e => setSpeedMultiplier(Number(e.target.value))}
+            onChange={e => speedMultiplierAtom.set(Number(e.target.value))}
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">
@@ -88,14 +126,14 @@ export function ControlsPanel({
 
         <div className="mb-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
           <label className="mb-3 block text-ui-text-bright">
-            <span className="text-body-text">VNODE_COUNT:</span> {vnodeCount}
+            <span className="text-body-text">VNODE_COUNT:</span> {numVirtualNodesPerNode}
           </label>
           <input
             type="range"
             min="1"
             max="20"
-            value={vnodeCount}
-            onChange={e => setVnodeCount(Number(e.target.value))}
+            value={numVirtualNodesPerNode}
+            onChange={handleVnodeCountChange}
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">
@@ -112,7 +150,7 @@ export function ControlsPanel({
             min="1"
             max="20"
             value={numRequests}
-            onChange={e => setNumRequests(Number(e.target.value))}
+            onChange={handleNumRequestsChange}
             className="w-full"
           />
           <p className="mt-2 text-sm italic text-ui-text-secondary">

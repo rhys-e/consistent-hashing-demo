@@ -1,15 +1,17 @@
 import React from 'react';
 import { ToggleIcon } from './ToggleIcon';
+import { useSelector } from '../hooks/useStore';
+import { statsStore } from '../state/stores';
 
 export function MetricsPanel({
   collapsed,
   togglePanel,
-  stats,
-  servers,
-  vnodeCount,
-  loadImbalance,
-  ringNodes,
+  nodes,
+  numVirtualNodesPerNode,
+  virtualNodes,
 }) {
+  const { nodeStats, loadImbalance, totalRequests } = useSelector(statsStore);
+
   return (
     <div className="rounded-sm border border-cyber-border bg-panel-bg p-4 font-mono md:p-6">
       <div className="panel-header" onClick={togglePanel}>
@@ -27,19 +29,19 @@ export function MetricsPanel({
         <div className="mt-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4 font-mono text-[0.9rem]">
           <p className="m-0 mb-2 flex justify-between">
             <span className="text-ui-text-secondary">SERVER_COUNT:</span>
-            <span className="text-ui-text-bright">{servers.length}</span>
+            <span className="text-ui-text-bright">{nodes.length}</span>
           </p>
           <p className="m-0 mb-2 flex justify-between">
             <span className="text-ui-text-secondary">VNODE_PER_SERVER:</span>
-            <span className="text-ui-text-bright">{Math.max(1, vnodeCount)}</span>
+            <span className="text-ui-text-bright">{numVirtualNodesPerNode}</span>
           </p>
           <p className="m-0 mb-2 flex justify-between">
             <span className="text-ui-text-secondary">TOTAL_RING_NODES:</span>
-            <span className="text-ui-text-bright">{Object.keys(ringNodes).length}</span>
+            <span className="text-ui-text-bright">{virtualNodes.length}</span>
           </p>
           <p className="m-0 mb-2 flex justify-between">
             <span className="text-ui-text-secondary">REQUESTS_PROCESSED:</span>
-            <span className="text-ui-text-bright">{stats.requestsProcessed}</span>
+            <span className="text-ui-text-bright">{totalRequests}</span>
           </p>
           <p className="m-0 mb-2 flex justify-between">
             <span className="text-ui-text-secondary">LOAD_IMBALANCE:</span>
@@ -54,31 +56,31 @@ export function MetricsPanel({
           </p>
         </div>
 
-        {servers.length > 0 && (
+        {nodes.length > 0 && (
           <div className="mt-4 border border-cyber-border bg-dark-cyber bg-opacity-70 p-4">
             <h4 className="m-0 mb-3 text-[0.9rem] uppercase tracking-wider text-ui-text-bright">
               Node Load Distribution
             </h4>
             {/* sort lexographically */}
-            {servers
+            {nodes
               .sort((a, b) => a.id.localeCompare(b.id))
-              .map(server => {
-                const requests = stats.nodeStats[server.id] || 0;
-                const maxRequests = Math.max(...Object.values(stats.nodeStats), 1);
+              .map(node => {
+                const requests = nodeStats[node.id] || 0;
+                const maxRequests = Math.max(...Object.values(nodeStats), 1);
                 const percentage = Math.round((requests / maxRequests) * 100) || 0;
 
                 return (
-                  <div key={server.id} className="mb-3">
+                  <div key={node.id} className="mb-3">
                     <div className="mb-1 flex items-center justify-between">
                       <div className="flex items-center">
                         <div
                           className="mr-2 h-[10px] w-[10px] rounded-sm"
                           style={{
-                            background: server.color,
-                            boxShadow: `0 0 5px ${server.color}`,
+                            background: node.color,
+                            boxShadow: `0 0 5px ${node.color}`,
                           }}
                         />
-                        <span className="text-[0.9rem] text-ui-text-bright">{server.id}</span>
+                        <span className="text-[0.9rem] text-ui-text-bright">{node.id}</span>
                       </div>
                       <span className="text-[0.9rem] text-ui-text-bright">{requests}</span>
                     </div>
@@ -89,8 +91,8 @@ export function MetricsPanel({
                         className={`absolute h-full transition-[width] duration-normal ease-default`}
                         style={{
                           width: `${percentage}%`,
-                          background: server.color,
-                          boxShadow: `0 0 10px ${server.color}`,
+                          background: node.color,
+                          boxShadow: `0 0 10px ${node.color}`,
                         }}
                       />
                     </div>

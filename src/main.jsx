@@ -2,9 +2,9 @@ import { scan } from 'react-scan';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './components/App.jsx';
-import { ThemeProvider } from './components/ThemeProvider.jsx';
 import theme from './themes';
 import './index.css';
+import { AppProvider } from './context/AppContext';
 
 if (import.meta.env.DEV) {
   scan({
@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component {
 }
 
 const CONTAINER_MAX_WIDTH = 1200;
-
+const MOBILE_BREAKPOINT = 950;
 const SVG_WIDTH_PERCENTAGE = theme.visualisation.svg.widthPercentage;
 const SVG_ASPECT_RATIO = theme.visualisation.svg.aspectRatio;
 const SVG_RADIUS_PERCENTAGE = theme.visualisation.svg.radiusPercentage;
@@ -54,14 +54,15 @@ const SVG_RADIUS_PERCENTAGE = theme.visualisation.svg.radiusPercentage;
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <App
-          SVG_WIDTH_PERCENTAGE={SVG_WIDTH_PERCENTAGE}
-          SVG_ASPECT_RATIO={SVG_ASPECT_RATIO}
-          SVG_RADIUS_PERCENTAGE={SVG_RADIUS_PERCENTAGE}
-          CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
-        />
-      </ThemeProvider>
+      <AppProvider
+        SVG_WIDTH_PERCENTAGE={SVG_WIDTH_PERCENTAGE}
+        SVG_ASPECT_RATIO={SVG_ASPECT_RATIO}
+        SVG_RADIUS_PERCENTAGE={SVG_RADIUS_PERCENTAGE}
+        CONTAINER_MAX_WIDTH={CONTAINER_MAX_WIDTH}
+        MOBILE_BREAKPOINT={MOBILE_BREAKPOINT}
+      >
+        <App />
+      </AppProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

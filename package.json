@@ -22,43 +22,47 @@
   },
   "author": "rhys-e",
   "dependencies": {
-    "@xstate/react": "5.0.3",
+    "@xstate/react": "^5.0.3",
+    "@xstate/store": "^3.4.3",
     "d3": "7.9.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "seedrandom": "3.0.5",
-    "xstate": "5.19.2"
+    "xstate": "^5.19.2"
   },
   "devDependencies": {
-    "@babel/core": "7.26.10",
-    "@babel/preset-env": "7.26.9",
-    "@storybook/addon-essentials": "8.6.12",
-    "@storybook/addon-interactions": "8.6.12",
-    "@storybook/addon-links": "8.6.12",
-    "@storybook/blocks": "8.6.12",
-    "@storybook/react": "8.6.12",
-    "@storybook/react-vite": "8.6.12",
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.6",
+    "@babel/preset-react": "^7.29.7",
+    "@storybook/addon-essentials": "8.6.18",
+    "@storybook/addon-interactions": "8.6.18",
+    "@storybook/addon-links": "8.6.18",
+    "@storybook/blocks": "8.6.18",
+    "@storybook/react": "8.6.18",
+    "@storybook/react-vite": "8.6.18",
     "@storybook/testing-library": "0.2.2",
-    "@vitejs/plugin-react": "4.3.4",
+    "@testing-library/react": "^16.3.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "10.4.21",
-    "babel-jest": "29.7.0",
+    "babel-jest": "^29.7.0",
     "babel-plugin-react-compiler": "19.0.0-beta-e993439-20250405",
-    "eslint": "9.24.0",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "10.1.1",
-    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-compiler": "19.0.0-beta-e993439-20250405",
     "eslint-plugin-react-hooks": "5.2.0",
     "globals": "16.0.0",
     "husky": "9.1.7",
-    "jest": "29.7.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "lint-staged": "15.5.0",
-    "postcss": "8.5.3",
+    "postcss": "^8.5.23",
     "prettier": "3.5.3",
     "prettier-plugin-tailwindcss": "0.6.11",
-    "react-scan": "0.3.3",
-    "storybook": "8.6.12",
+    "react-scan": "^0.5.7",
+    "storybook": "8.6.18",
     "tailwindcss": "3.4.17",
-    "vite": "6.2.5"
+    "vite": "^6.4.3"
   },
   "lint-staged": {
     "*.{js,jsx}": [
@@ -68,5 +72,9 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "brace-expansion": "^5.0.8",
+    "minimatch": "^10.2.5"
   }
 }
