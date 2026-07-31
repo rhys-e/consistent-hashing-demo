@@ -1,5 +1,8 @@
 import React from 'react';
+import { motion, useTransform } from 'motion/react';
 import theme from '../../themes';
+import { mix } from '../../story/easing';
+import { useAnimatedNumber } from '../../story/useAnimatedNumber';
 
 const palette = {
   label: theme.colors.ui.text.secondary,
@@ -15,21 +18,93 @@ const EVEN_MARK = 0.62;
 
 const toPercent = share => `${(share * 100).toFixed(1)}%`;
 
+function ShareRow({
+  row,
+  index,
+  x,
+  y,
+  width,
+  barWidth,
+  scale,
+  progress,
+  settleFor,
+  opacityFor,
+  shiftFor,
+}) {
+  const share = latest => mix(row.from, row.to, settleFor(latest, index));
+
+  const barLength = useTransform(progress, latest => Math.min(barWidth, share(latest) * scale));
+  const percent = useAnimatedNumber({ progress, valueFor: share, format: toPercent });
+  const opacity = useTransform(progress, latest => opacityFor(latest, index));
+  // A row that has not joined yet waits off the right-hand edge, so arriving is a
+  // move into the list rather than a fade-up in a slot that was already reserved.
+  //
+  // `x` rather than a `transform` attribute: handed a template string, motion sets
+  // the CSS `transform` property, and SVG transform syntax — `translate(44 0)`, no
+  // units and no comma — is not valid CSS. It parses as nothing and the row simply
+  // appears where it was going to be.
+  const shift = useTransform(progress, latest => shiftFor(latest, index));
+
+  return (
+    <motion.g data-layer={`row:${row.id}`} style={{ opacity, x: shift }}>
+      <rect x={x} y={y - 9} width="9" height="9" fill={row.color} />
+      <text x={x + 17} y={y} fill={palette.label} fontSize="12" letterSpacing="0.8">
+        {row.id}
+      </text>
+      <rect x={x} y={y + 8} width={barWidth} height={BAR_HEIGHT} fill={palette.track} />
+      <motion.rect x={x} y={y + 8} width={barLength} height={BAR_HEIGHT} fill={row.color} />
+      <text
+        x={x + width}
+        y={y}
+        fill={palette.bright}
+        fontSize="12"
+        textAnchor="end"
+        letterSpacing="0.8"
+      >
+        {percent}
+      </text>
+    </motion.g>
+  );
+}
+
 /**
  * The numbers beside a full-scale view.
  *
- * Both candidate treatments carry the same panel so that judging them is a
- * judgement about the artwork rather than about which one got the better readout.
  * The even-share mark is what turns a bar into a claim: the point is not how much
- * a server owns but how close every server is to the same amount.
+ * a server owns but how close every server is to the same amount. Bars are driven
+ * off the scene timeline so that a topology change is watched settling rather than
+ * read afterwards — the metric corroborates the animation instead of replacing it.
  */
-export function ServerLoadPanel({ x, y, width, shares, remap }) {
+export function ServerLoadPanel({
+  x,
+  y,
+  width,
+  rows,
+  progress,
+  settleFor,
+  revealFor,
+  rowOpacityFor = () => 1,
+  rowShiftFor = () => 0,
+  remap,
+  remapProgressFor,
+  remapRevealFor,
+}) {
   const barWidth = width - 84;
-  const evenShare = 1 / shares.length;
+  const evenShare = 1 / rows.length;
   const scale = (EVEN_MARK * barWidth) / evenShare;
+  const footerY = y + 34 + rows.length * ROW_HEIGHT;
+
+  const opacity = useTransform(progress, revealFor);
+  const remapOpacity = useTransform(progress, remapRevealFor ?? revealFor);
+  const remapped = useAnimatedNumber({
+    progress,
+    valueFor: latest =>
+      remap ? remap.fraction * (remapProgressFor ? remapProgressFor(latest) : 1) : 0,
+    format: value => `${toPercent(value)} of the space remapped`,
+  });
 
   return (
-    <g>
+    <motion.g style={{ opacity }}>
       <text x={x} y={y} fill={palette.label} fontSize="11" letterSpacing="2.4">
         SHARE OF HASH SPACE
       </text>
@@ -38,65 +113,46 @@ export function ServerLoadPanel({ x, y, width, shares, remap }) {
         x1={x + barWidth * EVEN_MARK}
         y1={y + 14}
         x2={x + barWidth * EVEN_MARK}
-        y2={y + 22 + shares.length * ROW_HEIGHT}
+        y2={y + 22 + rows.length * ROW_HEIGHT}
         stroke={palette.border}
         strokeWidth="1"
         strokeDasharray="2 4"
       />
 
-      {shares.map((server, index) => {
-        const rowY = y + 34 + index * ROW_HEIGHT;
+      {rows.map((row, index) => (
+        <ShareRow
+          key={row.id}
+          row={row}
+          index={index}
+          x={x}
+          y={y + 34 + index * ROW_HEIGHT}
+          width={width}
+          barWidth={barWidth}
+          scale={scale}
+          progress={progress}
+          settleFor={settleFor}
+          opacityFor={rowOpacityFor}
+          shiftFor={rowShiftFor}
+        />
+      ))}
 
-        return (
-          <g key={server.id}>
-            <rect x={x} y={rowY - 9} width="9" height="9" fill={server.color} />
-            <text x={x + 17} y={rowY} fill={palette.label} fontSize="12" letterSpacing="0.8">
-              {server.id}
-            </text>
-            <rect x={x} y={rowY + 8} width={barWidth} height={BAR_HEIGHT} fill={palette.track} />
-            <rect
-              x={x}
-              y={rowY + 8}
-              width={Math.min(barWidth, server.share * scale)}
-              height={BAR_HEIGHT}
-              fill={server.color}
-            />
-            <text
-              x={x + width}
-              y={rowY}
-              fill={palette.bright}
-              fontSize="12"
-              textAnchor="end"
-              letterSpacing="0.8"
-            >
-              {toPercent(server.share)}
-            </text>
-          </g>
-        );
-      })}
-
-      <text
-        x={x}
-        y={y + 34 + shares.length * ROW_HEIGHT + 18}
-        fill={palette.label}
-        fontSize="11"
-        letterSpacing="1.6"
-      >
+      <text x={x} y={footerY + 18} fill={palette.label} fontSize="11" letterSpacing="1.6">
         {`EVEN SHARE ${toPercent(evenShare)}`}
       </text>
 
       {remap ? (
-        <text
+        <motion.text
           x={x}
-          y={y + 34 + shares.length * ROW_HEIGHT + 42}
+          y={footerY + 42}
+          style={{ opacity: remapOpacity }}
           fill={palette.bright}
           fontSize="13"
           letterSpacing="1.2"
         >
-          {`${toPercent(remap.fraction)} of the space remapped`}
-        </text>
+          {remapped}
+        </motion.text>
       ) : null}
-    </g>
+    </motion.g>
   );
 }
 

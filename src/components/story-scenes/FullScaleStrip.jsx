@@ -1,4 +1,5 @@
 import React from 'react';
+import { useMotionValue } from 'motion/react';
 import theme from '../../themes';
 import { ringArcPath, ringPoint } from '../../story/projection';
 import { colorsById } from '../../story/topology';
@@ -60,7 +61,10 @@ function markerSubpath(range) {
  * reads as the same data at a usable resolution rather than as a different claim.
  */
 export function FullScaleStrip({ model, showRemap = false }) {
-  const { topology, shares, remap } = model;
+  const { topology, shares, beforeShares, remap } = model;
+  // The strip is the static comparison, so its panel is handed a timeline that
+  // never moves rather than being given a second, un-animated code path.
+  const settled = useMotionValue(1);
   const { centreX, centreY, radius, strip } = LAYOUT;
   const colors = colorsById(topology.servers);
 
@@ -173,7 +177,20 @@ export function FullScaleStrip({ model, showRemap = false }) {
         0xFFFFFFFF
       </text>
 
-      <ServerLoadPanel {...LAYOUT.panel} shares={shares} remap={showRemap ? remap : null} />
+      <ServerLoadPanel
+        {...LAYOUT.panel}
+        rows={shares.map(server => ({
+          id: server.id,
+          color: server.color,
+          from: beforeShares.find(entry => entry.id === server.id)?.share ?? 0,
+          to: server.share,
+        }))}
+        progress={settled}
+        settleFor={() => 1}
+        revealFor={() => 1}
+        remap={showRemap ? remap : null}
+        remapProgressFor={() => 1}
+      />
     </g>
   );
 }
