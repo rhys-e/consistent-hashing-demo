@@ -1,5 +1,5 @@
-import { VirtualNodesScene } from '../components/story-scenes/VirtualNodesScene';
-import { SPREAD_BEATS } from '../components/story-scenes/SpreadRing';
+import { VirtualNodesScene } from '../components/VirtualNodesScene';
+import { SPREAD_BEATS } from '../components/SpreadRing';
 
 /**
  * Scene 4: the same failure, at ten positions per server instead of one.

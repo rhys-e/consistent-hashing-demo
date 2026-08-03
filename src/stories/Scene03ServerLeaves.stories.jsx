@@ -1,5 +1,5 @@
-import { ServerLeavesScene } from '../components/story-scenes/ServerLeavesScene';
-import { REMOVAL_BEATS } from '../components/story-scenes/RemovalRing';
+import { ServerLeavesScene } from '../components/ServerLeavesScene';
+import { REMOVAL_BEATS } from '../components/RemovalRing';
 
 /**
  * Scene 3: three servers at one position each, and what happens when one leaves.

@@ -1,4 +1,4 @@
-import NarrationSlide from '../components/story-scenes/NarrationSlide';
+import NarrationSlide from '../components/NarrationSlide';
 
 /**
  * The narration slides on their own, because they are half the finished thing and

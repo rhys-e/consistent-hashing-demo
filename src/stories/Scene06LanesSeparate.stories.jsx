@@ -1,6 +1,6 @@
-import { LanesSeparateScene } from '../components/story-scenes/FullScaleScene';
-import FullScaleScene from '../components/story-scenes/FullScaleScene';
-import { buildLaneTimeline } from '../components/story-scenes/FullScaleLanes';
+import { LanesSeparateScene } from '../components/FullScaleScene';
+import FullScaleScene from '../components/FullScaleScene';
+import { buildLaneTimeline } from '../components/FullScaleLanes';
 
 const SEPARATING = buildLaneTimeline(6, { hasRemap: false });
 

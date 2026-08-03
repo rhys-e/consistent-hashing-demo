@@ -1,5 +1,5 @@
-import { ServerJoinsScene } from '../components/story-scenes/FullScaleScene';
-import { LANE_BEATS, handoverPhasesOf } from '../components/story-scenes/FullScaleLanes';
+import { ServerJoinsScene } from '../components/FullScaleScene';
+import { LANE_BEATS, handoverPhasesOf } from '../components/FullScaleLanes';
 
 /** Mid-flight of one handover, derived rather than pinned: the timings move. */
 const midFlight = index => {

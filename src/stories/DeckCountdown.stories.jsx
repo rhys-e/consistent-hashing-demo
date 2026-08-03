@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import DeckCountdown, { ScrollHint } from '../components/story-scenes/DeckCountdown';
-import NarrationSlide from '../components/story-scenes/NarrationSlide';
+import DeckCountdown, { ScrollHint } from '../components/DeckCountdown';
+import NarrationSlide from '../components/NarrationSlide';
 
 /**
  * The countdown on its own, because it was invisible for two rounds and neither

@@ -1,4 +1,4 @@
-import HashSpaceScene, { SCENE_STEPS } from '../components/story-scenes/HashSpaceScene';
+import HashSpaceScene, { SCENE_STEPS } from '../components/HashSpaceScene';
 
 const beatOf = label => SCENE_STEPS.find(step => step.label === label)?.at ?? 0;
 

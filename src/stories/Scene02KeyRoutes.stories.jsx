@@ -1,5 +1,5 @@
-import { KeyRoutesScene } from '../components/story-scenes/KeyRoutesScene';
-import { LOOKUP_BEATS } from '../components/story-scenes/LookupRing';
+import { KeyRoutesScene } from '../components/KeyRoutesScene';
+import { LOOKUP_BEATS } from '../components/LookupRing';
 
 /**
  * Scene 2: the lookup rule, in isolation.
