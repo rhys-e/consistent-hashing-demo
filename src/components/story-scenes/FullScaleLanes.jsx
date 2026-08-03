@@ -92,7 +92,22 @@ const NEWCOMER = { hold: 1.8, restore: 0.45 };
 /** The long rest on the assembled lanes: the seam between two scenes. */
 const ASSEMBLED_REST = 0.7;
 const MERGE = { move: 0.28, rest: 0.24 };
-const HIGHLIGHT = { move: 0.55 };
+/**
+ * The closing highlight, and the restore that follows it.
+ *
+ * The restore is not a flourish, it is the correction to what the highlight would
+ * otherwise say. This scene's claim is a *negative* — that the rest of the ring
+ * was untouched — and dimming everything else makes the slivers the figure and the
+ * untouched majority the ground, which is the argument upside down. Ending there
+ * leaves a viewer with "these slivers are the result", when the result is the ring
+ * shared seven ways and the slivers are what it cost.
+ *
+ * So the highlight is passed through: it answers what moved, and the frame the
+ * scene rests on afterwards answers what did not.
+ */
+const HIGHLIGHT = { move: 0.55, restore: 0.8 };
+/** The last frame: the ring entire, seven ways, and mostly where it was. */
+const WHOLE_REST = 1.6;
 /** Long enough that a step lands clear of the movement either side of it. */
 const REST = 0.35;
 /**
@@ -174,6 +189,9 @@ function addJoin(timeline, laneCount, sources) {
   );
   timeline.rest(CLOSING_REST, 'What it took');
 
+  const restoreHighlight = timeline.move(HIGHLIGHT.restore);
+  timeline.rest(WHOLE_REST, 'Everything else held');
+
   return {
     roster,
     join,
@@ -184,6 +202,9 @@ function addJoin(timeline, laneCount, sources) {
     assembled: assembledRest.to,
     merge: { from: mergeFrom, to: mergeTo, step: MERGE.move + MERGE.rest, move: MERGE.move },
     highlight,
+    // Not `restore`: that name already belongs to the newcomer coming back up,
+    // and shadowing it here silently repoints `laneOpacityAt` at this window.
+    highlightRestore: restoreHighlight,
   };
 }
 
@@ -447,7 +468,14 @@ function rosterAt(timeline, progressValue) {
 /** Zero for a scene that has no closing highlight, which is one without a remap. */
 function highlightAt(timeline, progressValue) {
   if (!timeline.highlight) return 0;
-  return rangeProgress(progressValue, timeline.highlight.from, timeline.highlight.to);
+
+  return pulseProgress(
+    progressValue,
+    timeline.highlight.from,
+    timeline.highlight.to,
+    timeline.highlightRestore.from,
+    timeline.highlightRestore.to
+  );
 }
 
 function laneOpacityAt(timeline, progressValue, laneIndex, isJoining) {

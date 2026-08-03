@@ -4,6 +4,12 @@ import { render } from '@testing-library/react';
 import FullScaleScene from '../FullScaleScene';
 import HashSpaceScene, { SCENE_STEPS as HASH_SPACE_STEPS } from '../HashSpaceScene';
 import { buildLaneSteps, buildLaneTimeline } from '../FullScaleLanes';
+import KeyRoutesScene from '../KeyRoutesScene';
+import { LOOKUP_STEPS } from '../LookupRing';
+import ServerLeavesScene from '../ServerLeavesScene';
+import VirtualNodesScene from '../VirtualNodesScene';
+import { SPREAD_STEPS } from '../SpreadRing';
+import { REMOVAL_STEPS } from '../RemovalRing';
 import { JOINING_SERVER, SAMPLE_SERVERS } from '../../../story/topology';
 
 /** Attributes that carry what a frame looks like. */
@@ -78,6 +84,18 @@ describe('scene rests', () => {
   it('rests at every step of the separating scene', () => {
     const steps = buildLaneSteps(buildLaneTimeline(6), SAMPLE_SERVERS, false);
     expectRestsAt(beat => <FullScaleScene pinnedProgress={beat} />, steps);
+  });
+
+  it('rests at every step of the lookup scene', () => {
+    expectRestsAt(beat => <KeyRoutesScene pinnedProgress={beat} />, LOOKUP_STEPS);
+  });
+
+  it('rests at every step of the removal scene', () => {
+    expectRestsAt(beat => <ServerLeavesScene pinnedProgress={beat} />, REMOVAL_STEPS);
+  });
+
+  it('rests at every step of the virtual nodes scene', () => {
+    expectRestsAt(beat => <VirtualNodesScene pinnedProgress={beat} />, SPREAD_STEPS);
   });
 
   it('rests at every step of the joining scene', () => {

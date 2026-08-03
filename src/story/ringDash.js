@@ -69,7 +69,7 @@ function coalesce(ranges) {
 }
 
 /** Distance from one position round to another, forwards, on a circle of length 1. */
-const forwards = (from, to) => (((to - from) % 1) + 1) % 1;
+export const forwards = (from, to) => (((to - from) % 1) + 1) % 1;
 
 /**
  * Ownership as spans of `{ start, length }` around a circle.
@@ -124,4 +124,30 @@ export function buildDashPattern(ranges) {
     // zero-length one standing in for "start further along".
     dashOffset: forwards(spans[0].start, CIRCLE_START),
   };
+}
+
+/**
+ * The ranges covering an arc of `length` ending at `endsAt`, split at the seam.
+ *
+ * Ownership runs *backwards* from a server's position to the one before it, so
+ * this is the shape every arc in the story is drawn from — including a partial one
+ * part-way through a sweep. Building the settled frame the same way as a moving
+ * one is deliberate: a separate path for "finished" is a path that can disagree.
+ */
+export function arcRanges(endsAt, length) {
+  if (length <= MIN_VISIBLE) return [];
+  if (length >= 1 - MIN_VISIBLE) return [{ from: 0, to: 1 }];
+
+  const wrap = value => ((value % 1) + 1) % 1;
+  const from = wrap(endsAt - length);
+  const to = wrap(endsAt);
+
+  return (
+    from < to
+      ? [{ from, to }]
+      : [
+          { from, to: 1 },
+          { from: 0, to },
+        ]
+  ).filter(range => range.to - range.from >= MIN_VISIBLE);
 }

@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
+import { useMachine } from '@xstate/react';
+import {
+  acceptsNudge,
+  deckMachine,
+  isCountingDown,
+  isSettled as settledIn,
+} from '../../story/deckMachine';
 import DeckCountdown, { COUNTDOWN_SECONDS, ScrollHint } from './DeckCountdown';
 import NarrationSlide from './NarrationSlide';
 
@@ -50,10 +57,6 @@ const SLIDE_TRANSITION = { duration: 1.05, ease: [0.65, 0, 0.35, 1] };
  * setting turned a considered movement into a jump.
  */
 const REDUCED_SLIDE_TRANSITION = { duration: 0.25, ease: 'linear' };
-/** A finished slide is left alone for a moment before it starts counting down. */
-const SETTLE_DWELL_MS = 1500;
-/** A slide is settled this long before another nudge counts. */
-const NUDGE_COOLDOWN_MS = 260;
 const SWIPE_THRESHOLD = 40;
 
 /**
@@ -140,38 +143,20 @@ function useSlideHeight(ref) {
 }
 
 export function StoryDeck({ slides, initialIndex = 0 }) {
-  const [index, setIndex] = useState(initialIndex);
-  // The deck opens already settled: the first slide is not transitioned into, so
-  // waiting for a transition to finish would leave it inert forever.
-  const [isSettled, setSettled] = useState(true);
-  const [isComplete, setComplete] = useState(false);
-  const [isEngaged, setEngaged] = useState(false);
+  const [state, send] = useMachine(deckMachine, {
+    input: { initialIndex, slideCount: slides.length },
+  });
+  const { index, engaged: isEngaged } = state.context;
+  const isSettled = settledIn(state);
+
   const reduceMotion = useReducedMotion();
   const containerRef = useRef(null);
   const slideHeight = useSlideHeight(containerRef);
-  const settledAt = useRef(0);
 
   const isLast = index === slides.length - 1;
 
-  const goTo = useCallback(
-    next => {
-      const clamped = Math.min(slides.length - 1, Math.max(0, next));
-      setIndex(current => {
-        if (current === clamped) return current;
-        setSettled(false);
-        setComplete(false);
-        return clamped;
-      });
-    },
-    [slides.length]
-  );
-
-  /**
-   * Engagement is sticky. Handing control back after one slide would take it away
-   * again on the next, and a viewer who has started stepping through has already
-   * said what they want.
-   */
-  const engage = useCallback(() => setEngaged(true), []);
+  const goTo = useCallback(next => send({ type: 'GOTO', index: next }), [send]);
+  const engage = useCallback(() => send({ type: 'ENGAGE' }), [send]);
 
   useEffect(() => {
     const handle = event => {
@@ -219,15 +204,14 @@ export function StoryDeck({ slides, initialIndex = 0 }) {
 
     const handle = event => {
       event.preventDefault();
-      if (!isSettled || event.timeStamp - settledAt.current < NUDGE_COOLDOWN_MS) return;
-      if (Math.abs(event.deltaY) < 1) return;
+      if (!acceptsNudge(state) || Math.abs(event.deltaY) < 1) return;
 
-      goTo(index + Math.sign(event.deltaY));
+      send({ type: event.deltaY > 0 ? 'NEXT' : 'PREV' });
     };
 
     element.addEventListener('wheel', handle, { passive: false });
     return () => element.removeEventListener('wheel', handle);
-  }, [goTo, index, isSettled]);
+  }, [send, state]);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -239,9 +223,9 @@ export function StoryDeck({ slides, initialIndex = 0 }) {
       startY = event.touches[0]?.clientY ?? null;
     };
     const end = event => {
-      if (startY === null || !isSettled) return;
+      if (startY === null || !acceptsNudge(state)) return;
       const travel = startY - (event.changedTouches[0]?.clientY ?? startY);
-      if (Math.abs(travel) > SWIPE_THRESHOLD) goTo(index + Math.sign(travel));
+      if (Math.abs(travel) > SWIPE_THRESHOLD) send({ type: travel > 0 ? 'NEXT' : 'PREV' });
       startY = null;
     };
 
@@ -251,26 +235,9 @@ export function StoryDeck({ slides, initialIndex = 0 }) {
       element.removeEventListener('touchstart', start);
       element.removeEventListener('touchend', end);
     };
-  }, [goTo, index, isSettled]);
+  }, [send, state]);
 
-  const onSettled = () => {
-    settledAt.current = typeof performance === 'undefined' ? 0 : performance.now();
-    setSettled(true);
-  };
-
-  const canCountDown = isSettled && isComplete && !isEngaged && !isLast;
-  const [isDwellDone, setDwellDone] = useState(false);
-
-  /** The scene has finished; leave the last frame alone before offering to move on. */
-  useEffect(() => {
-    setDwellDone(false);
-    if (!canCountDown) return undefined;
-
-    const timer = setTimeout(() => setDwellDone(true), SETTLE_DWELL_MS);
-    return () => clearTimeout(timer);
-  }, [canCountDown, index]);
-
-  const showCountdown = canCountDown && isDwellDone;
+  const showCountdown = isCountingDown(state);
 
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-body-bg">
@@ -279,12 +246,12 @@ export function StoryDeck({ slides, initialIndex = 0 }) {
         className="h-full w-full will-change-transform"
         animate={{ y: -index * slideHeight }}
         transition={reduceMotion ? REDUCED_SLIDE_TRANSITION : SLIDE_TRANSITION}
-        onAnimationComplete={onSettled}
+        onAnimationComplete={() => send({ type: 'ARRIVE' })}
       >
         {slides.map((slide, slideIndex) => {
           const isCurrent = slideIndex === index;
           const active = isSettled && isCurrent;
-          const onComplete = isCurrent ? () => setComplete(true) : undefined;
+          const onComplete = isCurrent ? () => send({ type: 'SCENE_COMPLETE' }) : undefined;
 
           return (
             // `my-0` is load-bearing: a base style in `index.css` gives every
@@ -321,7 +288,7 @@ export function StoryDeck({ slides, initialIndex = 0 }) {
         <DeckCountdown
           key={slides[index].key}
           seconds={COUNTDOWN_SECONDS}
-          onElapsed={() => goTo(index + 1)}
+          onElapsed={() => send({ type: 'COUNTDOWN_DONE' })}
         />
       ) : null}
       {isEngaged && !isLast ? <ScrollHint /> : null}

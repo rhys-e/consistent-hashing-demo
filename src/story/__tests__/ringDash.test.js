@@ -1,4 +1,4 @@
-import { buildDashPattern } from '../ringDash';
+import { arcRanges, buildDashPattern } from '../ringDash';
 import { buildTopology } from '../ringModel';
 
 const parse = pattern => pattern.dashArray.split(' ').map(Number);
@@ -141,5 +141,49 @@ describe('buildDashPattern', () => {
     [[{ from: 0, to: 0.5 }], [{ from: 0.2, to: 0.4 }]].forEach(ranges => {
       expect(parse(buildDashPattern(ranges)).length % 2).toBe(0);
     });
+  });
+});
+
+describe('arcRanges', () => {
+  const total = ranges => ranges.reduce((sum, range) => sum + (range.to - range.from), 0);
+
+  it('runs backwards from the position it ends at', () => {
+    const [only] = arcRanges(0.5, 0.2);
+
+    expect(only.to).toBeCloseTo(0.5, 10);
+    expect(only.from).toBeCloseTo(0.3, 10);
+  });
+
+  it('splits at the seam so every range can be drawn without a special case', () => {
+    const [tail, head] = arcRanges(0.1, 0.3);
+
+    expect(tail.from).toBeCloseTo(0.8, 10);
+    expect(tail.to).toBe(1);
+    expect(head.from).toBe(0);
+    expect(head.to).toBeCloseTo(0.1, 10);
+    expect(total(arcRanges(0.1, 0.3))).toBeCloseTo(0.3, 10);
+  });
+
+  /** A sweep starts at nothing, and nothing must not become a degenerate mark. */
+  it('draws nothing at zero length and everything at full length', () => {
+    expect(arcRanges(0.4, 0)).toEqual([]);
+    expect(arcRanges(0.4, 1)).toEqual([{ from: 0, to: 1 }]);
+    expect(buildDashPattern(arcRanges(0.4, 0))).toBeNull();
+  });
+
+  /** An arc ending exactly on the seam is the case that used to draw a disc. */
+  it('leaves no zero-length range when it ends on the seam', () => {
+    const ranges = arcRanges(0, 0.25);
+
+    expect(ranges.length).toBe(1);
+    expect(ranges[0].from).toBeCloseTo(0.75, 10);
+    expect(ranges[0].to).toBe(1);
+    expect(buildDashPattern(ranges).dashArray).not.toMatch(/(^| )0\.0000000/);
+  });
+
+  it('keeps its length through every part of a sweep', () => {
+    for (let sweep = 0.05; sweep <= 1; sweep += 0.05) {
+      expect(total(arcRanges(0.1622, sweep * 0.332))).toBeCloseTo(sweep * 0.332, 10);
+    }
   });
 });

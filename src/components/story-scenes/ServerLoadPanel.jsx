@@ -13,7 +13,14 @@ const palette = {
 
 const ROW_HEIGHT = 34;
 const BAR_HEIGHT = 6;
-/** An even share sits here, leaving room either side for a server to be off it. */
+/**
+ * Where an even share sits along the bar, leaving room either side for a server to
+ * be off it.
+ *
+ * A scene whose whole point is one server ending up at twice an even share has to
+ * put the mark further left, or the bar that makes the point clamps at the end of
+ * its track and the doubling stops being measurable.
+ */
 const EVEN_MARK = 0.62;
 
 const toPercent = share => `${(share * 100).toFixed(1)}%`;
@@ -88,10 +95,31 @@ export function ServerLoadPanel({
   remap,
   remapProgressFor,
   remapRevealFor,
+  evenMark = EVEN_MARK,
+  evenShare: evenShareOverride,
+  evenShareFor,
 }) {
   const barWidth = width - 84;
-  const evenShare = 1 / rows.length;
-  const scale = (EVEN_MARK * barWidth) / evenShare;
+  const evenShare = evenShareOverride ?? 1 / rows.length;
+  /**
+   * The scale is fixed, and only the mark moves.
+   *
+   * An even share changes when the roster does — lose one of three servers and it
+   * goes from a third to a half — and a panel that still says 33.3% afterwards is
+   * measuring against a fleet that no longer exists. But deriving the *scale* from
+   * it would shorten every bar the moment the mark moved, which reads as everyone
+   * losing space when nobody has. So a bar's length always means the same amount
+   * of ring, and the reference slides along it.
+   */
+  const scale = (evenMark * barWidth) / evenShare;
+  const shareNow = latest => evenShareFor?.(latest) ?? evenShare;
+
+  const markX = useTransform(progress, latest => x + shareNow(latest) * scale);
+  const evenLabel = useAnimatedNumber({
+    progress,
+    valueFor: shareNow,
+    format: value => `EVEN SHARE ${toPercent(value)}`,
+  });
   const footerY = y + 34 + rows.length * ROW_HEIGHT;
 
   const opacity = useTransform(progress, revealFor);
@@ -109,10 +137,10 @@ export function ServerLoadPanel({
         SHARE OF HASH SPACE
       </text>
 
-      <line
-        x1={x + barWidth * EVEN_MARK}
+      <motion.line
+        x1={markX}
         y1={y + 14}
-        x2={x + barWidth * EVEN_MARK}
+        x2={markX}
         y2={y + 22 + rows.length * ROW_HEIGHT}
         stroke={palette.border}
         strokeWidth="1"
@@ -137,7 +165,7 @@ export function ServerLoadPanel({
       ))}
 
       <text x={x} y={footerY + 18} fill={palette.label} fontSize="11" letterSpacing="1.6">
-        {`EVEN SHARE ${toPercent(evenShare)}`}
+        {evenLabel}
       </text>
 
       {remap ? (

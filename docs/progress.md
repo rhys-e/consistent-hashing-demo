@@ -1,21 +1,21 @@
 # Hash Ring Visual Redesign — Progress
 
-Status against [`hash-ring-visual-design-plan.md`](./hash-ring-visual-design-plan.md), as of 2026-07-29.
+Status against [`hash-ring-visual-design-plan.md`](./hash-ring-visual-design-plan.md), as of 2026-08-02.
 
-**Verdict:** The opening is one scene — a number line that bends into a ring — so the continuity it depends on is structural rather than asserted. Scene 6 is decided — per-server lanes — and the transition into it is built and animated, which was the part of that treatment most likely to lose a viewer. What is still missing is the middle of the story: the scenes that teach ownership before the full-scale view assumes it.
+**Verdict:** The spine of the argument now exists end to end: a number line bends into a ring, servers take positions on it, a key routes to one, a server fails, and the same thing is then shown at production density. The gap that mattered most — nothing had ever turned a _position_ into a _range_ — is closed by Scene 2, and closed by demonstration rather than assertion. Scene 4 now supplies the answer Scene 3 sets up, so the argument no longer asserts anything it could demonstrate. What is left is not story but structure: a scene machine, navigation, and the sandbox.
 
 ## Scenes
 
-| Scene                | Plan status                   | Notes                                                                                                                                     |
-| -------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **0–1 Hash Space**   | Done, merged                  | One scene: rail draws, keys land, rail bends into a ring. Missing: hover-to-replay a key.                                                 |
-| **2 Lookup**         | Not started                   | Owes the story the step from a _position_ to a _range_. See below.                                                                        |
-| **3 Server leaves**  | Model done, scene not started | `remapDelta` asserts the single-neighbour spike; nothing drawn yet.                                                                       |
-| **4 Virtual nodes**  | Not started                   | Should hand over to Scene 6 on the shared ring coloured by owner, which is exactly the frame Scene 6 opens on.                            |
-| **5 Zoom density**   | Not started                   | Optional for the first pass; 6C is the obvious basis for it.                                                                              |
-| **6 Full-scale**     | **Chosen and animated**       | 6A lanes. Opens on the shared ring, separates into one lane per server, load panel resolves in. Missing: the low-to-high density opening. |
-| **7 Remap at scale** | **Animated on 6A**            | A seventh server joins, each server hands over in turn, the lanes fold back into one ring, and the newcomer's share is picked out on it.  |
-| **8 Sandbox**        | Not started                   | Existing freeform app still the live demo.                                                                                                |
+| Scene                | Plan status             | Notes                                                                                                                                     |
+| -------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **0–1 Hash Space**   | Done, merged            | One scene: rail draws, keys land, rail bends into a ring. Missing: hover-to-replay a key.                                                 |
+| **2 Lookup**         | **Built**               | Keys land on the ring, servers arrive, keys step inside, three lookups are taught, then the arcs sweep. Ends on Scene 3's opening frame.  |
+| **3 Server leaves**  | **Built**               | `cache-4` wavers, drops, leaves an unowned gap; the neighbour sweeps across it. 31.1% → 64.3%, four of eleven keys move.                  |
+| **4 Virtual nodes**  | **Built**               | Scene 3's failure again at ten positions each. 64/36 becomes 52/48; the keys leave during the split.                                      |
+| **5 Zoom density**   | Not started             | Optional for the first pass; 6C is the obvious basis for it.                                                                              |
+| **6 Full-scale**     | **Chosen and animated** | 6A lanes. Opens on the shared ring, separates into one lane per server, load panel resolves in. Missing: the low-to-high density opening. |
+| **7 Remap at scale** | **Animated on 6A**      | A seventh server joins, each server hands over in turn, the lanes fold back into one ring, and the newcomer's share is picked out on it.  |
+| **8 Sandbox**        | Not started             | Existing freeform app still the live demo.                                                                                                |
 
 ## Technical approach
 
@@ -129,11 +129,28 @@ Against the success criteria:
 - _Metrics corroborate what was just seen_ — the share bars settle during the handover rather than after it, against an even-share mark.
 - _Removing a server without vnodes overloads one neighbour_ — asserted in `ringModel`, not yet drawn.
 
-## The gap: positions become ranges
+## Positions become ranges
 
-Scene 6 assumes the viewer already reads a coloured arc as "the range this server owns". Nothing has taught that yet — Scene 2 is where it has to happen, and it is the one remaining piece of the argument that has no prototype.
+This was the gap, and Scene 2 closes it. Scene 6 assumes a viewer reads a coloured arc as "the range this server owns", and nothing had taught that.
 
-The device that fits the rest of the story: a server marker sits on the ring, and its ownership arc **sweeps backwards** from the marker, anticlockwise, until it reaches the previous marker. That animates the rule itself — a server owns the range _ending_ at its position — rather than illustrating it after the fact. Scene 4 then splits each server into many markers and the same sweep runs many times, arriving at exactly the frame Scene 6 opens on.
+The order is what does the teaching. Keys land on the ring as Scene 1 left them. Servers arrive on the same ring, hashed by their own names, and the keys step _inside_ it — the band is about to stop being a number line and start being ownership, so they vacate it, which makes the notation change a motivated moment rather than a difference between two slides. One key then travels clockwise to the first server it meets, slowly enough to be read as a rule; two more confirm it is a rule; the rest follow at once. **Only then do the arcs sweep**, backwards from each server to the position before it — so a range arrives as _the set of positions that route here_, derived rather than asserted.
+
+Two properties are enforced rather than intended:
+
+- **A key has no colour until its own lookup arrives.** Colouring it up front would be showing the answer and then demonstrating the question.
+- **Scene 2's last frame is Scene 3's first frame**, asserted attribute-for-attribute across the two components. They are separate scenes with separate timelines, so every retiming is a chance for them to disagree by a few units — which reads as the ring jumping at a slide boundary and is invisible to anyone testing either scene alone.
+
+Scene 4 then splits each server into many markers and the same sweep runs many times, arriving at exactly the frame Scene 6 opens on.
+
+### What the two ring scenes share
+
+`RingParts.jsx` owns the geometry (`LAYOUT`) and the three marks: the head-bright ownership arc, the server node, and the key. Shared rather than copied, because two copies drift — a radius here, an inset there — and the continuity the pair depends on would then need maintaining by hand. `KeyMark` takes an animatable inset, so "key on the line" and "key inside on a stem" are one component at two values.
+
+Three drawing rules were learned the hard way and are worth not relearning:
+
+- **A circle with no dash array is a _solid_ one.** An arc that owns nothing therefore draws the whole ring unless something stops it. `MIN_DRAW` draws it at a minimum length and hides it, which also avoids the sub-pixel dash that renders as a disc.
+- **A server node has to sit _proud_ of the band.** Narrower and the slivers of arc above and below trace its outline; running the arc forward to cover that outline instead pushes colour past the boundary, which in a scene about where boundaries fall is the worse error.
+- **Key labels follow the radius and are centred**, with a gap wide enough to clear half a label. Anchoring by side avoids overlap too and looks like three rules fighting.
 
 ## The story as vertical slides
 
@@ -221,6 +238,36 @@ Not built. It changes what Scene 6 opens on, so it wants deciding against Scene 
 - Should sample request traffic run continuously in sandbox, or only on demand?
 - Is the existing app sandbox-only, or kept as a parallel entry?
 
+## Scene 4, and what the data would not allow
+
+The plan asked for a stepper at one, three and eight positions per server. The data refuses both intermediate counts, and the refusal is worth recording because it looks like a bug in the scene rather than in the plan:
+
+- **At three positions each the surviving neighbour still takes 96%** of what was lost. The scene would show virtual nodes not working.
+- **At eight, the starting split is 44/33/22** — visibly worse than at one — so a viewer would read the fix as having caused the problem.
+
+Both are small-sample noise rather than anything about consistent hashing. **One against ten** is the honest pair, and ten is representative rather than lucky: every count from eight upwards splits the failure roughly in half.
+
+|                    | before             | after the failure            |
+| ------------------ | ------------------ | ---------------------------- |
+| one position each  | 31.1 / 33.2 / 35.7 | **64.3 / 35.7**, in 2 pieces |
+| ten positions each | 35.6 / 31.6 / 32.9 | **51.5 / 48.5**, in 7 pieces |
+
+The two levels start from the same balance, which is what makes it a comparison: the only thing a viewer has to account for afterwards is the density. A test asserts that, because a dense level that happened to start more even would let the scene take credit for the wrong thing.
+
+Three things the scene had to do that the earlier ring scenes did not:
+
+- **Nodes shrink as they multiply.** Thirty positions puts the closest pair about a pixel apart. Beyond crowding, a scene with many positions per server is no longer asking anyone to look at one of them, and the mark should stop inviting it. Names leave the ring entirely — the share panel is the legend.
+- **The head-bright arc fade has to switch off.** At thirty arcs a tail at a quarter opacity beside the next arc's bright head reads as a _gap_, so a fully owned ring looks broken. `OwnershipArc` takes a `flattenFor`, and the fade goes as the split runs — by which point the direction it exists to state has long been taught.
+- **The keys leave.** Only one of the eleven belongs to the failing server at ten positions each, which is too small a sample to carry anything. That is the scene's second job rather than a loss: thirty boundaries is past the point where an individual key can be followed, and reading the ring as quantities is exactly what Scene 6 assumes.
+
+The two densities are separate sets of ranges crossfaded, not one set that grows — a topology is rebuilt when its vnode count changes. What carries the eye across the change is the marks flying out from each server's first position on tethers, which is also what makes ten marks in one colour read as _one server holding ten places_.
+
 ## Recommended next move
 
-Build **Scene 2's backwards sweep**, then **Scene 3**. Between them they are the whole argument for virtual nodes, and Scene 6 currently rests on a rule the story has not yet shown. After that the spine: the xstate scene machine and navigation, since nine standalone stories are not a demo.
+**The spine.** The argument is complete; what is missing is that a deck of slides in Storybook is not a demo. The xstate scene machine, navigation and per-scene URLs, and the hand-off into the sandbox.
+
+Three smaller things, none of them blocking:
+
+- **Scene 3 can lose its opening.** Its markers-land and sweep phases replay what Scene 2 has just done; it should start at `Shares shown`, exactly as Scene 7 opens on already-separated lanes. Scene 4 already does this — it opens on the settled sparse ring.
+- **Scene 6's low-to-high density opening** is now partly redundant with Scene 4, which makes the density argument at a scale where positions are still countable. Worth deciding whether Scene 6 still needs its own ramp.
+- **Scene 5 (zoom into production density)** remains optional, and is the one scene the story currently reads fine without.

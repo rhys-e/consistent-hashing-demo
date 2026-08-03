@@ -10,7 +10,13 @@ import {
   rangeProgress,
 } from '../../story/easing';
 import { useSceneTimeline } from '../../story/useSceneTimeline';
-import { buildSteps, createTimeline, stepAtRest } from '../../story/sceneSteps';
+import {
+  annotationAt,
+  annotationPresenceAt,
+  buildSteps,
+  createTimeline,
+  stepAtRest,
+} from '../../story/sceneSteps';
 import { useHashDecode } from '../../story/useHashDecode';
 import { SAMPLE_KEYS, decorateSampleKeys, toHashLabel } from '../../story/hashSpace';
 import { STAGE } from '../../story/stage';
@@ -26,6 +32,7 @@ import {
 } from './HashSpaceLayers';
 import SceneControls from './SceneControls';
 import SceneFrame from './SceneFrame';
+import SceneAnnotation from './SceneAnnotation';
 
 /**
  * The opening: a hash space drawn as a number line, and the same line wrapped
@@ -75,6 +82,20 @@ const MORPH = { move: 1.8 };
 /** The pulse starts just before the ends meet and outlasts the bend. */
 const SEAM = { lead: 0.2, peak: 0.2, tail: 0.7 };
 const CLOSE_REST = 0.5;
+/**
+ * The card, held before the bend. Long enough to be read without hurrying, and
+ * the bend that follows keeps it up for a while longer.
+ */
+const CARD_REST = 3;
+/**
+ * Top left, which is the only corner clear in *both* shapes.
+ *
+ * Bottom left looks free while the rail is straight and is not: `user:1842` is the
+ * leftmost key, so the bend carries its label down into that corner. A card has to
+ * be placed against the frame the scene ends on as well as the one it starts on,
+ * or it collides with something that was nowhere near it when it was positioned.
+ */
+const CARD = { x: 60, y: 96, width: 250 };
 
 /** How far into the bend the ring's own atmosphere starts to resolve. */
 const RING_PRESENCE = { from: 0.55, to: 1 };
@@ -102,6 +123,12 @@ const TIMELINE = (() => {
     return { beatStart, rest: timeline.rest(KEY.rest, `${sampleKey.keyName} landed`) };
   });
 
+  // Said while it is still a line, and the one thing three keys landing cannot
+  // show: that landing there was not a choice and will not change. The bend then
+  // has something to preserve.
+  timeline.annotate("A key's hash is its position. The same key always lands in the same place.");
+  const card = timeline.rest(CARD_REST, 'Positions fixed');
+
   const morph = timeline.move(MORPH.move);
   const seam = {
     from: morph.to - SEAM.lead,
@@ -120,9 +147,11 @@ const TIMELINE = (() => {
     rail,
     drawn,
     keys,
+    card,
     morph,
     seam,
     closed,
+    annotations: timeline.annotations(),
     end: timeline.at(),
   };
 })();
@@ -134,6 +163,7 @@ export const SCENE_STEPS = buildSteps(
     stepAtRest(TIMELINE.opening, 'Empty stage'),
     stepAtRest(TIMELINE.drawn, 'Rail drawn'),
     ...TIMELINE.keys.map(key => stepAtRest(key.rest, key.rest.label)),
+    stepAtRest(TIMELINE.card, TIMELINE.card.label),
     stepAtRest(TIMELINE.closed, 'Ring closed'),
   ],
   BEAT_COUNT
@@ -621,6 +651,15 @@ export function HashSpaceScene({
             }
           />
         ))}
+
+        <SceneAnnotation
+          progress={progress}
+          x={CARD.x}
+          y={CARD.y}
+          width={CARD.width}
+          textFor={latest => annotationAt(TIMELINE, latest)}
+          presenceFor={latest => annotationPresenceAt(TIMELINE, latest)}
+        />
       </svg>
     </SceneFrame>
   );
