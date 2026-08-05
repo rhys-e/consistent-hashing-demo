@@ -22,8 +22,8 @@
   },
   "author": "rhys-e",
   "dependencies": {
-    "@xstate/react": "5.0.5",
-    "@xstate/store": "3.17.5",
+    "@xstate/react": "6.1.0",
+    "@xstate/store": "4.2.1",
     "d3": "7.9.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
