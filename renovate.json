@@ -9,6 +9,7 @@
   "rebaseWhen": "auto",
   "baseBranches": ["main"],
   "schedule": ["before 5am on Monday"],
+  "minimumReleaseAge": "30 days",
   "autoApprove": true,
   "automerge": true,
   "packageRules": [
