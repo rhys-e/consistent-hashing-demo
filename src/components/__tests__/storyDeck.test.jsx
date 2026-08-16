@@ -1,8 +1,9 @@
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import StoryDeck, { openingIndex } from '../StoryDeck';
 import { COUNTDOWN_SECONDS } from '../DeckCountdown';
 import { STORY_SLIDES } from '../Story';
+import NarrationSlide from '../NarrationSlide';
 
 const SLIDES = [
   { kind: 'interstitial', key: 'one', number: 'Part one', label: 'A', title: 'First', body: [] },
@@ -124,6 +125,40 @@ describe('story deck', () => {
 
     expect(screen.getByLabelText('Story slides')).toBeTruthy();
     expect(currentTick().getAttribute('aria-label')).toBe('First');
+  });
+
+  /**
+   * The ticks are a control, and while the deck is running itself there is nothing
+   * to steer — so they wait with the scene transport and the scroll hint rather
+   * than sitting on a composition whose whole point is that nothing else is on it.
+   */
+  it('keeps the ticks out of sight until the viewer takes over', () => {
+    render(<StoryDeck slides={SLIDES} />);
+    const ticks = () => screen.getByLabelText('Story slides');
+
+    expect(ticks().dataset.shown).toBe('false');
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(ticks().dataset.shown).toBe('true');
+  });
+
+  /**
+   * Hiding them hides the only pointer-free way to see where you are, so focus has
+   * to bring them back. They stay in the document and stay focusable — only their
+   * opacity goes — because a keyboard user landing on something invisible is worse
+   * than the clutter this removes.
+   */
+  it('brings them back for a viewer who tabs to them', () => {
+    render(<StoryDeck slides={SLIDES} />);
+    const ticks = () => screen.getByLabelText('Story slides');
+
+    expect(ticks().dataset.shown).toBe('false');
+    // Still reachable while hidden, which is the whole point of hiding them this
+    // way rather than unmounting them.
+    expect(within(ticks()).getAllByRole('button').length).toBe(SLIDES.length);
+
+    fireEvent.focus(within(ticks()).getAllByRole('button')[1], { bubbles: true });
+    expect(ticks().dataset.shown).toBe('true');
   });
 
   it.each([
@@ -340,5 +375,79 @@ describe('slide addresses', () => {
     fireEvent.keyDown(window, { key: 'ArrowDown' });
 
     expect(window.location.hash).toBe('#/');
+  });
+});
+
+/**
+ * A slide is inactive for the whole of the deck's transition, at either end of it,
+ * and while that transition was a quarter of a second the two ends were
+ * indistinguishable. Slowed to a second they are opposites: one is a slide with
+ * nothing on it yet, the other a slide with everything on it still.
+ *
+ * Read through `NarrationSlide` directly rather than through the deck, because
+ * jsdom has no layout and the deck never completes a transition there — so the
+ * states this is about are exactly the ones the deck cannot be driven into.
+ */
+describe('a slide arriving against a slide leaving', () => {
+  const TITLE = 'Servers come and go';
+  const BODY = ['First paragraph.', 'Second paragraph.'];
+
+  const titleOf = container => container.querySelector('.glitch-title').textContent;
+  const shownOf = container => container.querySelectorAll('p')[0].dataset.shown;
+
+  const headingOf = container => container.querySelector('.glitch-title');
+
+  /**
+   * Nothing on the way in. A slide arriving with a frozen row of block glyphs on
+   * it looks broken rather than loading — noise only reads as something resolving
+   * while it is actually moving — so the title waits, and then arrives out of
+   * nothing and settles into itself.
+   */
+  it('carries no title in, and carries the finished one out', () => {
+    const arriving = render(
+      <NarrationSlide title={TITLE} body={BODY} active={false} current />
+    ).container;
+    expect(headingOf(arriving).dataset.shown).toBe('false');
+
+    const leaving = render(
+      <NarrationSlide title={TITLE} body={BODY} active={false} current={false} />
+    ).container;
+    expect(headingOf(leaving).dataset.shown).toBe('true');
+    expect(titleOf(leaving)).toBe(TITLE);
+  });
+
+  /**
+   * What the hidden title is holding underneath. The resolve is started by an
+   * effect, so a title left resolved while inactive would paint one frame of the
+   * finished text at the moment it becomes visible, before the effect scrambles it.
+   */
+  it('holds noise under the hidden title rather than the answer', () => {
+    const arriving = render(
+      <NarrationSlide title={TITLE} body={BODY} active={false} current />
+    ).container;
+
+    // Same length and the same spaces, so the box never moves as it resolves.
+    expect(titleOf(arriving)).toHaveLength(TITLE.length);
+    expect(titleOf(arriving)).not.toBe(TITLE);
+  });
+
+  it('holds the paragraphs on the way out and hides them on the way in', () => {
+    const arriving = render(
+      <NarrationSlide title={TITLE} body={BODY} active={false} current />
+    ).container;
+    expect(shownOf(arriving)).toBe('false');
+
+    const leaving = render(
+      <NarrationSlide title={TITLE} body={BODY} active={false} current={false} />
+    ).container;
+    expect(shownOf(leaving)).toBe('true');
+  });
+
+  /** Rendered on its own, with no deck to be current in, nothing has changed. */
+  it('leaves a slide rendered on its own exactly as it was', () => {
+    const alone = render(<NarrationSlide title={TITLE} body={BODY} active={false} />).container;
+
+    expect(titleOf(alone)).toBe(TITLE);
+    expect(shownOf(alone)).toBe('true');
   });
 });

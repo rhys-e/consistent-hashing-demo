@@ -79,6 +79,20 @@ export const deckMachine = setup({
     goToTarget: assign({
       index: ({ context, event }) => targetOf(context, event),
       viaViewer: true,
+      /**
+       * Sticky, and separate from `engaged` on purpose.
+       *
+       * Moving the deck yourself is not the same as taking it over: a viewer who
+       * presses the down arrow has nudged the story along and may well want it to
+       * carry on by itself, which is why navigating deliberately does not stop the
+       * countdown. But they have started steering, and from that moment the marks
+       * down the edge are worth showing — where am I, and how much is left.
+       *
+       * `engaged` answers "should the deck stop driving". This answers "is anybody
+       * else's hand on the wheel". They are different questions and were one flag
+       * for exactly as long as nothing needed the second one.
+       */
+      steered: true,
     }),
     advance: assign({
       index: ({ context }) => clamp(context.index + 1, context.slideCount),
@@ -97,6 +111,7 @@ export const deckMachine = setup({
     index: clamp(input?.initialIndex ?? 0, input?.slideCount ?? 1),
     slideCount: input?.slideCount ?? 1,
     engaged: false,
+    steered: false,
     // Nobody has moved it yet, so the opening address replaces rather than pushes.
     viaViewer: false,
     countdownMs: input?.countdownMs ?? 5000,
@@ -184,6 +199,14 @@ function targetOf(context, event) {
  */
 export const isSettled = state => !state.matches({ navigation: 'settling' });
 export const isCountingDown = state => state.matches({ navigation: 'counting' });
+
+/**
+ * Whether the viewer has had any hand in this, by taking over or by steering.
+ *
+ * What the deck's own controls read, as against `engaged`, which is what decides
+ * whether it still advances on its own.
+ */
+export const isSteering = state => state.context.engaged || state.context.steered;
 /** The last second and a half, when the slide takes its bow. */
 export const isClosing = state => state.matches({ navigation: { counting: 'closing' } });
 

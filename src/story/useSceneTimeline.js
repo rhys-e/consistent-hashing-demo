@@ -25,8 +25,23 @@ export function useSceneTimeline({
   secondsPerBeat = 1.4,
   pinnedProgress = null,
   autoPlay = true,
+  /**
+   * Whether the scene is on its way in, as against on its way out.
+   *
+   * Both look identical from `autoPlay` alone — a scene is not playing at either
+   * end of a slide transition — and the difference decides where the beat goes.
+   * Arriving, it belongs at zero. Leaving, it belongs exactly where the viewer
+   * left it: rewinding a scene while it is still on screen sliding away plays its
+   * opening frame as a parting shot, which was invisible while the transition was
+   * a quarter of a second and is not now.
+   *
+   * Defaults to `autoPlay`, so a scene rendered on its own is never arriving and
+   * behaves as it did.
+   */
+  arriving,
 }) {
   const isPinned = pinnedProgress !== null && pinnedProgress !== undefined;
+  const isArriving = (arriving ?? autoPlay) && !autoPlay;
   const progress = useMotionValue(isPinned ? pinnedProgress : 0);
   const playbackRef = useRef(null);
 
@@ -117,12 +132,22 @@ export function useSceneTimeline({
       return undefined;
     }
 
-    progress.set(0);
-    if (autoPlay) play();
-    else send({ type: SCENE_EVENT.reset });
+    if (autoPlay) {
+      progress.set(0);
+      play();
+      return stop;
+    }
 
-    return stop;
-  }, [autoPlay, beatCount, isPinned, play, pinnedProgress, progress, send, stop]);
+    // Leaving: hold the last frame. The rewind happens on the way back in, which
+    // is the same moment and a better one, because by then nobody is watching the
+    // frame it rewinds from.
+    if (isArriving) {
+      progress.set(0);
+      send({ type: SCENE_EVENT.reset });
+    }
+    stop();
+    return undefined;
+  }, [autoPlay, beatCount, isArriving, isPinned, play, pinnedProgress, progress, send, stop]);
 
   return {
     progress,

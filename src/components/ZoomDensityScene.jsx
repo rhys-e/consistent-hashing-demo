@@ -19,6 +19,8 @@ export function ZoomDensityScene({
   secondsPerBeat,
   pinnedProgress = null,
   active = true,
+  // Arriving, not merely inactive. See `useSceneTimeline`.
+  current,
   engaged = false,
   onComplete,
 }) {
@@ -28,6 +30,7 @@ export function ZoomDensityScene({
     secondsPerBeat,
     pinnedProgress,
     autoPlay: active,
+    arriving: current,
   });
   const { progress, status } = timeline;
   const isPinned = pinnedProgress !== null && pinnedProgress !== undefined;

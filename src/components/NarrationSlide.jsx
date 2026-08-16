@@ -31,6 +31,26 @@ import { useScramble } from '../story/useScramble';
  */
 
 const RESOLVE = { duration: 0.5, ease: [0.16, 1, 0.3, 1] };
+/**
+ * The title fades up as it resolves, rather than being on screen while it waits.
+ *
+ * A slide that arrives carrying a frozen row of block glyphs looks broken, not
+ * loading — noise only reads as something resolving while it is actually moving.
+ * So nothing is there until the slide has landed, and then one thing happens: the
+ * title arrives out of nothing and settles into itself.
+ */
+const TITLE_IN = { duration: 0.3, ease: 'linear' };
+/**
+ * The paragraphs start before the title has finished, on purpose.
+ *
+ * Waiting for it costs half a second on top of a transition that is already a
+ * second long, and buys a beat of an empty slide nobody asked for. Overlapping
+ * them means the block is complete about three quarters of a second after the
+ * slide lands, and the title is still the first thing to appear and the first to
+ * settle — which is all the order has to establish.
+ */
+const BODY_DELAY = 0.3;
+const BODY_STAGGER = 0.12;
 
 /**
  * The title breaks up for a third of a second when the deck starts counting down.
@@ -53,7 +73,7 @@ const RESOLVE = { duration: 0.5, ease: [0.16, 1, 0.3, 1] };
 const READ_LEAD_MS = 800;
 const READ_PER_WORD_MS = 130;
 
-function Body({ paragraph, index, active }) {
+function Body({ paragraph, index, active, arriving }) {
   return (
     <motion.p
       /**
@@ -64,9 +84,18 @@ function Body({ paragraph, index, active }) {
        * block read as one column.
        */
       className="text-xl leading-relaxed text-ui-text-primary"
+      // The decision, not the frame the animation happens to be on. Motion writes
+      // opacity from a ticker, so in a test there is nothing to read but this.
+      data-shown={active || !arriving ? 'true' : 'false'}
       initial={{ opacity: 0, y: 12 }}
-      animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
-      transition={{ ...RESOLVE, delay: active ? 0.45 + index * 0.14 : 0 }}
+      /**
+       * Hidden only on the way in. A slide being carried *out* keeps what it had —
+       * clearing it as it leaves plays the arrival backwards on a slide the viewer
+       * has finished with, which is a second thing moving during a movement that
+       * was already saying everything.
+       */
+      animate={active || !arriving ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+      transition={{ ...RESOLVE, delay: active ? BODY_DELAY + index * BODY_STAGGER : 0 }}
     >
       {paragraph}
     </motion.p>
@@ -78,10 +107,28 @@ export function NarrationSlide({
   body = [],
   lead = false,
   active = true,
+  /**
+   * Whether this is the slide being travelled to, which is not the same question
+   * as whether it has arrived.
+   *
+   * A slide is inactive for the whole of the deck's transition, at either end of
+   * it, and until the transition was slowed down the two were indistinguishable.
+   * They are opposites: one is a slide with nothing on it yet, the other a slide
+   * with everything on it still.
+   *
+   * Defaults to `active`, so a slide rendered on its own is never "arriving" and
+   * behaves exactly as it did.
+   */
+  current,
   imminent = false,
   onComplete,
 }) {
-  const resolvedTitle = useScramble({ text: title, active });
+  const arriving = (current ?? active) && !active;
+  const resolvedTitle = useScramble({
+    text: title,
+    active,
+    idle: arriving ? 'noise' : 'resolved',
+  });
   /**
    * Smaller than it wants to be, because of the scramble.
    *
@@ -136,17 +183,23 @@ export function NarrationSlide({
           <h2 aria-hidden="true" className={`invisible ${heading}`}>
             {title}
           </h2>
-          <h2
+          <motion.h2
             className={`glitch-title absolute inset-0 ${heading} text-ui-text-heading`}
             data-text={resolvedTitle}
             data-glitching={imminent ? 'true' : 'false'}
+            data-shown={arriving ? 'false' : 'true'}
+            // No `initial`: a slide being carried out is already showing its title
+            // and must not fade it up again on the way past.
+            initial={false}
+            animate={{ opacity: arriving ? 0 : 1 }}
+            transition={arriving ? { duration: 0 } : TITLE_IN}
             style={{
               '--glitch-a': theme.colors.primary.cyberBlue,
               '--glitch-b': theme.colors.primary.neoRed,
             }}
           >
             {resolvedTitle}
-          </h2>
+          </motion.h2>
         </div>
 
         {/* The paragraphs are a block of their own, closer to each other than to
@@ -154,7 +207,13 @@ export function NarrationSlide({
             every gap on the slide is the same size. */}
         <div className="flex flex-col gap-5">
           {body.map((paragraph, index) => (
-            <Body key={paragraph} paragraph={paragraph} index={index} active={active} />
+            <Body
+              key={paragraph}
+              paragraph={paragraph}
+              index={index}
+              active={active}
+              arriving={arriving}
+            />
           ))}
         </div>
       </div>

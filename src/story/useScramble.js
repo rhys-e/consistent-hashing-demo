@@ -22,18 +22,36 @@ function scrambleGlyph(index, tick) {
  * Spaces are never scrambled, so the shape of the sentence is legible before its
  * letters are, and the text never reflows as it resolves.
  */
-export function useScramble({ text, active = true, characterMs = 26, durationMs, churnMs = 45 }) {
+export function useScramble({
+  text,
+  active = true,
+  /**
+   * What the text is when it is not resolving.
+   *
+   * `resolved` is the finished string, which is right for a title that has had its
+   * moment and is now being carried off the screen. `noise` is the unresolved one,
+   * for a title on its way *in* — which is drawn invisible, so this is not what the
+   * viewer sees. It is what stops them seeing anything else: the resolve is started
+   * by an effect, so a title held resolved while inactive paints one frame of the
+   * finished text at the moment it becomes visible, before the effect scrambles it.
+   */
+  idle = 'resolved',
+  characterMs = 26,
+  durationMs,
+  churnMs = 45,
+}) {
   // A caption resolves in a fixed time regardless of length; a title resolves at a
   // fixed rate per character, because its length is the point.
   const perCharacter = durationMs
     ? Math.max(4, durationMs / Math.max(1, text.length))
     : characterMs;
-  const [revealed, setRevealed] = useState(active ? 0 : text.length);
+  const idleRevealed = idle === 'noise' ? 0 : text.length;
+  const [revealed, setRevealed] = useState(active ? 0 : idleRevealed);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!active) {
-      setRevealed(text.length);
+      setRevealed(idleRevealed);
       return undefined;
     }
 
@@ -46,7 +64,7 @@ export function useScramble({ text, active = true, characterMs = 26, durationMs,
     }, perCharacter);
 
     return () => clearInterval(timer);
-  }, [active, perCharacter, text]);
+  }, [active, idleRevealed, perCharacter, text]);
 
   const isResolving = active && revealed < text.length;
 

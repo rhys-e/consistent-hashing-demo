@@ -42,6 +42,8 @@ export function DensityRampScene({
   secondsPerBeat = 1.3,
   pinnedProgress = null,
   active = true,
+  // Arriving, not merely inactive. See `useSceneTimeline`.
+  current,
   engaged = false,
   onComplete,
 }) {
@@ -53,6 +55,7 @@ export function DensityRampScene({
     secondsPerBeat,
     pinnedProgress,
     autoPlay: active,
+    arriving: current,
   });
   const { progress, status } = timeline;
   const isPinned = pinnedProgress !== null && pinnedProgress !== undefined;

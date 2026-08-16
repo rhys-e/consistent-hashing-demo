@@ -4,6 +4,7 @@ import {
   deckMachine,
   isCountingDown,
   isSettled,
+  isSteering,
   NUDGE_COOLDOWN_MS,
   SETTLE_DWELL_MS,
 } from '../deckMachine';
@@ -145,5 +146,36 @@ describe('the deck machine', () => {
 
     expect(actor.getSnapshot().context.index).toBe(1);
     expect(isSettled(actor.getSnapshot())).toBe(false);
+  });
+
+  /**
+   * Two questions that were one flag for as long as nothing needed the second.
+   *
+   * `engaged` decides whether the deck still advances on its own. `steered` says
+   * whether anybody else's hand has been on the wheel, which is what the marks
+   * down the edge read — a viewer who presses the down arrow has nudged the story
+   * along and may well want it to carry on by itself, but they have started
+   * navigating and from that moment it is worth showing them where they are.
+   */
+  it('separates steering the deck from taking it over', () => {
+    const actor = createActor(deckMachine, { input: { slideCount: 4 } }).start();
+
+    expect(actor.getSnapshot().context.steered).toBe(false);
+    expect(isSteering(actor.getSnapshot())).toBe(false);
+
+    actor.send({ type: 'GOTO', index: 2 });
+
+    // Steering, but not taken over: the deck may still advance on its own.
+    expect(isSteering(actor.getSnapshot())).toBe(true);
+    expect(actor.getSnapshot().context.engaged).toBe(false);
+  });
+
+  /** And taking it over counts as steering, without anything having moved. */
+  it('counts taking over as steering', () => {
+    const actor = createActor(deckMachine, { input: { slideCount: 4 } }).start();
+    actor.send({ type: 'ENGAGE' });
+
+    expect(isSteering(actor.getSnapshot())).toBe(true);
+    expect(actor.getSnapshot().context.index).toBe(0);
   });
 });

@@ -21,6 +21,8 @@ export function KeyRoutesScene({
   secondsPerBeat,
   pinnedProgress = null,
   active = true,
+  // Arriving, not merely inactive. See `useSceneTimeline`.
+  current,
   engaged = false,
   onComplete,
 }) {
@@ -30,6 +32,7 @@ export function KeyRoutesScene({
     secondsPerBeat,
     pinnedProgress,
     autoPlay: active,
+    arriving: current,
   });
   const { progress, status } = timeline;
   const isPinned = pinnedProgress !== null && pinnedProgress !== undefined;

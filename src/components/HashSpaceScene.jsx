@@ -486,6 +486,8 @@ export function HashSpaceScene({
   pinnedProgress = null,
   secondsPerBeat = 1.5,
   active = true,
+  // Arriving, not merely inactive. See `useSceneTimeline`.
+  current,
   engaged = false,
   onComplete,
 }) {
@@ -495,6 +497,7 @@ export function HashSpaceScene({
     secondsPerBeat,
     pinnedProgress,
     autoPlay: active,
+    arriving: current,
   });
   const { progress, status } = timeline;
   const isPinned = pinnedProgress !== null && pinnedProgress !== undefined;

@@ -23,6 +23,8 @@ function LanesScene({
   pinnedProgress,
   secondsPerBeat,
   active,
+  // Arriving, not merely inactive. See `useSceneTimeline`.
+  current,
   engaged,
   onComplete,
 }) {
@@ -42,6 +44,7 @@ function LanesScene({
     secondsPerBeat,
     pinnedProgress,
     autoPlay: active,
+    arriving: current,
   });
   const { progress, status } = timeline;
   const isPinned = pinnedProgress !== null && pinnedProgress !== undefined;
@@ -114,6 +117,7 @@ export function FullScaleScene({
   pinnedProgress = null,
   secondsPerBeat = 1.15,
   active = true,
+  current,
   engaged = false,
   onComplete,
 }) {
@@ -130,6 +134,7 @@ export function FullScaleScene({
       pinnedProgress={pinnedProgress}
       secondsPerBeat={secondsPerBeat}
       active={active}
+      current={current}
       engaged={engaged}
       onComplete={onComplete}
     />

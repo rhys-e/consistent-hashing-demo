@@ -21,6 +21,8 @@ export function VirtualNodesScene({
   secondsPerBeat,
   pinnedProgress = null,
   active = true,
+  // Arriving, not merely inactive. See `useSceneTimeline`.
+  current,
   engaged = false,
   onComplete,
   // How the dense ring is drawn. Threaded only so the alternatives can be put
@@ -33,6 +35,7 @@ export function VirtualNodesScene({
     secondsPerBeat,
     pinnedProgress,
     autoPlay: active,
+    arriving: current,
   });
   const { progress, status } = timeline;
   const isPinned = pinnedProgress !== null && pinnedProgress !== undefined;

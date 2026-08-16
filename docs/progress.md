@@ -188,6 +188,11 @@ Two judgements in that:
   `DeckCountdown` has its own story — the thing was unwatchable while it only existed five slides into a deck — and `storyDeck.test.jsx` drives the whole path: readable, dwelt, counting down, and giving way to a hint on engagement.
 
 - **Engagement is sticky, and the transport is hidden until it happens** (or until a scene has finished playing). Watching and studying are different activities, and the interface for the second is clutter during the first. Handing control back after one slide would take it away again on the next.
+- **The progress ticks wait with it.** They were the one control on screen throughout, which put a column of marks down the edge of a composition whose whole point is that nothing else is on it. They now arrive with the transport and the scroll hint.
+
+  That needed a second flag, because the two questions turned out to be different. `engaged` decides whether the deck still advances on its own, and deliberate navigation deliberately does _not_ set it — a viewer who presses the down arrow has nudged the story along and may well want it to carry on. But they have started steering, and from that moment the marks are worth showing. `steered` is set by any `GOTO`, `NEXT` or `PREV`; `isSteering` is the two together, and it is what the ticks read.
+
+  Hiding them hides the only pointer-free way to see where you are, so focus brings them back. They stay in the document and stay focusable and only their opacity goes — `display: none` or `aria-hidden` would leave a keyboard user with focus on something invisible, which is worse than the clutter this removes.
 
 ### No seam between slides
 
@@ -708,6 +713,64 @@ damage in half", Scene 4's step reads `Six positions each`, and its closing line
 says six pieces. `spreadModel.test.js` asserts the whole thing, including a test
 whose only job is to record _why_ six needs the placement: it holds hashed-six
 above fifteen points of spread and placed-six below six.
+
+## Arriving is not the same as leaving
+
+A slide is inactive for the whole of the deck's transition, at _both_ ends of it,
+and `active` cannot tell those apart. While the transition was a quarter of a
+second nothing had to: reduced motion made it a near-cut and both ends were over
+before they could be read. At the full second and a bit they are opposites — one is
+a slide with nothing on it yet, the other a slide with everything on it still — and
+two faults fell out of the confusion.
+
+**A title arrived finished, then broke up, then finished again.** `useScramble`
+returns the resolved string when it is inactive, so the completed title rode in on
+the transition, and only when the slide landed did it dissolve and resolve. The
+viewer read it, watched it come apart, and read it again.
+
+The first fix carried it in as static noise instead, and that was wrong for a
+reason worth keeping: **noise only reads as something resolving while it is
+actually moving.** A frozen row of block glyphs riding in on a slide looks broken,
+not loading. So nothing is there at all until the slide lands, and then one thing
+happens — the title arrives out of nothing and settles into itself. `useScramble`
+still holds noise underneath rather than the answer, because the resolve is started
+by an effect and a title left resolved would paint one frame of the finished text
+at the instant it becomes visible.
+
+The paragraphs now start at 0.3s rather than 0.45s and overlap the title's resolve.
+Waiting for it cost half a second on top of a transition already a second long, and
+bought a beat of an empty slide nobody asked for. The title is still the first
+thing to appear and the first to settle, which is all the order has to establish.
+
+**Everything reset as it left.** The paragraphs animated back to hidden and every
+scene ran `progress.set(0)`, so a slide the viewer had finished with played its own
+arrival backwards, and a scene rewound to its opening frame while still on screen.
+Both now hold what they had. The rewind happens on the way back _in_, which is the
+same moment and a quieter one, since by then nobody is watching the frame it
+rewinds from.
+
+Both fixes need the same distinction, so `current` is threaded from the deck to
+`NarrationSlide` and through every scene wrapper to `useSceneTimeline` as
+`arriving`. It defaults to `active` in both, so anything rendered on its own — every
+Storybook story — behaves exactly as it did.
+
+The alternative was to keep the transition fast enough to hide all this, which is
+what reduced motion had been doing by accident. That would have been a decision to
+stop the deck moving properly in order to avoid fixing what the movement revealed.
+
+### What it costs, measured
+
+A narration slide is fully settled **1.97s** after a slide change begins: 1.05s of
+travel, then the title fades up over 0.3s while resolving over about 0.5s, with the
+paragraphs starting at 0.3s and the last one landing at 0.92s. The title is legible
+around 1.55s.
+
+Nothing overlaps the travel, and that is the remaining lever. Letting the title
+begin before the slide lands would save 0.21s at 80% of travel, 0.37s at 65%, or
+0.53s at halfway — but the deck has no signal for "nearly there", so it would need
+a timer keyed to the transition's own duration, and a second one for the reduced
+motion case. Not built, because two seconds on a slide that then holds for several
+is a small thing to buy with a race against an animation.
 
 ## A slide between Scenes 2 and 3, against a decision that said not to
 

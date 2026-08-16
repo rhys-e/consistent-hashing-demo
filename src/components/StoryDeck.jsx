@@ -7,6 +7,7 @@ import {
   isClosing,
   isCountingDown,
   isSettled as settledIn,
+  isSteering,
 } from '../story/deckMachine';
 import { hashFor, indexForHash, titleFor } from '../story/slideUrl';
 import DeckCountdown, { COUNTDOWN_SECONDS, ScrollHint } from './DeckCountdown';
@@ -70,12 +71,32 @@ const SITE_TITLE = 'Consistent Hashing';
  * Hairlines rather than pills. The deck is the thing being looked at, and a
  * column of filled dots down the edge of a dark composition reads as part of it.
  * The generous hit area is padding, so the mark stays thin without being fiddly.
+ *
+ * **Hidden until the viewer takes over**, like the scene transport and the scroll
+ * hint. While the deck is running itself there is nothing to steer, so a column of
+ * marks down the edge is a control offered to somebody who has not asked for one —
+ * and the whole point of the automatic mode is that nothing is on screen but the
+ * story. Engagement brings all three out together.
+ *
+ * Focus brings them out too, and has to. Hiding them means hiding the only pointer
+ * -free way to see where you are, so tabbing into the column reveals it — the
+ * marks stay in the document and stay focusable, and only their opacity goes.
+ * Making them `display: none` or `aria-hidden` would leave a keyboard user with
+ * focus somewhere invisible, which is worse than the clutter this removes.
  */
-function DeckProgress({ slides, index, onSelect }) {
+function DeckProgress({ slides, index, onSelect, shown }) {
+  const [focused, setFocused] = useState(false);
+
   return (
-    <nav
+    <motion.nav
       aria-label="Story slides"
       className="fixed right-7 top-1/2 z-20 flex -translate-y-1/2 flex-col"
+      initial={false}
+      animate={{ opacity: shown || focused ? 1 : 0 }}
+      transition={{ duration: 0.4 }}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={() => setFocused(false)}
+      data-shown={shown || focused ? 'true' : 'false'}
     >
       {slides.map((slide, slideIndex) => {
         const isCurrent = slideIndex === index;
@@ -99,7 +120,7 @@ function DeckProgress({ slides, index, onSelect }) {
           </button>
         );
       })}
-    </nav>
+    </motion.nav>
   );
 }
 
@@ -342,11 +363,12 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
                   // A scene plays once its slide has arrived and settled, and resets
                   // when it leaves, so coming back to one finds it at its beginning
                   // rather than part-way through the transition that brought it in.
-                  slide.render({ active, engaged: isEngaged, onComplete })
+                  slide.render({ active, current: isCurrent, engaged: isEngaged, onComplete })
                 ) : (
                   <NarrationSlide
                     title={slide.title}
                     lead={slide.lead}
+                    current={isCurrent}
                     // The last moment of the slide, not the whole countdown: two
                     // things changing at once splits the viewer between them.
                     imminent={isCurrent && isClosing(state)}
@@ -370,7 +392,7 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
       ) : null}
       {isEngaged && !isLast ? <ScrollHint /> : null}
 
-      <DeckProgress slides={slides} index={index} onSelect={goTo} />
+      <DeckProgress slides={slides} index={index} onSelect={goTo} shown={isSteering(state)} />
     </div>
   );
 }
