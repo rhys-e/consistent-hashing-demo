@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, useTransform } from 'motion/react';
 import theme from '../themes';
 import { arcRanges, buildDashPattern } from '../story/ringDash';
-import { mix, rangeProgress } from '../story/easing';
+import { rangeProgress } from '../story/easing';
 import { ringPoint } from '../story/projection';
 import { toHashLabel } from '../story/hashSpace';
 
@@ -34,23 +34,29 @@ export const LAYOUT = {
 
 const ARC_WIDTH = 12;
 /**
- * An arc is drawn brightest at the server that owns it and falls away towards the
- * position it runs back to.
+ * Arcs are flat, everywhere, and that is the whole rule.
  *
- * That is not decoration. Ownership here has a direction — a range *ends* at its
- * server and begins at the one before — and a uniform band states a boundary
- * without stating which side of it does the owning. Fading also gives the previous
- * server's marker somewhere to sit, instead of a hard butt joint between two
- * saturated bands that reads as a collision.
+ * They were once drawn brightest at the owning server and falling away behind it,
+ * which stated the one thing a uniform band cannot: that a range *ends* at its
+ * server and begins at the one before. It reads beautifully on three arcs. It does
+ * not survive thirty — a fade needs room to be a gradient, and in fifty pixels it
+ * is an edge, so the dark tail of one arc against the bright head of the next reads
+ * as a gap and a fully owned ring looks broken.
  *
- * Built as nested arcs sharing one head rather than as a gradient: a stroke
- * gradient in SVG runs in a straight line, which on a 120-degree arc points
- * nowhere useful.
+ * Two ways out were tried and both were worse than flatness. Switching the fade off
+ * partway through Scene 4 left the story with two treatments and no event to
+ * explain the change. Scaling how far the fade falls to how much room it had kept
+ * one rule, but produced arcs at every alpha between a quarter and solid on the
+ * same ring, which is a third thing to look at rather than a subtler version of the
+ * first.
  *
- * The fade is for a handful of large arcs, and a scene can turn it off. At thirty
- * arcs a tail at a quarter opacity next to the next arc's bright head reads as a
- * *gap*, so a ring that is entirely owned looks broken — and by then the direction
- * the fade exists to state has long since been taught.
+ * The direction the fade existed to state is taught by *movement* instead, and
+ * always was: Scene 2 sweeps every arc backwards from its server to the position
+ * before it, which is the ownership rule performed rather than shaded. A still
+ * frame does not have to carry it.
+ *
+ * `fade` is kept for the Storybook comparison that settled this, and for nothing
+ * else. No scene passes it.
  */
 const ARC_BANDS = 8;
 const ARC_BAND_ALPHA = 0.26;
@@ -65,9 +71,14 @@ const ARC_BAND_ALPHA = 0.26;
  * misstatement, since the whole scene is about exactly where boundaries fall.
  *
  * So the node is drawn *proud* of the band instead. Its outline is deliberate
- * rather than incidental, the dark ring separates the two arcs that meet under it,
- * and it needs no tick because it is itself the boundary. It also gives the story
- * a grammar: round and on the ring is a server, angular and inside it is a key.
+ * rather than incidental, and the dark ring separates the two arcs that meet under
+ * it. It also gives the story a grammar: round and on the ring is a server,
+ * angular and inside it is a key.
+ *
+ * **One size, in every scene.** It was shrunk once where positions were dense, to
+ * buy room a hashed ring does not have to give — see `placedRing`, which buys the
+ * room by placing the positions instead. The shrunken dot read as a smudge and cost
+ * the picture the one mark the story had taught.
  */
 const MARKER = { labelGap: 30, hashGap: 13, dot: 8.5, outline: 3 };
 /**
@@ -105,8 +116,8 @@ const MIN_DRAW = 0.002;
  * `MIN_DRAW` stops a vanishing arc becoming a degenerate mark, but on its own it
  * turns the last of a shrink into a stall: the arc wipes down to a three-pixel
  * sliver, sits there at full strength while the number keeps falling, and then
- * pops out when it finally hits zero. Ten of those going at once — a server with
- * ten positions failing — reads as a glitch rather than as a server leaving.
+ * pops out when it finally hits zero. Six of those going at once — a server with
+ * six positions failing — reads as a glitch rather than as a server leaving.
  *
  * Fading over the last few pixels of the shrink covers the clamp entirely, and it
  * does the same favour in the other direction: a sweep growing from nothing now
@@ -114,7 +125,7 @@ const MIN_DRAW = 0.002;
  *
  * It has to be measured against the arc's *own* span, not as an absolute length.
  * Fading everything shorter than a fixed number dims the ranges that are simply
- * small — at ten positions per server several genuinely are — and a range drawn
+ * small — at six positions per server several genuinely are — and a range drawn
  * faint because it is short is the drawing lying about ownership. So this is a
  * ceiling on the fade, and a short arc fades over the last half of itself instead.
  */
@@ -135,7 +146,7 @@ export function OwnershipArc({
   lengthFor,
   fullLength,
   opacityFor,
-  flattenFor,
+  fade = false,
   layer,
 }) {
   const vanishBelow = Math.min(FADE_BELOW, (fullLength ?? FADE_BELOW) / 2);
@@ -147,29 +158,25 @@ export function OwnershipArc({
 
   return (
     <motion.g data-layer={layer} style={{ opacity }}>
-      {bands.map(fraction => (
+      {(fade ? bands : [1]).map(fraction => (
         <ArcBand
           key={fraction}
           progress={progress}
           endsAt={endsAt}
           color={color}
           lengthFor={latest => Math.max(MIN_DRAW, lengthFor(latest) * fraction)}
-          flattenFor={flattenFor}
+          alpha={fade ? ARC_BAND_ALPHA : 1}
         />
       ))}
     </motion.g>
   );
 }
 
-function ArcBand({ progress, endsAt, color, lengthFor, flattenFor }) {
+function ArcBand({ progress, endsAt, color, lengthFor, alpha }) {
   const pattern = latest => buildDashPattern(arcRanges(endsAt, lengthFor(latest)));
   const dashArray = useTransform(progress, latest => pattern(latest)?.dashArray);
   const dashOffset = useTransform(progress, latest => pattern(latest)?.dashOffset);
-  // Every band opaque is a flat arc, because they all then paint the same colour
-  // over each other — so one number takes the fade out without a second drawing.
-  const bandOpacity = useTransform(progress, latest =>
-    mix(ARC_BAND_ALPHA, 1, flattenFor?.(latest) ?? 0)
-  );
+  const bandOpacity = alpha;
 
   return (
     <motion.circle
@@ -188,11 +195,9 @@ function ArcBand({ progress, endsAt, color, lengthFor, flattenFor }) {
 }
 
 /**
- * A server on the ring: a tick across the band, a dot on it, and its name outside.
+ * A server on the ring: a dot straddling the band, and its name outside.
  *
- * The tick crosses the whole band because a position is a *boundary* — the point
- * where one server's range ends and the next begins. A dot alone reads as a thing
- * sitting on the ring rather than as a division of it.
+ * There is one dot, at one size, in every scene that draws one — see `MARKER`.
  */
 export function ServerMarker({
   progress,
@@ -215,11 +220,10 @@ export function ServerMarker({
   /**
    * A node shrinks as a server acquires more of them.
    *
-   * At ten positions each there are thirty on the ring and the closest pair is
-   * about a pixel apart, so a node sized to be read individually would draw a
-   * server as a smear. Shrinking is not only a fix for crowding: a scene with many
-   * positions per server is no longer asking the viewer to look at any one of
-   * them, and the mark should stop inviting it.
+   * Kept at one for every scene the story now draws, because `placedRing` clears
+   * the crowding at the source. It stays available because a scene that ever does
+   * put more positions on the ring than there is room for should shrink the mark
+   * rather than overlap it.
    */
   const dotRadius = useTransform(
     progress,
@@ -227,7 +231,7 @@ export function ServerMarker({
   );
   // The waver is a failing server's own signal, so it flickers the marker without
   // touching anything else on the ring.
-  // A name is a separate question from a node: thirty of them cannot be labelled,
+  // A name is a separate question from a node: eighteen of them cannot be labelled,
   // so a dense scene keeps its names in the panel and lets the ring go quiet.
   const flicker = useTransform(
     progress,
@@ -405,5 +409,37 @@ export function KeyMark({ progress, sampleKey, colorFor, presenceFor, labelFor, 
         strokeWidth="1.5"
       />
     </motion.g>
+  );
+}
+
+/**
+ * One circle per server, whatever the position count.
+ *
+ * The story's other ring scenes draw an arc per *position*, which is affordable
+ * at three and at thirty and is not at five hundred. A `pathLength="1"` circle
+ * with the server's ranges as its dash pattern is the same picture in one
+ * element, which is the device the full-scale scenes use and the only reason
+ * this one can be dragged up to four thousand positions without thinking about
+ * it.
+ */
+const RING_WIDTH = 13;
+
+export function ServerRing({ ranges, color, opacity }) {
+  const pattern = React.useMemo(() => buildDashPattern(ranges), [ranges]);
+  if (!pattern) return null;
+
+  return (
+    <motion.circle
+      cx={LAYOUT.centreX}
+      cy={LAYOUT.centreY}
+      r={LAYOUT.radius}
+      pathLength="1"
+      fill="none"
+      stroke={color}
+      strokeWidth={RING_WIDTH}
+      strokeDasharray={pattern.dashArray}
+      strokeDashoffset={pattern.dashOffset}
+      style={{ opacity }}
+    />
   );
 }

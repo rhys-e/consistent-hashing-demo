@@ -27,5 +27,8 @@ export function useBeatCaption(progress, captions) {
     setIndex(current => (current === next ? current : next));
   });
 
-  return captions[Math.min(index, captions.length - 1)].text;
+  // A scene with nothing to say is a scene, not a mistake: the full-scale view
+  // lost its only caption when the story stopped needing it, and indexing an
+  // empty list here took the scene down with it.
+  return captions[Math.min(index, captions.length - 1)]?.text ?? null;
 }

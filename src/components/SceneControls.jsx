@@ -1,30 +1,29 @@
 import React, { useEffect } from 'react';
-import { SCENE_EVENT, canStepWhile, primaryActionFor } from '../story/scenePlayer';
 
 /**
- * Transport for a scene.
+ * Transport for a scene: one button, and the space bar.
  *
- * A scene that has finished playing has nothing to offer but a replay, which asks
- * the viewer to sit through the whole thing again to see the one moment they
- * missed. Stepping is the answer, and because the timeline is a single scalar,
- * stepping back genuinely rewinds the scene rather than cutting to an earlier
- * still.
+ * It used to offer Back and Next as well, on the reasoning that a scene which has
+ * finished has nothing to give but a replay, and stepping lets somebody return to
+ * the one moment they missed. The reasoning holds and the control did not. A step
+ * is only meaningful at a rest, the rests are unevenly spaced, and pressing Next
+ * twice in a row lands somewhere the viewer has no way to predict — so the thing
+ * that reads as a scrubber behaves like a chapter list nobody has seen.
  *
- * Nothing in here moves. Back and Next sit together because they are one control
- * used twice; the primary is a different kind of action and goes last, at a fixed
- * width so that Play becoming Reset does not shift the row under the cursor.
+ * What is left is the one action that is always unambiguous: put the scene back to
+ * its beginning. The timeline still keeps its steps, because that is what
+ * `sceneRests` checks the scenes against — they are the scene's structure, not
+ * only a control surface.
  */
 
 const BUTTON =
-  'shrink-0 border border-cyber-border px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-ui-text-secondary transition-colors duration-normal hover:text-ui-text-bright disabled:cursor-default disabled:opacity-30 disabled:hover:text-ui-text-secondary';
-const PRIMARY = `${BUTTON} w-[6.5rem] text-center`;
+  'shrink-0 border border-cyber-border px-4 py-2 text-[11px] uppercase tracking-[0.28em] ' +
+  'text-ui-text-secondary transition-colors duration-normal hover:text-ui-text-bright ' +
+  'disabled:cursor-default disabled:opacity-30 disabled:hover:text-ui-text-secondary';
 
-const PRIMARY_LABEL = {
-  [SCENE_EVENT.play]: 'Play',
-  [SCENE_EVENT.reset]: 'Reset',
-};
+export function SceneControls({ timeline, enabled = true }) {
+  const replay = React.useCallback(() => timeline.reset(), [timeline]);
 
-function useTransportKeys({ onPrimary, onNext, onPrevious, enabled }) {
   useEffect(() => {
     if (!enabled) return undefined;
 
@@ -36,59 +35,20 @@ function useTransportKeys({ onPrimary, onNext, onPrevious, enabled }) {
       ) {
         return;
       }
+      if (event.key !== ' ' && event.key !== 'Spacebar') return;
 
-      if (event.key === 'ArrowRight') onNext();
-      else if (event.key === 'ArrowLeft') onPrevious();
-      else if (event.key === ' ' || event.key === 'Spacebar') {
-        event.preventDefault();
-        onPrimary();
-      } else return;
+      event.preventDefault();
+      replay();
     };
 
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
-  }, [enabled, onNext, onPrevious, onPrimary]);
-}
-
-export function SceneControls({ timeline, enabled = true }) {
-  const { status, stepIndex, stepCount, canStepBack, canStepForward } = timeline;
-
-  const isAtStart = stepIndex === 0;
-  const primary = primaryActionFor(status, isAtStart);
-  const stepping = canStepWhile(status);
-
-  const onPrimary = () => (primary === SCENE_EVENT.reset ? timeline.reset() : timeline.play());
-  const onNext = () => stepping && timeline.next();
-  const onPrevious = () => stepping && timeline.previous();
-
-  // A deck has every scene mounted at once; only the one on screen may answer.
-  useTransportKeys({ onPrimary, onNext, onPrevious, enabled });
+  }, [enabled, replay]);
 
   return (
-    <div className="flex shrink-0 items-center gap-3">
-      <span className="mr-1 text-[11px] uppercase tracking-[0.28em] text-ui-text-secondary/60">
-        {`${String(stepIndex + 1).padStart(2, '0')} / ${String(stepCount).padStart(2, '0')}`}
-      </span>
-      <button
-        type="button"
-        className={BUTTON}
-        onClick={onPrevious}
-        disabled={!stepping || !canStepBack}
-        aria-label="Previous step"
-      >
-        Back
-      </button>
-      <button
-        type="button"
-        className={BUTTON}
-        onClick={onNext}
-        disabled={!stepping || !canStepForward}
-        aria-label="Next step"
-      >
-        Next
-      </button>
-      <button type="button" className={PRIMARY} onClick={onPrimary}>
-        {PRIMARY_LABEL[primary]}
+    <div className="flex items-center gap-3">
+      <button type="button" className={BUTTON} onClick={replay} disabled={!enabled}>
+        Replay
       </button>
     </div>
   );

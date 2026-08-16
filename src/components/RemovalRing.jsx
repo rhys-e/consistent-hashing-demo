@@ -39,17 +39,22 @@ const EVEN_MARK = 0.4;
 /**
  * The scene as durations laid end to end.
  *
- * One movement carries the whole scene, and the scene plays it twice. Each
+ * One movement carries the whole scene, and the story plays it twice. Each
  * server's arc sweeps *backwards* from its own position to the one before it —
- * that is the ownership rule, animated rather than asserted. Then a server leaves,
- * and its neighbour's arc performs the identical sweep again across the ground it
- * left. The second reads as an answer because the first taught the grammar.
+ * that is the ownership rule, animated rather than asserted. Scene 2 does that
+ * sweep; this scene is the second playing of it, where a server leaves and its
+ * neighbour performs the identical sweep again across the ground it left. The
+ * second reads as an answer because the first taught the grammar.
+ *
+ * Which is why nothing here establishes anything. Scene 2 ends on precisely the
+ * frame this scene opens on — three servers, eleven keys, every range claimed —
+ * and `Story.jsx` puts no slide between them in order to keep it. This scene used
+ * to land the markers, sweep the arcs and place the keys all over again, which
+ * spent the first twelve seconds rebuilding a picture already on screen and threw
+ * away the continuity the pair was arranged to have.
  */
-const OPENING = 0.45;
-const MARKERS = { each: 0.55, stagger: 0.4 };
-const SWEEP = { each: 0.95, stagger: 0.6 };
-const KEYS = { move: 1.4 };
 const PANEL = 0.45;
+const OPENING_REST = 1.2;
 /**
  * A server does not vanish, it fails: it wavers first, which is the difference
  * between something being removed from a diagram and something going wrong.
@@ -105,31 +110,32 @@ export function buildRemovalTimeline(model) {
   const timeline = createTimeline({ readingRest: READING_REST });
   const servers = model.servers.length;
 
-  const opening = timeline.rest(OPENING, 'Empty ring');
+  /**
+   * The establishing movements, kept as windows of no length at the very start.
+   *
+   * Every layer describes itself as "how far through my window are we", and
+   * `rangeProgress` reads a zero-length window as complete from the first frame.
+   * So the ring arrives assembled without any layer needing a second, settled code
+   * path — which is the version of this that would rot, because the drawing and the
+   * timeline would then hold separate opinions about what the scene opens on.
+   */
+  const arrived = { from: 0, to: 0 };
+  const markers = group(arrived, servers, 0);
+  const sweep = group(arrived, servers, 0);
+  const keys = group(arrived, model.keys.length, 0);
 
-  const markers = group(
-    timeline.move(MARKERS.each + MARKERS.stagger * (servers - 1)),
-    servers,
-    MARKERS.each
-  );
-  timeline.rest(REST, 'Three servers');
-
-  const sweep = group(
-    timeline.move(SWEEP.each + SWEEP.stagger * (servers - 1)),
-    servers,
-    SWEEP.each
-  );
-  timeline.rest(REST, 'Ranges claimed');
-
-  const keys = group(timeline.move(KEYS.move), model.keys.length, KEYS.move * 0.4);
-  timeline.rest(REST, 'Keys placed');
-
+  // The one thing that does arrive, because it is the one thing Scene 2 never put
+  // on screen. The ring carries straight over and the measurement of it turns up:
+  // that is a scene beginning, rather than the previous slide being redrawn.
   const panel = timeline.move(PANEL);
-  const settled = timeline.rest(REST, 'Shares shown');
+  // Long enough to register as a frame the viewer has arrived at rather than one
+  // the previous slide left behind, and short enough that a scene which opens on a
+  // picture the viewer already read does not make them wait to be told why.
+  const settled = timeline.rest(OPENING_REST, 'Shares shown');
 
   // The claim the scene is here to make, said while it is still true of nothing on
   // screen, and left standing until the second half qualifies it.
-  timeline.annotate('A server fails. Only the keys it was holding need to move at all.');
+  timeline.annotate('A server fails, and only the keys it was holding have to move anywhere.');
   const waver = timeline.move(FAIL.waver);
   const drop = timeline.move(FAIL.drop);
   const orphaned = timeline.rest(ORPHANED_REST, 'Nobody owns it');
@@ -139,7 +145,7 @@ export function buildRemovalTimeline(model) {
 
   const highlight = timeline.move(HIGHLIGHT.move);
   timeline.annotate(
-    'Every one of them landed on the same neighbour, which now owns twice as much.'
+    'All of them went to the same neighbour, which now owns roughly twice what it did.'
   );
   const closing = timeline.rest(READING_REST, 'What it cost');
 
@@ -147,7 +153,6 @@ export function buildRemovalTimeline(model) {
   const whole = timeline.rest(WHOLE_REST, 'Everything else held');
 
   return {
-    opening,
     markers,
     sweep,
     keys,
@@ -373,6 +378,25 @@ export function RemovalRing({ model, progress, timeline }) {
         />
       ))}
 
+      {/* What changed hands, in the colour of whoever took it — one block, one
+          colour, which is exactly what Scene 4 then breaks apart.
+
+          Above the arcs and below the marks, because a mark is the *boundary* of
+          the stretch being highlighted: drawn last, the highlight covered the dots
+          at either end of itself and hid the thing it was pointing at. */}
+      {model.remap.ranges.map(range => (
+        <OwnershipArc
+          key={`moved-${range.from}`}
+          progress={progress}
+          endsAt={range.to}
+          color={colors.get(range.serverId)}
+          fullLength={range.to - range.from}
+          lengthFor={() => range.to - range.from}
+          opacityFor={latest => highlightAt(timeline, latest)}
+          layer={`moved:${range.serverId}:${range.from.toFixed(6)}`}
+        />
+      ))}
+
       {model.before.arcs.map((arc, index) => (
         <ServerMarker
           key={`marker-${arc.serverId}`}
@@ -397,22 +421,6 @@ export function RemovalRing({ model, progress, timeline }) {
           presenceFor={latest => keyAt(timeline, latest, index)}
           labelFor={latest => keyLabelAt(timeline, latest, sampleKey, index)}
           layer={`key:${sampleKey.name}`}
-        />
-      ))}
-
-      {/* What changed hands, in the colour of whoever took it — one block, one
-          colour, which is exactly what Scene 4 then breaks apart. */}
-      {model.remap.ranges.map(range => (
-        <OwnershipArc
-          key={`moved-${range.from}`}
-          progress={progress}
-          endsAt={range.to}
-          color={colors.get(range.serverId)}
-          fullLength={range.to - range.from}
-          lengthFor={() => range.to - range.from}
-          opacityFor={latest => highlightAt(timeline, latest)}
-          flattenFor={() => 1}
-          layer={`moved:${range.serverId}:${range.from.toFixed(6)}`}
         />
       ))}
 

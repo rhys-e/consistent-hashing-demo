@@ -4,9 +4,10 @@ import { REMOVAL_BEATS } from '../components/RemovalRing';
 /**
  * Scene 3: three servers at one position each, and what happens when one leaves.
  *
- * The settled frame first. Everything the scene will animate is a pure function of
- * a beat value, so the composition is worth agreeing on before anything moves
- * through it.
+ * It opens assembled, on the frame Scene 2 ends on. There is no establishing
+ * sequence to review here any more — the markers landing and the arcs sweeping are
+ * Scene 2's stories, and this scene is the second half of one movement rather than
+ * a second run at the whole of it.
  */
 const meta = {
   title: 'Hash Ring/Guided Story/Scene 03 Server Leaves',
@@ -25,18 +26,9 @@ export const Playing = {
   args: {},
 };
 
-export const EmptyRing = {
-  args: { pinnedProgress: 0.2 },
-};
-
-/** Three positions, no ownership yet: the frame the sweep answers. */
-export const MarkersPlaced = {
-  args: { pinnedProgress: REMOVAL_BEATS.sweep.from },
-};
-
-/** Mid-sweep, which is the frame the rule lives in. */
-export const Sweeping = {
-  args: { pinnedProgress: (REMOVAL_BEATS.sweep.from + REMOVAL_BEATS.sweep.to) / 2 },
+/** The first frame, which has to be the frame Scene 2 left on screen. */
+export const Opening = {
+  args: { pinnedProgress: 0 },
 };
 
 export const Settled = {

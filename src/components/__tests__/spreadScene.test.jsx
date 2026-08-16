@@ -39,10 +39,10 @@ function unownedStretches(container) {
 }
 
 describe('virtual nodes', () => {
-  it('splits three positions into thirty', () => {
+  it('splits three positions into eighteen', () => {
     const markers = frameAt(SPREAD_BEATS.settled).querySelectorAll('[data-layer^="marker:"]');
 
-    expect(markers.length).toBe(30);
+    expect(markers.length).toBe(18);
     expect([...markers].every(marker => opacityOf(marker) > 0.99)).toBe(true);
   });
 
@@ -80,7 +80,7 @@ describe('virtual nodes', () => {
     expect(unownedStretches(frameAt(SPREAD_BEATS.orphaned.from + 1.2))).toBe(
       SPREAD_MODEL.levels[1].before.arcs.filter(arc => arc.serverId === DEPARTING_SERVER_ID).length
     );
-    expect(unownedStretches(frameAt(SPREAD_BEATS.orphaned.from + 1.2))).toBe(10);
+    expect(unownedStretches(frameAt(SPREAD_BEATS.orphaned.from + 1.2))).toBe(6);
   });
 
   /** And the outcome: shared, rather than landing on one. */
@@ -89,15 +89,18 @@ describe('virtual nodes', () => {
     const share = (level, id) =>
       Number((level.after.shares.find(entry => entry.id === id).share * 100).toFixed(1));
 
+    // One position each dumps two thirds of the ring on one neighbour. Six each
+    // splits it. The sparse level is still hashed, because it is Scene 3's ring;
+    // only the dense one is placed.
     expect(share(sparse, 'cache-3')).toBe(64.3);
-    expect(share(dense, 'cache-3')).toBe(51.5);
-    expect(share(dense, 'cache-5')).toBe(48.5);
+    expect(share(dense, 'cache-3')).toBe(52.2);
+    expect(share(dense, 'cache-5')).toBe(47.8);
   });
 
   /**
    * The two scenes end on the same device so they can be held against each other,
    * and the contrast *is* the argument: one solid block in one colour against
-   * seven scattered pieces in two. A panel reporting 64/36 and 52/48 states the
+   * six scattered pieces in two. A panel reporting 64/36 and 52/48 states the
    * same thing and states it — this is the only part a viewer sees.
    */
   it('closes on what changed hands, in one colour or two', () => {
@@ -115,5 +118,44 @@ describe('virtual nodes', () => {
     expect(coloursOf(sparse).size).toBe(1);
     expect(coloursOf(dense).size).toBe(2);
     expect(dense.length).toBeGreaterThan(sparse.length);
+  });
+});
+
+describe('the closing highlight', () => {
+  const opacityOf = (container, selector) =>
+    [...container.querySelectorAll(selector)].map(node =>
+      Number(node.getAttribute('opacity') ?? 1)
+    );
+
+  /**
+   * The scene's argument is a negative — that the rest of the ring was untouched —
+   * and it cannot make that argument with the rest of the ring taken away. At a
+   * twelfth opacity the untouched arcs stopped reading as a ring at all and became
+   * six lit slivers in the dark, which is the one thing this frame must not say.
+   */
+  it('leaves the untouched ring legible while the moved pieces are named', () => {
+    const { container } = render(
+      <VirtualNodesScene pinnedProgress={SPREAD_BEATS.closing.from + 1} />
+    );
+
+    // The survivors' arcs only. The failed server's are at nothing by now, which
+    // is the scene working rather than the highlight.
+    const untouched = opacityOf(container, '[data-layer^="arc:cache-3#"]').concat(
+      opacityOf(container, '[data-layer^="arc:cache-5#"]')
+    );
+    expect(untouched.length).toBeGreaterThan(10);
+    expect(Math.min(...untouched)).toBeGreaterThan(0.3);
+
+    // And what moved is still the brighter thing, or the highlight says nothing.
+    const moved = opacityOf(container, '[data-layer^="moved:"]');
+    expect(Math.max(...moved)).toBeGreaterThan(Math.max(...untouched));
+
+    // Before the highlight and after the restore the ring is whole, because the
+    // highlight is a moment passed through rather than the frame it ends on.
+    [SPREAD_BEATS.absorbed, SPREAD_BEATS.whole].forEach(at => {
+      const frame = render(<VirtualNodesScene pinnedProgress={at} />).container;
+      const arcs = opacityOf(frame, '[data-layer^="arc:cache-3#"]');
+      expect(Math.min(...arcs)).toBeGreaterThan(0.95);
+    });
   });
 });

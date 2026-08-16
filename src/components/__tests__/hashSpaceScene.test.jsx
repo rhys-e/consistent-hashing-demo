@@ -54,9 +54,9 @@ describe('hash space scene', () => {
    */
   it('withholds the transport until the scene ends or the viewer engages', () => {
     const { rerender } = render(<HashSpaceScene />);
-    expect(screen.queryByLabelText('Next step')).toBeNull();
+    expect(screen.queryByText('Replay')).toBeNull();
 
     rerender(<HashSpaceScene engaged />);
-    expect(screen.queryByLabelText('Next step')).toBeTruthy();
+    expect(screen.queryByText('Replay')).toBeTruthy();
   });
 });

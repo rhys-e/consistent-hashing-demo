@@ -216,7 +216,7 @@ export function buildLookupModel({ servers = REMOVAL_SERVERS, keyNames = REMOVAL
  * one and ten have in common is the honest part — they start from the same
  * balance, so the only thing that differs afterwards is the failure.
  */
-export const SPREAD_LEVELS = [1, 10];
+export const SPREAD_LEVELS = [1, 6];
 
 /**
  * Scene 4: the same three servers and the same failure, at two densities.
@@ -229,12 +229,14 @@ export function buildSpreadModel({
   servers = REMOVAL_SERVERS,
   removedId = DEPARTING_SERVER_ID,
   levels = SPREAD_LEVELS,
+  vnodeKey,
+  positionFor,
 } = {}) {
   const survivors = servers.filter(server => server.id !== removedId);
 
   const built = levels.map(vnodesPerServer => {
-    const before = buildTopology({ servers, vnodesPerServer });
-    const after = buildTopology({ servers: survivors, vnodesPerServer });
+    const before = buildTopology({ servers, vnodesPerServer, vnodeKey, positionFor });
+    const after = buildTopology({ servers: survivors, vnodesPerServer, vnodeKey, positionFor });
     const delta = remapDelta(before, after);
 
     return {

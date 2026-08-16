@@ -2,7 +2,7 @@ import { VirtualNodesScene } from '../components/VirtualNodesScene';
 import { SPREAD_BEATS } from '../components/SpreadRing';
 
 /**
- * Scene 4: the same failure, at ten positions per server instead of one.
+ * Scene 4: the same failure, at six positions per server instead of one.
  *
  * The comparison against Scene 3 is the point, so everything except the density is
  * deliberately identical — same cast, same server failing, same sweep.

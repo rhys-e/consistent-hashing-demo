@@ -49,6 +49,8 @@ export default {
         'ui-text-error': theme.colors.ui.text.error,
 
         // Other UI colors
+        'ui-border': theme.colors.ui.border,
+        'ui-panel-bg': theme.colors.ui.panelBg,
         'ui-grid': theme.colors.ui.grid,
         'ui-particle': theme.colors.ui.particle,
 

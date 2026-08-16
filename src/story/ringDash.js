@@ -40,8 +40,12 @@ const MIN_VISIBLE = 1e-6;
 /**
  * SVG starts a circle at three o'clock, which is position 0.75 in the story's
  * handedness, and a dash offset moves the pattern backwards from there.
+ *
+ * A straight path starts where it starts, so anything drawing one passes
+ * `pathStart: 0` — the same pattern, measured from a different origin.
  */
 const CIRCLE_START = 0.75;
+export const LINE_START = 0;
 
 const PRECISION = 7;
 
@@ -101,7 +105,7 @@ function toSpans(ranges) {
  * The array alternates dash and gap, starting on the first span and closing with
  * the gap that wraps back round to it. Every entry is positive.
  */
-export function buildDashPattern(ranges) {
+export function buildDashPattern(ranges, { pathStart = CIRCLE_START } = {}) {
   const spans = toSpans(ranges);
   if (spans.length === 0) return null;
 
@@ -122,7 +126,7 @@ export function buildDashPattern(ranges) {
     dashArray: pattern.map(value => value.toFixed(PRECISION)).join(' '),
     // The phase lives here, so the array can begin with a real dash rather than a
     // zero-length one standing in for "start further along".
-    dashOffset: forwards(spans[0].start, CIRCLE_START),
+    dashOffset: forwards(spans[0].start, pathStart),
   };
 }
 
@@ -150,4 +154,36 @@ export function arcRanges(endsAt, length) {
           { from: 0, to },
         ]
   ).filter(range => range.to - range.from >= MIN_VISIBLE);
+}
+
+/**
+ * The part of a set of ranges inside a window, rescaled so the window is 0 to 1.
+ *
+ * This is the whole of the magnifier. A stretch of the ring becomes a stretch of
+ * anything else — a straight line, a wider arc — by being renormalised, so the
+ * thing that draws it does not need to know it is looking at a detail.
+ *
+ * Every range is tried twice, once shifted a full turn, because a window near the
+ * seam contains ranges from both ends of the space and neither offset alone finds
+ * both. Ranges are already split at the seam by `buildRanges`, so no range needs
+ * unwrapping itself — only relocating relative to the window.
+ */
+export function windowRanges(ranges, from, width) {
+  if (width <= 0) return [];
+
+  const start = ((from % 1) + 1) % 1;
+  const end = start + width;
+  const clipped = [];
+
+  ranges.forEach(({ from: rangeFrom, to: rangeTo, ...rest }) => {
+    [0, 1].forEach(turn => {
+      const low = Math.max(start, rangeFrom + turn);
+      const high = Math.min(end, rangeTo + turn);
+      if (high - low <= MIN_VISIBLE) return;
+
+      clipped.push({ ...rest, from: (low - start) / width, to: (high - start) / width });
+    });
+  });
+
+  return clipped;
 }

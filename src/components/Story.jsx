@@ -1,10 +1,12 @@
 import React from 'react';
-import StoryDeck from './StoryDeck';
+import StoryDeck, { openingIndex } from './StoryDeck';
 import HashSpaceScene from './HashSpaceScene';
 import KeyRoutesScene from './KeyRoutesScene';
 import ServerLeavesScene from './ServerLeavesScene';
 import VirtualNodesScene from './VirtualNodesScene';
+import ZoomDensityScene from './ZoomDensityScene';
 import { ServerJoinsScene } from './FullScaleScene';
+import SandboxScene from './SandboxScene';
 
 /**
  * The story, as the sequence of slides it is.
@@ -28,15 +30,17 @@ import { ServerJoinsScene } from './FullScaleScene';
  * changes on the way into the full-scale view.
  */
 export const STORY_SLIDES = [
+  // The opening names the subject and states the problem it solves. `lead` sets it
+  // larger and centred, which is the only difference between it and the chapter
+  // slides that follow.
   {
     kind: 'interstitial',
     key: 'intro',
-    number: 'Part one',
-    label: 'Positions',
-    title: 'Where does a key live?',
+    lead: true,
+    title: 'Consistent hash ring',
     body: [
-      'A cache is a set of machines, and a key has to land on exactly one of them. Choose badly and every machine you add moves every key that was already placed.',
-      'Consistent hashing answers this in two moves. The first is to stop thinking about machines at all, and think about a number.',
+      'A cache is a group of machines, and every key has to live on exactly one of them. The obvious way to choose is to divide the key by the number of machines.',
+      'That works until you add a machine. Then almost every key moves at once, and a cache that has to be refilled is worth very little. Consistent hashing is how you avoid it.',
     ],
   },
   // One slide, because the line and the ring it bends into are one movement.
@@ -48,12 +52,10 @@ export const STORY_SLIDES = [
   {
     kind: 'interstitial',
     key: 'ownership',
-    number: 'Part two',
-    label: 'Ownership',
     title: 'Which server holds it?',
     body: [
-      'A ring of numbers is not much use on its own. The second move is to put the servers on it — hashed by their own names, the same way, so that a server has a position in exactly the sense a key does.',
-      'That leaves one question, and the whole scheme is the answer to it: given a key here and servers there, which one holds it?',
+      'A ring of numbers does nothing on its own, so the servers have to go on it as well. Each one takes its position from its own name, hashed exactly the way a key is.',
+      'That leaves a single question, and the rest of consistent hashing is the answer to it. A key sits at one point and the servers sit at others. Which server holds the key?',
     ],
   },
   // Two slides, no break. Scene 2 ends on the frame Scene 3 opens on — three
@@ -75,12 +77,10 @@ export const STORY_SLIDES = [
   {
     kind: 'interstitial',
     key: 'spread',
-    number: 'Part three',
-    label: 'Spread',
-    title: 'One position was the mistake',
+    title: 'Many positions each',
     body: [
-      "Nothing that just happened was a flaw in the hashing. The ring did exactly what it promised — only the failed server's keys moved. The problem is that with one position each there is only one neighbour standing next to the gap, and it gets all of it.",
-      'So stop giving a server one position. Give it many, scattered independently, and let the same rule run again.',
+      'The ring kept its promise. Only the keys of the failed server had to move, and every other key stayed where it was. The trouble is where they all went.',
+      'With one position each there is only one server next to the gap, so it inherits the lot. The fix is to stop giving a server one position, and give it many.',
     ],
   },
   {
@@ -91,13 +91,19 @@ export const STORY_SLIDES = [
   {
     kind: 'interstitial',
     key: 'scale',
-    number: 'Part four',
-    label: 'Scale',
-    title: 'Now do it a thousand times',
+    title: 'At production scale',
     body: [
-      'Ten positions each was enough to halve the damage. Real deployments give every server hundreds, and the effect keeps going: the more positions there are, the less any single failure can concentrate anywhere.',
-      'But at that density you can no longer look at a ring and say who owns what — there is no dominant owner anywhere on it. So the picture has to change. Not to hide the detail, but to stop pretending a summary is a drawing of it.',
+      'Six positions each cut the damage in half, and real systems give each server hundreds. The more positions there are, the more efficiently a failure is spread.',
+      'Every ring so far has been a simplified one, small enough to point at. What follows is the same ring at close to production scale. At that size you cannot read it by eye.',
     ],
+  },
+  // Two dense-ring slides in a row, and no break between them. Scene 5 ends on the
+  // ring it opened with, which is the one Scene 6 then takes apart — a narration
+  // slide here would separate the evidence from the conclusion it is evidence for.
+  {
+    kind: 'scene',
+    key: 'zoom-density',
+    render: props => <ZoomDensityScene {...props} />,
   },
   // One slide for the whole of the full-scale argument. Taking the ring apart, the
   // handover, and putting it back are one movement: cut it in half and the lanes
@@ -108,10 +114,26 @@ export const STORY_SLIDES = [
     key: 'full-scale',
     render: props => <ServerJoinsScene {...props} />,
   },
+  // The last break, and the only one that hands something over rather than
+  // setting something up.
+  {
+    kind: 'interstitial',
+    key: 'yours',
+    title: 'Try your own numbers',
+    body: [
+      'Every example so far has used fixed numbers. Three servers, or six and then seven, at counts chosen to make a point clearly. None of the argument depends on them.',
+      'So here is the same ring with the numbers unlocked. Two things are worth watching. How far the split sits from even, and how much of the ring moves when you change it.',
+    ],
+  },
+  {
+    kind: 'scene',
+    key: 'sandbox',
+    render: props => <SandboxScene {...props} />,
+  },
 ];
 
 export function Story() {
-  return <StoryDeck slides={STORY_SLIDES} />;
+  return <StoryDeck slides={STORY_SLIDES} initialIndex={openingIndex(STORY_SLIDES)} urlSync />;
 }
 
 export default Story;

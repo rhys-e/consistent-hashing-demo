@@ -40,6 +40,15 @@ import { assign, setup } from 'xstate';
 export const SETTLE_DWELL_MS = 1500;
 /** A slide is settled this long before another nudge counts. */
 export const NUDGE_COOLDOWN_MS = 260;
+/**
+ * How long before the deck moves on the title breaks up.
+ *
+ * Late, and on its own. Firing it with the countdown bar put two changes on
+ * screen at the same moment, and a viewer has to choose which to look at. This
+ * way the bar states the fact for five seconds and the title takes a bow at the
+ * end of them.
+ */
+export const CLOSING_MS = 1500;
 
 const clamp = (value, count) => Math.min(count - 1, Math.max(0, value));
 
@@ -60,13 +69,27 @@ export const deckMachine = setup({
     movesSomewhere: ({ context, event }) => targetOf(context, event) !== context.index,
   },
   actions: {
-    goToTarget: assign({ index: ({ context, event }) => targetOf(context, event) }),
-    advance: assign({ index: ({ context }) => clamp(context.index + 1, context.slideCount) }),
+    /**
+     * `viaViewer` records who moved the deck, which is not a detail the machine
+     * needs but is the one thing an address bar cannot work out for itself.
+     * A move somebody made is worth a history entry; the deck advancing on its
+     * own is not, or the back button becomes a way to re-watch the story one
+     * slide at a time rather than a way out.
+     */
+    goToTarget: assign({
+      index: ({ context, event }) => targetOf(context, event),
+      viaViewer: true,
+    }),
+    advance: assign({
+      index: ({ context }) => clamp(context.index + 1, context.slideCount),
+      viaViewer: false,
+    }),
     engage: assign({ engaged: true }),
   },
   delays: {
     dwell: SETTLE_DWELL_MS,
     cooldown: NUDGE_COOLDOWN_MS,
+    untilClosing: ({ context }) => Math.max(0, context.countdownMs - CLOSING_MS),
   },
 }).createMachine({
   id: 'deck',
@@ -74,6 +97,9 @@ export const deckMachine = setup({
     index: clamp(input?.initialIndex ?? 0, input?.slideCount ?? 1),
     slideCount: input?.slideCount ?? 1,
     engaged: false,
+    // Nobody has moved it yet, so the opening address replaces rather than pushes.
+    viaViewer: false,
+    countdownMs: input?.countdownMs ?? 5000,
   }),
   type: 'parallel',
   states: {
@@ -99,6 +125,14 @@ export const deckMachine = setup({
           on: { ENGAGE: 'ready' },
         },
         counting: {
+          initial: 'running',
+          states: {
+            running: {
+              after: { untilClosing: 'closing' },
+            },
+            /** The last moment of a slide, and the only thing that reads it. */
+            closing: {},
+          },
           on: {
             COUNTDOWN_DONE: { target: 'settling', actions: 'advance' },
             ENGAGE: 'ready',
@@ -150,6 +184,8 @@ function targetOf(context, event) {
  */
 export const isSettled = state => !state.matches({ navigation: 'settling' });
 export const isCountingDown = state => state.matches({ navigation: 'counting' });
+/** The last second and a half, when the slide takes its bow. */
+export const isClosing = state => state.matches({ navigation: { counting: 'closing' } });
 
 /**
  * Whether a nudge should be acted on: wheel and touch are refused while a slide

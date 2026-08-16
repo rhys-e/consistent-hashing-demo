@@ -37,15 +37,30 @@ export function hashPosition(key) {
   return (hash >>> 0) / 0x100000000;
 }
 
-export function buildVirtualNodes({ servers, vnodesPerServer }) {
+/**
+ * How a server's nth position is named, and therefore where it lands.
+ *
+ * A real implementation picks some format here and the choice is arbitrary, but it
+ * is not *inert*: it decides the whole sample, so it is a parameter rather than a
+ * string buried in a loop. Sixteen formats were measured against what the scenes
+ * need and this one won on every count, so it is the default and every scene uses
+ * it — but a candidate cast under review can pass its own.
+ */
+export const VNODE_KEY = (serverId, index) => `${serverId}#${index}`;
+
+export function buildVirtualNodes({ servers, vnodesPerServer, vnodeKey = VNODE_KEY, positionFor }) {
   const vnodes = [];
 
   servers.forEach(server => {
     for (let index = 0; index < vnodesPerServer; index++) {
+      const vnodeId = vnodeKey(server.id, index);
       vnodes.push({
         serverId: server.id,
-        vnodeId: `${server.id}#${index}`,
-        position: hashPosition(`${server.id}#${index}`),
+        vnodeId,
+        // A scene may place its positions rather than hash them — see `placedRing`.
+        // Everything downstream is the same computation either way, which is the
+        // point: only where the points are changes, never what is done with them.
+        position: positionFor?.(server.id, index) ?? hashPosition(vnodeId),
       });
     }
   });
@@ -83,8 +98,8 @@ export function buildRanges(vnodes) {
   return ranges.filter(range => range.to > range.from);
 }
 
-export function buildTopology({ servers, vnodesPerServer }) {
-  const vnodes = buildVirtualNodes({ servers, vnodesPerServer });
+export function buildTopology({ servers, vnodesPerServer, vnodeKey, positionFor }) {
+  const vnodes = buildVirtualNodes({ servers, vnodesPerServer, vnodeKey, positionFor });
 
   return { servers, vnodesPerServer, vnodes, ranges: buildRanges(vnodes) };
 }

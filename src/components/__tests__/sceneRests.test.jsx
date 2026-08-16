@@ -8,6 +8,8 @@ import KeyRoutesScene from '../KeyRoutesScene';
 import { LOOKUP_STEPS } from '../LookupRing';
 import ServerLeavesScene from '../ServerLeavesScene';
 import VirtualNodesScene from '../VirtualNodesScene';
+import ZoomDensityScene from '../ZoomDensityScene';
+import { ZOOM_STEPS } from '../DensityZoom';
 import { SPREAD_STEPS } from '../SpreadRing';
 import { REMOVAL_STEPS } from '../RemovalRing';
 import { JOINING_SERVER, SAMPLE_SERVERS } from '../../story/topology';
@@ -96,6 +98,10 @@ describe('scene rests', () => {
 
   it('rests at every step of the virtual nodes scene', () => {
     expectRestsAt(beat => <VirtualNodesScene pinnedProgress={beat} />, SPREAD_STEPS);
+  });
+
+  it('rests at every step of the density scene', () => {
+    expectRestsAt(beat => <ZoomDensityScene pinnedProgress={beat} />, ZOOM_STEPS);
   });
 
   it('rests at every step of the joining scene', () => {

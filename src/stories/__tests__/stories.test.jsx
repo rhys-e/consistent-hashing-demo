@@ -7,11 +7,19 @@ import * as scene07Stories from '../Scene07ServerJoins.stories';
 import * as narrationStories from '../NarrationSlide.stories';
 import * as countdownStories from '../DeckCountdown.stories';
 import * as deckStories from '../StoryDeck.stories';
+import * as bridgeStories from '../Bridge01Density.stories';
+import * as arcStories from '../Treatment01Arcs.stories';
+import * as distributionStories from '../Treatment02Distribution.stories';
+import * as highlightStories from '../Treatment03Highlight.stories';
 
 const STORY_FILES = [
   ['Scene 00 Hash Space', hashSpaceStories],
   ['Scene 06 Lanes Separate', scene06Stories],
   ['Scene 07 Server Joins', scene07Stories],
+  ['Bridge 01 Density Ramp', bridgeStories],
+  ['Treatment 01 Arc Shading', arcStories],
+  ['Treatment 02 Distribution', distributionStories],
+  ['Treatment 03 Closing Highlight', highlightStories],
   ['Narration Slide', narrationStories],
   ['Deck Countdown', countdownStories],
   ['Story Deck', deckStories],

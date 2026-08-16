@@ -127,8 +127,6 @@ const CLOSING_REST = READING_REST;
 const FLARE_DECAY = 0.18;
 
 const LANE_OPACITY = { full: 0.92, dim: 0.14, highlighted: 0.12 };
-/** How present the share panel is before it has anything to say. */
-const PANEL_PRESENCE = 0.16;
 
 /**
  * Beat boundaries depend on how many lanes there are, because the sequence is a
@@ -139,7 +137,9 @@ function addJoin(timeline, laneCount, sources) {
   const roster = timeline.move(ROSTER.slide);
   // Left standing through the empty lane, every handover and the fold back out:
   // the whole of that movement is this one sentence happening.
-  timeline.annotate('A new cache joins. The ring has to be shared out again to make room for it.');
+  timeline.annotate(
+    'A new server joins, so the ring has to be shared out between seven instead of six.'
+  );
   timeline.rest(ROSTER.rest, 'A cache joins');
 
   const join = timeline.move(JOIN);
@@ -178,9 +178,7 @@ function addJoin(timeline, laneCount, sources) {
   // rest of the ring was untouched — is the one claim worth spending words on.
   // Nothing replaces it: it is the last word of the scene and stays up until the
   // slide does.
-  timeline.annotate(
-    'Only these ranges changed hands. Every other key stayed exactly where it was.'
-  );
+  timeline.annotate('Only these ranges changed hands. Every other key stayed where it was.');
   timeline.rest(CLOSING_REST, 'What it took');
 
   const restoreHighlight = timeline.move(HIGHLIGHT.restore);
@@ -237,9 +235,11 @@ export function buildLaneTimeline(laneCount, { hasRemap = true, fromSettled = fa
     };
   }
 
-  timeline.narrate(
-    'Ownership changes hands hundreds of times around this ring — no stretch of it belongs to any one server.'
-  );
+  // No opening note. The Scale slide states the density and Scene 5 shows it, so
+  // a third telling arrived over a ring the viewer had already been told about —
+  // and blurring the artwork to say it meant the ring was on screen unblurred for
+  // a moment first, which read as the note being late rather than the scene
+  // starting.
   timeline.skip(OPENING);
   const fanOut = timeline.move(FAN_OUT);
   timeline.rest(REST, 'Lanes separated');
@@ -835,15 +835,9 @@ export function FullScaleLanes({ model, progress, timeline }) {
         rows={rows}
         progress={progress}
         settleFor={settleFor}
-        /**
-         * The panel is faintly present from the first frame rather than fading up
-         * from nothing. The ring is composed off-centre to leave room for it, so
-         * an empty right-hand side does not read as space being reserved — it
-         * reads as a ring that has been pushed out of true.
-         */
-        revealFor={latest =>
-          mix(PANEL_PRESENCE, 1, rangeProgress(latest, timeline.panel.from, timeline.panel.to))
-        }
+        // Only the numbers fade in. The panel around them is drawn from the first
+        // frame — see `ServerLoadPanel`.
+        revealFor={latest => rangeProgress(latest, timeline.panel.from, timeline.panel.to)}
         rowOpacityFor={(latest, rowIndex) => {
           if (!remap) return 1;
           // The newcomer's row is absent until it arrives, and then never dims: it
@@ -855,6 +849,18 @@ export function FullScaleLanes({ model, progress, timeline }) {
           rowIndex === joiningIndex && remap
             ? (1 - rosterAt(timeline, latest)) * ROSTER_SLIDE_FROM
             : 0
+        }
+        // Six servers are on the ring when the scene opens and seven when it ends,
+        // so a mark fixed at a seventh calls all six of them overloaded for the
+        // first third of the scene, when in fact their split is exactly even. The
+        // mark moves with the roster, on the same window the newcomer's row slides
+        // in on: the row appearing is the server existing.
+        evenShare={1 / servers.length}
+        evenShareFor={
+          joiningIndex >= 0
+            ? latest =>
+                mix(1 / (servers.length - 1), 1 / servers.length, rosterAt(timeline, latest))
+            : undefined
         }
         remap={remap}
         remapProgressFor={landedAt}

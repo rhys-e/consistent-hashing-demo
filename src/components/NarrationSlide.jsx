@@ -1,9 +1,21 @@
 import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
+import theme from '../themes';
 import { useScramble } from '../story/useScramble';
 
 /**
  * A chapter heading, given its own slide.
+ *
+ * One component for every slide of prose, in two sizes. The opening slide names
+ * the subject and is set larger and centred; the rest are the same slide left
+ * aligned. Keeping them one component is what stops the column width, the type
+ * scale and the timing drifting apart between chapters.
+ *
+ * There is no part number or section label above the title any more. The label
+ * said what the title said — `Spread` over `Give each server many positions` —
+ * the ticks down the edge of the deck already show how far through the story a
+ * viewer is, and the numbering had been rewritten twice as scenes were inserted,
+ * which is a fair sign it was tracking a structure the story never committed to.
  *
  * Prose and animation both want the viewer's whole attention, so each gets a
  * slide of its own: the macro argument is read without a moving picture beside
@@ -19,6 +31,21 @@ import { useScramble } from '../story/useScramble';
  */
 
 const RESOLVE = { duration: 0.5, ease: [0.16, 1, 0.3, 1] };
+
+/**
+ * The title breaks up for a third of a second when the deck starts counting down.
+ *
+ * Sliced rather than shaken: the title tears along two horizontal lines and the
+ * halves separate into red and blue for a few frames. A whole word wobbling reads
+ * as an error, where bands tearing along straight lines read as a signal — which
+ * is what this is. It fires when the countdown bar appears, so the two say the
+ * same thing in two registers, and neither fires once a viewer has taken over,
+ * because then nothing is about to happen.
+ *
+ * The bands themselves are in `index.css`: they are pseudo-elements reading
+ * `data-text`, which keeps one copy of the title in the document.
+ */
+
 /**
  * Roughly a skim rather than a careful read: the slide is offering to move on,
  * not insisting, and anyone who wants longer takes control and it stops asking.
@@ -29,7 +56,14 @@ const READ_PER_WORD_MS = 130;
 function Body({ paragraph, index, active }) {
   return (
     <motion.p
-      className="max-w-3xl text-xl leading-relaxed text-ui-text-primary"
+      /**
+       * Deliberately *not* balanced. `text-wrap: balance` shortens lines to even
+       * them up, so each paragraph settles at whatever width suits it and the
+       * right edge of the column moves from one paragraph to the next. A fixed
+       * measure with every paragraph long enough to fill it is what makes the
+       * block read as one column.
+       */
+      className="text-xl leading-relaxed text-ui-text-primary"
       initial={{ opacity: 0, y: 12 }}
       animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
       transition={{ ...RESOLVE, delay: active ? 0.45 + index * 0.14 : 0 }}
@@ -39,8 +73,26 @@ function Body({ paragraph, index, active }) {
   );
 }
 
-export function NarrationSlide({ number, label, title, body = [], active = true, onComplete }) {
+export function NarrationSlide({
+  title,
+  body = [],
+  lead = false,
+  active = true,
+  imminent = false,
+  onComplete,
+}) {
   const resolvedTitle = useScramble({ text: title, active });
+  /**
+   * Smaller than it wants to be, because of the scramble.
+   *
+   * The heading face is proportional, so a block glyph is not the width of the
+   * letter it stands in for. The invisible copy holds the box open, but the
+   * resolving copy can still wrap inside it where the finished title does not —
+   * a title set to the edge of its column visibly reflows as it settles. Titles
+   * are kept to four words and the type a size down, which leaves room for the
+   * widest glyph run to be wrong about its width and still fit on one line.
+   */
+  const heading = `font-orbitron ${lead ? 'text-5xl' : 'text-4xl'} font-normal uppercase leading-tight tracking-[0.16em]`;
 
   const words = [title, ...body].join(' ').split(/\s+/).length;
 
@@ -67,37 +119,44 @@ export function NarrationSlide({ number, label, title, body = [], active = true,
         }}
       />
 
-      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-9">
-        <div className="flex items-center gap-6 text-xs uppercase tracking-[0.5em] text-ui-text-secondary">
-          <span>{number}</span>
-          <motion.span
-            className="bg-cyber-border h-px flex-1 origin-left"
-            initial={{ scaleX: 0 }}
-            animate={active ? { scaleX: 1 } : { scaleX: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          />
-          <span>{label}</span>
-        </div>
-
+      {/* Left aligned on every slide, including the first.
+          A centred opening and left-aligned chapters are two typographic systems
+          in one deck, and the reader notices the switch rather than the emphasis.
+          `lead` now changes one thing: the size of the title. */}
+      {/* One width for the whole block.
+          The container used to be `max-w-5xl` with the paragraphs at `max-w-3xl`
+          inside it, so the text sat left of a wider centred box and the slide read
+          as off-centre. Titles are short enough to live in the narrower measure. */}
+      <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-9">
         {/* The finished title, invisible, holds the box open; the resolving one
             is laid over it. The heading face is proportional, so a block glyph is
             not the width of the letter it stands in for — left to itself the
             title rewraps as it resolves and shoves the paragraphs down the page. */}
         <div className="relative">
-          <h2
-            aria-hidden="true"
-            className="invisible font-orbitron text-5xl font-normal uppercase leading-tight tracking-[0.16em]"
-          >
+          <h2 aria-hidden="true" className={`invisible ${heading}`}>
             {title}
           </h2>
-          <h2 className="absolute inset-0 font-orbitron text-5xl font-normal uppercase leading-tight tracking-[0.16em] text-ui-text-heading">
+          <h2
+            className={`glitch-title absolute inset-0 ${heading} text-ui-text-heading`}
+            data-text={resolvedTitle}
+            data-glitching={imminent ? 'true' : 'false'}
+            style={{
+              '--glitch-a': theme.colors.primary.cyberBlue,
+              '--glitch-b': theme.colors.primary.neoRed,
+            }}
+          >
             {resolvedTitle}
           </h2>
         </div>
 
-        {body.map((paragraph, index) => (
-          <Body key={paragraph} paragraph={paragraph} index={index} active={active} />
-        ))}
+        {/* The paragraphs are a block of their own, closer to each other than to
+            the title. Short sentences read as a list rather than as prose when
+            every gap on the slide is the same size. */}
+        <div className="flex flex-col gap-5">
+          {body.map((paragraph, index) => (
+            <Body key={paragraph} paragraph={paragraph} index={index} active={active} />
+          ))}
+        </div>
       </div>
     </div>
   );

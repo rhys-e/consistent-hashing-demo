@@ -103,7 +103,11 @@ const presenceIn = (intervals, progressValue) => {
   return pulseProgress(
     progressValue,
     holding.from,
-    holding.from + OVERLAY_FADE_IN,
+    // A note that opens the scene is already up when the scene starts. Fading it
+    // in over the first moments leaves the artwork at full strength with nothing
+    // said about it, which reads as the note arriving late rather than as the
+    // scene beginning.
+    holding.from === 0 ? holding.from : holding.from + OVERLAY_FADE_IN,
     holding.to - OVERLAY_FADE_OUT,
     holding.to
   );

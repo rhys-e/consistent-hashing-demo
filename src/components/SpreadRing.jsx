@@ -11,6 +11,7 @@ import {
   stepAtRest,
 } from '../story/sceneSteps';
 import { buildSpreadModel, REMOVAL_KEYS } from '../story/topology';
+import { PLACED_SPREAD } from '../story/placedRing';
 import { hashPosition } from '../story/ringModel';
 import { LAYOUT, KeyMark, OwnershipArc, ServerMarker } from './RingParts';
 import ServerLoadPanel from './ServerLoadPanel';
@@ -21,14 +22,14 @@ import SceneAnnotation from './SceneAnnotation';
  *
  * It is Scene 3 run twice with one thing changed. The same three servers, the same
  * server failing, the same sweep filling the gap it leaves — but each server now
- * holds ten positions instead of one, and that is the only difference the viewer
+ * holds six positions instead of one, and that is the only difference the viewer
  * is asked to account for. Everything else is deliberately identical, because a
  * comparison in which two things differ proves neither.
  *
- * The keys leave during the split, and that is the scene's second job. Ten
- * positions each puts thirty boundaries on the ring, which is past the point where
- * a viewer can follow an individual key — so the story stops asking them to, and
- * starts reading the ring as quantities. Scene 6 assumes exactly that.
+ * The keys leave during the split, and that is the scene's second job. Six
+ * positions each puts eighteen boundaries on the ring, which is past the point
+ * where a viewer can follow an individual key — so the story stops asking them to,
+ * and starts reading the ring as quantities. Scene 6 assumes exactly that.
  */
 /**
  * Long, and the longest rest in the scene before the closing one.
@@ -39,7 +40,7 @@ import SceneAnnotation from './SceneAnnotation';
  * it, which is more than a beat's worth of work.
  */
 const OPENING = 3;
-/** Each server's other nine positions arriving, staggered so they read as arriving. */
+/** Each server's other five positions arriving, staggered so they read as arriving. */
 const SPLIT = { move: 2.6, stagger: 0.12, tether: 0.9 };
 const KEYS_OUT = { move: 1 };
 const PANEL = 0.5;
@@ -64,15 +65,12 @@ const ABSORB = { move: 3.4 };
  * So the highlight is a moment passed through: it answers what moved, and the
  * frame the scene rests on afterwards answers what did not.
  */
-const HIGHLIGHT = { move: 0.9, restore: 0.8, dim: 0.12 };
+const HIGHLIGHT = { move: 0.9, restore: 0.8 };
 /** The last frame of the scene: the ring entire, and mostly where it was. */
 const WHOLE_REST = 1.6;
 /** Long enough that a step lands clear of the movement either side of it. */
 const REST = 0.5;
 const READING_REST = 5;
-
-/** How small a node gets, relative to a scene with one position per server. */
-const DENSE_SCALE = 0.34;
 
 function staggered({ from, to, count, each }, index) {
   const step = count > 1 ? (to - from - each) / (count - 1) : 0;
@@ -88,7 +86,7 @@ export function buildSpreadTimeline(model) {
 
   // Said before the pause rather than after it, so the rest is spent reading the
   // line *and* looking at the ring it is about.
-  timeline.annotate('Give every server ten positions instead of one, scattered by the same hash.');
+  timeline.annotate('Give each server six positions instead of one, spread around the whole ring.');
   const opening = timeline.rest(OPENING, 'One position each');
 
   const split = {
@@ -97,7 +95,7 @@ export function buildSpreadTimeline(model) {
     each: SPLIT.move,
   };
   const keysOut = { from: split.from, to: split.from + KEYS_OUT.move };
-  timeline.rest(REST, 'Ten positions each');
+  timeline.rest(REST, 'Six positions each');
 
   const panel = timeline.move(PANEL);
   const settled = timeline.rest(REST, 'Shares shown');
@@ -110,8 +108,13 @@ export function buildSpreadTimeline(model) {
   const absorbed = timeline.rest(REST, 'Absorbed');
 
   const highlight = timeline.move(HIGHLIGHT.move);
+  // Written against Scene 3's closing line rather than on its own. That one says
+  // "All of them went to the same neighbour, which now owns roughly twice what it
+  // did", and this scene exists to be held against it — so the line has to name
+  // what changed between the two, not only report where things ended up. The old
+  // wording stated the result and left the viewer to supply the cause.
   timeline.annotate(
-    'The same failure, in seven pieces. Neither neighbour took much more than half.'
+    'One neighbour took all of it last time. This time the extra positions broke the same failure into six pieces, and each neighbour took about half.'
   );
   const closing = timeline.rest(READING_REST, 'What it cost');
 
@@ -141,7 +144,16 @@ export function buildSpreadTimeline(model) {
   };
 }
 
-export const SPREAD_MODEL = buildSpreadModel();
+/**
+ * Scene 4's ring, with its positions placed rather than hashed — see `placedRing`.
+ *
+ * A hash puts twelve of the thirty neighbouring pairs closer together than a dot is
+ * wide, two of them a pixel apart, and re-rolling does not help: 52,800 candidate
+ * casts and key formats were measured and none got below seven collisions, because
+ * for thirty random points a tight pair is the expected outcome. Placing them is
+ * the only thing that clears the picture, and it costs nothing the scene claims.
+ */
+export const SPREAD_MODEL = buildSpreadModel(PLACED_SPREAD);
 export const SPREAD_BEATS = buildSpreadTimeline(SPREAD_MODEL);
 
 export function buildSpreadSteps(timeline) {
@@ -215,9 +227,37 @@ function Tether({ progress, timeline, from, to, color, index }) {
 }
 
 /**
- * Scene 4: the same failure, with ten positions per server instead of one.
+ * Scene 4: the same failure, with six positions per server instead of one.
  */
-export function SpreadRing({ model, progress, timeline }) {
+/**
+ * How big a position's dot is at ten per server.
+ *
+ * It is the same dot as everywhere else, and getting there took ruling out both of
+ * the ways round the crowding. Thirty full-size dots on this ring do overlap —
+ * thirteen of the thirty neighbouring pairs touch, and two positions are 1.1px
+ * apart — and the overlap cannot be designed away:
+ *
+ * **A hash will not give a clear ring.** For thirty points thrown at a ring of this
+ * circumference, the chance that no two land closer together than a dot is wide is
+ * `(1 - 30*17/1457)^29`, about **one in 265,000** — confirmed against a twenty
+ * thousand draw simulation. Overlap is not this sample being unlucky, it is the
+ * expected outcome. Sixteen candidate vnode key formats were measured and none
+ * reached even a ten pixel minimum gap; `{id}#{i}`, the one in use, was also the
+ * best of them on every other count the scenes need.
+ *
+ * **Fewer positions will not do it either.** Twelve dots clear each other in one
+ * draw in five, which is the first count where it is even plausible — but ten is
+ * the only count between one and twelve whose *starting* balance matches the
+ * one-position ring's, and both levels starting from the same balance is what makes
+ * the scene a comparison rather than two unrelated rings.
+ *
+ * So the dot stays the size the story taught it at, and the clumps stay. They are
+ * not noise in the picture: they are the reason the shares are 35.6 / 31.6 / 32.9
+ * rather than a third each, which is the number the panel beside them is showing.
+ */
+export const SPREAD_TREATMENT = { dotScale: 1, dim: 0.45 };
+
+export function SpreadRing({ model, progress, timeline, treatment = SPREAD_TREATMENT }) {
   const { centreX, centreY, radius } = LAYOUT;
   const [sparse, dense] = model.levels;
   const colors = new Map(model.servers.map(server => [server.id, server.color]));
@@ -306,13 +346,35 @@ export function SpreadRing({ model, progress, timeline }) {
               return after ? mix(arc.span, after.span, absorbAt(timeline, latest)) : arc.span;
             }}
             opacityFor={latest =>
-              splitAt(timeline, latest) * mix(1, HIGHLIGHT.dim, highlightAt(timeline, latest))
+              splitAt(timeline, latest) * mix(1, treatment.dim, highlightAt(timeline, latest))
             }
-            flattenFor={latest => splitAt(timeline, latest)}
             layer={`arc:${arc.vnodeId}`}
           />
         );
       })}
+
+      {/* What changed hands, in the colours of whoever took it. Drawn over the
+          dimmed ring rather than instead of it, because the point is how little
+          of the ring these pieces are and how scattered they are across it.
+
+          Above the arcs and below the marks. It used to be last of all, which put
+          a highlighted stretch in front of the dots at either end of it — and a
+          dot is the *boundary* of that stretch, so covering it hid exactly the
+          thing the highlight is pointing at. Everything on this ring is drawn in
+          the order of what it is: the band, then what happened to the band, then
+          the positions that divide it. */}
+      {dense.remap.ranges.map(range => (
+        <OwnershipArc
+          key={`moved-${range.from}`}
+          progress={progress}
+          endsAt={range.to}
+          color={colors.get(range.serverId)}
+          fullLength={range.to - range.from}
+          lengthFor={() => range.to - range.from}
+          opacityFor={latest => highlightAt(timeline, latest)}
+          layer={`moved:${range.serverId}:${range.from.toFixed(6)}`}
+        />
+      ))}
 
       {dense.before.topology.vnodes.map(vnode => {
         const index = orderOf.get(vnode.vnodeId);
@@ -340,9 +402,9 @@ export function SpreadRing({ model, progress, timeline }) {
                 (gone ? 1 - droppedAt(timeline, latest) : 1)
               }
               // Only the original position keeps its name, and only until there are
-              // ten of them: after that the panel is the legend.
+              // six of them: after that the panel is the legend.
               namedFor={latest => (first ? 1 - splitAt(timeline, latest) : 0)}
-              scaleFor={latest => mix(1, DENSE_SCALE, splitAt(timeline, latest))}
+              scaleFor={latest => mix(1, treatment.dotScale, splitAt(timeline, latest))}
               waverFor={gone ? latest => waverAt(timeline, latest) : undefined}
               layer={`marker:${vnode.vnodeId}`}
             />
@@ -363,23 +425,6 @@ export function SpreadRing({ model, progress, timeline }) {
             1 - easeInOutCubic(rangeProgress(latest, timeline.keysOut.from, timeline.keysOut.to))
           }
           layer={`key:${sampleKey.name}`}
-        />
-      ))}
-
-      {/* What changed hands, in the colours of whoever took it. Drawn over the
-          dimmed ring rather than instead of it, because the point is how little
-          of the ring these pieces are and how scattered they are across it. */}
-      {dense.remap.ranges.map(range => (
-        <OwnershipArc
-          key={`moved-${range.from}`}
-          progress={progress}
-          endsAt={range.to}
-          color={colors.get(range.serverId)}
-          fullLength={range.to - range.from}
-          lengthFor={() => range.to - range.from}
-          opacityFor={latest => highlightAt(timeline, latest)}
-          flattenFor={() => 1}
-          layer={`moved:${range.serverId}:${range.from.toFixed(6)}`}
         />
       ))}
 

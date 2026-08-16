@@ -110,4 +110,39 @@ describe('full scale scenes', () => {
     // The servers already on the ring do not move while it happens.
     expect(shiftOf(rowAt(LANE_BEATS.settled, 'cache-01'))).toBe(0);
   });
+
+  /**
+   * An even share is a fact about the roster, so it has to change when the roster
+   * does. Fixed at a seventh from the first frame, the mark told the viewer that
+   * all six servers were over their share for the whole opening — when six servers
+   * holding a sixth each is the most even a ring can be.
+   *
+   * It moves on the window the newcomer's row slides in on, because that is when
+   * the seventh server starts existing. Between then and the handover the panel
+   * says something true and useful: seven servers now, six of them over, one at
+   * nothing.
+   */
+  it('moves the even share when the roster changes, not when the ring does', () => {
+    const evenShareAt = at => {
+      const { container } = render(<ServerJoinsScene pinnedProgress={at} />);
+      const label = [...container.querySelectorAll('text')].find(node =>
+        node.textContent.startsWith('EVEN SHARE')
+      );
+      return label.textContent;
+    };
+
+    expect(evenShareAt(LANE_BEATS.settled)).toBe(`EVEN SHARE ${((100 * 1) / 6).toFixed(1)}%`);
+    expect(evenShareAt(LANE_BEATS.roster.to)).toBe(`EVEN SHARE ${((100 * 1) / 7).toFixed(1)}%`);
+    expect(evenShareAt(LANE_BEATS.end)).toBe(`EVEN SHARE ${((100 * 1) / 7).toFixed(1)}%`);
+  });
+
+  /** No newcomer, no movement: the separating scene is six servers throughout. */
+  it('holds the even share still where no server joins', () => {
+    const { container } = render(<LanesSeparateScene pinnedProgress={LANE_BEATS.settled} />);
+    const label = [...container.querySelectorAll('text')].find(node =>
+      node.textContent.startsWith('EVEN SHARE')
+    );
+
+    expect(label.textContent).toBe(`EVEN SHARE ${((100 * 1) / 6).toFixed(1)}%`);
+  });
 });

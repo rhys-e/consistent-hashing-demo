@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import StoryDeck from '../StoryDeck';
+import StoryDeck, { openingIndex } from '../StoryDeck';
+import { COUNTDOWN_SECONDS } from '../DeckCountdown';
 import { STORY_SLIDES } from '../Story';
 
 const SLIDES = [
@@ -87,6 +88,33 @@ describe('story deck countdown', () => {
     runUntilCountdown();
 
     expect(screen.queryByTestId('deck-countdown')).toBeNull();
+  });
+
+  /**
+   * The break-up and the countdown bar are one signal in two registers, so a
+   * title that tears while nothing is about to happen would be lying.
+   */
+  it('breaks the title up only while the deck is about to move on', () => {
+    render(<StoryDeck slides={NARRATION} />);
+    const title = () => document.querySelector('.glitch-title');
+
+    expect(title().dataset.glitching).toBe('false');
+
+    // The bar has the slide's last few seconds to itself.
+    runUntilCountdown();
+    expect(title().dataset.glitching).toBe('false');
+
+    runTimers(COUNTDOWN_SECONDS * 1000 - 1400);
+    expect(title().dataset.glitching).toBe('true');
+  });
+
+  it('never breaks it up once the viewer has taken over', () => {
+    render(<StoryDeck slides={NARRATION} />);
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+
+    runUntilCountdown();
+    runTimers(COUNTDOWN_SECONDS * 1000);
+    expect(document.querySelector('.glitch-title').dataset.glitching).toBe('false');
   });
 });
 
@@ -202,10 +230,84 @@ describe('the story as slides', () => {
     });
   });
 
-  it('numbers its parts in order, once each', () => {
-    const numbers = slides.filter(slide => slide.number).map(slide => slide.number);
-    const inOrder = ['Part one', 'Part two', 'Part three', 'Part four', 'Part five'];
+  /**
+   * The opening slide names the subject; the rest are chapter headings. Only the
+   * first is set as a lead, and a second one would make the story look like it
+   * started twice.
+   */
+  it('leads with exactly one slide', () => {
+    const leads = slides.filter(slide => slide.lead);
 
-    expect(numbers).toEqual(inOrder.slice(0, numbers.length));
+    expect(leads.length).toBe(1);
+    expect(slides[0]).toBe(leads[0]);
+    expect(slides[0].title).toMatch(/consistent hash ring/i);
+  });
+});
+
+/**
+ * The address bar is the only part of the deck a viewer can arrive through, so it
+ * is worth driving rather than trusting: a link into the middle of the story has
+ * to open there, and moving has to leave an address worth copying.
+ */
+describe('slide addresses', () => {
+  const at = hash => {
+    window.history.replaceState(null, '', hash || '#/');
+  };
+
+  beforeEach(() => at('#/'));
+  afterEach(() => at('#/'));
+
+  const deck = () => <StoryDeck slides={SLIDES} initialIndex={openingIndex(SLIDES)} urlSync />;
+
+  it('opens where a link points', () => {
+    at('#/two');
+    render(deck());
+
+    expect(currentTick().getAttribute('aria-label')).toContain('Second');
+  });
+
+  it('ignores an address that names nothing, rather than failing', () => {
+    at('#/no-such-slide');
+    render(deck());
+
+    expect(currentTick().getAttribute('aria-label')).toContain('First');
+  });
+
+  it('writes the address as the viewer moves', () => {
+    render(deck());
+    expect(window.location.hash).toBe('#/one');
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(window.location.hash).toBe('#/scene');
+    expect(document.title).toContain('Scene');
+  });
+
+  /**
+   * Deliberate moves push and automatic ones replace, so the back button is a way
+   * out of a story that plays itself rather than a way to walk backwards through
+   * it one slide at a time.
+   */
+  it('goes back to where the viewer was, not to where it drifted', () => {
+    render(deck());
+    const before = window.history.length;
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(window.history.length).toBe(before + 1);
+
+    // The deck advancing on its own leaves the address correct and the history
+    // untouched.
+    act(() => {
+      window.history.replaceState(null, '', '#/two');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    expect(currentTick().getAttribute('aria-label')).toContain('Second');
+  });
+
+  it('leaves the address alone unless asked to own it', () => {
+    at('#/');
+    render(<StoryDeck slides={SLIDES} />);
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+
+    expect(window.location.hash).toBe('#/');
   });
 });

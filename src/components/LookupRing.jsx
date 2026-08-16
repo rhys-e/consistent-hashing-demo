@@ -75,7 +75,9 @@ export function buildLookupTimeline(model) {
 
   // The servers arriving and the keys standing aside are one movement, because
   // they are one fact: the band now belongs to whoever owns it.
-  timeline.annotate('Servers take positions on the same ring, hashed the same way.');
+  timeline.annotate(
+    'The servers go on the same ring, and the same hash decides where each one sits.'
+  );
   const arrive = group(
     timeline.move(ARRIVE.move + ARRIVE.stagger * (servers - 1)),
     servers,
@@ -119,7 +121,7 @@ export function buildLookupTimeline(model) {
   // them. Said here because it is the one claim the picture cannot make on its own
   // — the positions that are not drawn are exactly the ones being generalised to.
   timeline.annotate(
-    'Every position in between routes the same way. That span is what a server owns.'
+    'Every position between two servers routes the same way, and that range is its own.'
   );
   const sweep = group(
     timeline.move(SWEEP.each + SWEEP.stagger * (servers - 1)),
@@ -289,15 +291,33 @@ function RoutingTrail({ progress, sampleKey, model, timeline }) {
  * Only the three taught lookups get a line. The other eight are a count, because
  * eleven rows would be a table and the point is not the table.
  */
-const ROW = { height: 30, hashX: 104 };
+/**
+ * Every key, not a chosen few.
+ *
+ * The readout used to list the three keys the scene routes one at a time, which
+ * made those three look significant — they are not, they are simply the ones
+ * slow enough to watch. Listing all of them says the opposite and truer thing:
+ * the rule is the same for every key, and the table fills as the ring answers.
+ *
+ * Set small enough that eleven rows sit above the line of commentary beneath.
+ */
+const READOUT = { x: LAYOUT.panel.x, y: 138, width: LAYOUT.panel.width };
+const ROW = { height: 21, hashX: 96 };
 
-function LookupRow({ progress, sampleKey, model, timeline, x, y, width }) {
+function LookupRow({ progress, sampleKey, keyIndex, model, timeline, x, y, width }) {
   const window = timeline.routes.get(sampleKey.name);
   const server = model.servers.find(entry => entry.id === sampleKey.owner);
 
-  const presence = useTransform(progress, latest =>
-    rangeProgress(latest, window.from, window.from + 0.4)
-  );
+  /**
+   * A row arrives with its key, not with its answer.
+   *
+   * Tying it to the lookup left the heading alone above an empty column for the
+   * first half of the scene — a title with nothing under it, which reads as
+   * something that failed to load rather than as something still to come. The
+   * key and its hash are true the moment the key lands, so the row can say them
+   * then and leave a space where the server will go.
+   */
+  const presence = useTransform(progress, latest => keyAt(timeline, latest, keyIndex));
   // The answer appears when the answer arrives, not when the question is asked.
   const answer = useTransform(progress, latest =>
     rangeProgress(latest, window.to, window.to + 0.3)
@@ -305,10 +325,10 @@ function LookupRow({ progress, sampleKey, model, timeline, x, y, width }) {
 
   return (
     <motion.g data-layer={`readout:${sampleKey.name}`} style={{ opacity: presence }}>
-      <text x={x} y={y} fill={theme.colors.ui.text.secondary} fontSize="12" letterSpacing="0.6">
+      <text x={x} y={y} fill={theme.colors.ui.text.secondary} fontSize="11" letterSpacing="0.6">
         {sampleKey.name}
       </text>
-      <text x={x + ROW.hashX} y={y} fill={theme.colors.ui.border} fontSize="12" letterSpacing="0.6">
+      <text x={x + ROW.hashX} y={y} fill={theme.colors.ui.border} fontSize="11" letterSpacing="0.6">
         {toHashLabel(sampleKey.position)}
       </text>
       <motion.text
@@ -316,7 +336,7 @@ function LookupRow({ progress, sampleKey, model, timeline, x, y, width }) {
         y={y}
         textAnchor="end"
         fill={server.color}
-        fontSize="12"
+        fontSize="11"
         letterSpacing="0.6"
         style={{ opacity: answer }}
       >
@@ -327,56 +347,33 @@ function LookupRow({ progress, sampleKey, model, timeline, x, y, width }) {
 }
 
 function LookupPanel({ progress, model, timeline, x, y, width }) {
-  const taught = TAUGHT.map(name => model.keys.find(key => key.name === name));
-  const others = model.keys.length - taught.length;
-
-  const heading = useTransform(progress, latest =>
-    rangeProgress(latest, timeline.arrive.from, timeline.arrive.to)
-  );
-  // Fading *inside* the movement rather than after it: the rest that follows is a
-  // step, and a step has to be a frame in which nothing is still arriving.
-  const summary = useTransform(progress, latest =>
-    rangeProgress(latest, timeline.remainder.to - 0.5, timeline.remainder.to)
-  );
-
   return (
     <g>
-      <motion.text
+      {/* Chrome, not data: the column is spoken for from the first frame. */}
+      <text
         data-layer="readout:heading"
         x={x}
         y={y}
         fill={theme.colors.ui.text.secondary}
         fontSize="11"
         letterSpacing="2.4"
-        style={{ opacity: heading }}
       >
         WHERE EACH KEY LIVES
-      </motion.text>
+      </text>
 
-      {taught.map((sampleKey, index) => (
+      {model.keys.map((sampleKey, index) => (
         <LookupRow
           key={sampleKey.name}
           progress={progress}
           sampleKey={sampleKey}
+          keyIndex={index}
           model={model}
           timeline={timeline}
           x={x}
-          y={y + 32 + index * ROW.height}
+          y={y + 28 + index * ROW.height}
           width={width}
         />
       ))}
-
-      <motion.text
-        data-layer="readout:summary"
-        x={x}
-        y={y + 42 + taught.length * ROW.height}
-        fill={theme.colors.ui.border}
-        fontSize="12"
-        letterSpacing="0.6"
-        style={{ opacity: summary }}
-      >
-        {`and ${others} more, the same way`}
-      </motion.text>
     </g>
   );
 }
@@ -468,7 +465,7 @@ export function LookupRing({ model, progress, timeline }) {
         />
       ))}
 
-      <LookupPanel progress={progress} model={model} timeline={timeline} {...LAYOUT.panel} />
+      <LookupPanel progress={progress} model={model} timeline={timeline} {...READOUT} />
 
       <SceneAnnotation
         progress={progress}

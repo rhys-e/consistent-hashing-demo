@@ -87,6 +87,8 @@ const CLOSE_REST = 0.5;
  * the bend that follows keeps it up for a while longer.
  */
 const CARD_REST = 3;
+/** Long enough to read a standing line without hurrying. */
+const READING_REST = 4.5;
 /**
  * Top left, which is the only corner clear in *both* shapes.
  *
@@ -126,7 +128,9 @@ const TIMELINE = (() => {
   // Said while it is still a line, and the one thing three keys landing cannot
   // show: that landing there was not a choice and will not change. The bend then
   // has something to preserve.
-  timeline.annotate("A key's hash is its position. The same key always lands in the same place.");
+  timeline.annotate(
+    "A key's hash is its position, and the same key always hashes to the same place."
+  );
   const card = timeline.rest(CARD_REST, 'Positions fixed');
 
   const morph = timeline.move(MORPH.move);
@@ -142,6 +146,15 @@ const TIMELINE = (() => {
   timeline.skip(SEAM.tail);
   const closed = timeline.rest(CLOSE_REST, 'Ring closed');
 
+  // Said once the shape has finished changing, because the point of it is that
+  // nothing else did. A viewer who has just watched a line become a ring will
+  // reasonably wonder what the ring added, and the answer is only that the two
+  // ends of the range are now neighbours.
+  timeline.annotate(
+    'Nothing about the numbers changed. The line closed into a loop, so the highest value now sits beside the lowest.'
+  );
+  const joined = timeline.rest(READING_REST, 'Ends joined');
+
   return {
     opening,
     rail,
@@ -151,12 +164,16 @@ const TIMELINE = (() => {
     morph,
     seam,
     closed,
+    joined,
     annotations: timeline.annotations(),
     end: timeline.at(),
   };
 })();
 
 const BEAT_COUNT = TIMELINE.end;
+
+/** The scene's beats, for the copy checks that read every line in the story. */
+export const HASH_SPACE_BEATS = TIMELINE;
 
 export const SCENE_STEPS = buildSteps(
   [
@@ -165,6 +182,7 @@ export const SCENE_STEPS = buildSteps(
     ...TIMELINE.keys.map(key => stepAtRest(key.rest, key.rest.label)),
     stepAtRest(TIMELINE.card, TIMELINE.card.label),
     stepAtRest(TIMELINE.closed, 'Ring closed'),
+    stepAtRest(TIMELINE.joined, TIMELINE.joined.label),
   ],
   BEAT_COUNT
 );

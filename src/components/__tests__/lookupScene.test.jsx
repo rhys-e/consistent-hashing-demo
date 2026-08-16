@@ -44,9 +44,14 @@ describe('the lookup scene', () => {
    * invisible to anyone testing either scene alone.
    */
   it('ends on exactly the frame the removal scene opens on', () => {
-    expect(ringFrame(<KeyRoutesScene pinnedProgress={LOOKUP_BEATS.settled} />)).toBe(
-      ringFrame(<ServerLeavesScene pinnedProgress={REMOVAL_BEATS.settled} />)
-    );
+    const ending = ringFrame(<KeyRoutesScene pinnedProgress={LOOKUP_BEATS.settled} />);
+
+    // Beat zero, not merely the settled rest. Scene 3 used to land its own markers
+    // and sweep its own arcs before arriving here, which spent its first third
+    // rebuilding a picture the viewer was already looking at. It now opens
+    // assembled, and that is only continuity if the very first frame matches.
+    expect(ringFrame(<ServerLeavesScene pinnedProgress={0} />)).toBe(ending);
+    expect(ringFrame(<ServerLeavesScene pinnedProgress={REMOVAL_BEATS.settled} />)).toBe(ending);
   });
 
   /**

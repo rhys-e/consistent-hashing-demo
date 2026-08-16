@@ -37,12 +37,16 @@ function ShareRow({
   settleFor,
   opacityFor,
   shiftFor,
+  dataFor,
 }) {
   const share = latest => mix(row.from, row.to, settleFor(latest, index));
 
   const barLength = useTransform(progress, latest => Math.min(barWidth, share(latest) * scale));
   const percent = useAnimatedNumber({ progress, valueFor: share, format: toPercent });
   const opacity = useTransform(progress, latest => opacityFor(latest, index));
+  // The bar and the number are the data. The swatch, the name and the empty track
+  // are the panel, and the panel is there from the first frame.
+  const dataOpacity = useTransform(progress, dataFor);
   // A row that has not joined yet waits off the right-hand edge, so arriving is a
   // move into the list rather than a fade-up in a slot that was already reserved.
   //
@@ -59,17 +63,25 @@ function ShareRow({
         {row.id}
       </text>
       <rect x={x} y={y + 8} width={barWidth} height={BAR_HEIGHT} fill={palette.track} />
-      <motion.rect x={x} y={y + 8} width={barLength} height={BAR_HEIGHT} fill={row.color} />
-      <text
+      <motion.rect
+        x={x}
+        y={y + 8}
+        width={barLength}
+        height={BAR_HEIGHT}
+        fill={row.color}
+        style={{ opacity: dataOpacity }}
+      />
+      <motion.text
         x={x + width}
         y={y}
         fill={palette.bright}
         fontSize="12"
         textAnchor="end"
         letterSpacing="0.8"
+        style={{ opacity: dataOpacity }}
       >
         {percent}
-      </text>
+      </motion.text>
     </motion.g>
   );
 }
@@ -122,7 +134,6 @@ export function ServerLoadPanel({
   });
   const footerY = y + 34 + rows.length * ROW_HEIGHT;
 
-  const opacity = useTransform(progress, revealFor);
   const remapOpacity = useTransform(progress, remapRevealFor ?? revealFor);
   const remapped = useAnimatedNumber({
     progress,
@@ -132,7 +143,19 @@ export function ServerLoadPanel({
   });
 
   return (
-    <motion.g style={{ opacity }}>
+    /**
+     * No fade on the panel itself.
+     *
+     * The ring is composed off-centre to leave room for this, so the column has to
+     * be occupied from the first frame or the ring reads as pushed out of true.
+     * Fading the whole panel up was the first answer and it was worse: a ghost of
+     * a panel is a third state to look at, and once a line of commentary appears
+     * beneath it at full strength the column is showing two opacities at once.
+     *
+     * A panel with its headings, names and empty tracks is not a ghost. It is a
+     * panel with no numbers in it yet, which is exactly what is true.
+     */
+    <g>
       <text x={x} y={y} fill={palette.label} fontSize="11" letterSpacing="2.4">
         SHARE OF HASH SPACE
       </text>
@@ -161,6 +184,7 @@ export function ServerLoadPanel({
           settleFor={settleFor}
           opacityFor={rowOpacityFor}
           shiftFor={rowShiftFor}
+          dataFor={revealFor}
         />
       ))}
 
@@ -180,7 +204,7 @@ export function ServerLoadPanel({
           {remapped}
         </motion.text>
       ) : null}
-    </motion.g>
+    </g>
   );
 }
 

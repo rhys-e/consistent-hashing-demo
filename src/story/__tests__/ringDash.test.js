@@ -1,4 +1,4 @@
-import { arcRanges, buildDashPattern } from '../ringDash';
+import { arcRanges, buildDashPattern, windowRanges } from '../ringDash';
 import { buildTopology } from '../ringModel';
 
 const parse = pattern => pattern.dashArray.split(' ').map(Number);
@@ -185,5 +185,56 @@ describe('arcRanges', () => {
     for (let sweep = 0.05; sweep <= 1; sweep += 0.05) {
       expect(total(arcRanges(0.1622, sweep * 0.332))).toBeCloseTo(sweep * 0.332, 10);
     }
+  });
+});
+
+describe('windowRanges', () => {
+  const RANGES = [
+    { serverId: 'a', from: 0, to: 0.25 },
+    { serverId: 'b', from: 0.25, to: 0.5 },
+    { serverId: 'c', from: 0.5, to: 1 },
+  ];
+  const total = ranges => ranges.reduce((sum, range) => sum + (range.to - range.from), 0);
+
+  it('rescales the window to fill nought to one', () => {
+    const inside = windowRanges(RANGES, 0.2, 0.2);
+
+    expect(total(inside)).toBeCloseTo(1, 10);
+    expect(inside.map(range => range.serverId)).toEqual(['a', 'b']);
+    // A quarter of the window is `a`, the rest is `b`.
+    expect(inside[0].to).toBeCloseTo(0.25, 10);
+  });
+
+  it('keeps what is inside and drops what is not', () => {
+    expect(windowRanges(RANGES, 0.6, 0.2).map(range => range.serverId)).toEqual(['c']);
+  });
+
+  /**
+   * A window near the seam holds ranges from both ends of the space, and neither
+   * offset alone finds both — which is why every range is tried twice.
+   */
+  it('spans the seam', () => {
+    const inside = windowRanges(RANGES, 0.9, 0.2);
+
+    expect(total(inside)).toBeCloseTo(1, 10);
+    expect(new Set(inside.map(range => range.serverId))).toEqual(new Set(['a', 'c']));
+  });
+
+  it('fills the window wherever it is put', () => {
+    for (let from = 0; from < 1; from += 0.037) {
+      expect(total(windowRanges(RANGES, from, 0.05))).toBeCloseTo(1, 9);
+    }
+  });
+
+  it('draws nothing for an empty window', () => {
+    expect(windowRanges(RANGES, 0.3, 0)).toEqual([]);
+  });
+
+  /** A straight path starts where it starts, unlike a circle. */
+  it('measures a line pattern from its own beginning', () => {
+    const ranges = [{ from: 0.25, to: 0.5 }];
+
+    expect(buildDashPattern(ranges, { pathStart: 0 }).dashOffset).toBeCloseTo(0.75, 10);
+    expect(buildDashPattern(ranges).dashOffset).toBeCloseTo(0.5, 10);
   });
 });
