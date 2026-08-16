@@ -1,39 +1,9 @@
 import { assign, setup } from 'xstate';
 
 /**
- * The deck's discrete state, as a chart.
- *
- * Everything continuous stays out: a beat is a motion value and this machine
- * never sees one. What it owns is the handful of facts the deck actually
- * coordinates — which slide, whether it has arrived, whether the scene on it has
- * finished, and whether the viewer has taken over — and those were five booleans
- * and two refs spread across four effects before this existed.
- *
- * That arrangement is where every countdown bug came from, and the shape of the
- * bug was the same each time: two pieces of state that had to agree, and nothing
- * making them. `isSettled` started `false` and the opening slide is never
- * transitioned into, so nothing ever completed and the countdown was unreachable.
- * A pointer-down anywhere marked the viewer engaged, permanently suppressing it.
- * A reduced-motion duration of zero made a countdown elapse the instant it
- * mounted. None of those is expressible here: a slide that has not arrived is in
- * `settling`, and there is nowhere for it to also be counting down from.
- *
- * ## Two regions, because there are genuinely two things happening
- *
- * Navigation runs on its own; engagement is a one-way latch that runs alongside
- * it. Modelling them as one flat state would need a copy of every navigation
- * state for the engaged case, which is exactly the duplication the booleans were.
- *
- * ## The cooldown is a state, not a timestamp
- *
- * A trackpad flick arrives as a burst of wheel events with a momentum tail, so a
- * slide that has just arrived must refuse input briefly or one gesture moves two
- * slides. That was a stored timestamp compared against `event.timeStamp`; it is
- * now the `cooling` state, which cannot be got wrong and needs no clock.
- *
- * Keyboard and the progress ticks are deliberately *not* subject to it — they are
- * deliberate acts, not the tail of one. Hence two events: `NUDGE` for wheel and
- * touch, `GOTO`/`NEXT`/`PREV` for everything else.
+ * Discrete deck state. Continuous values stay out. Navigation and engagement are
+ * separate regions. `cooling` swallows the tail of a wheel/touch nudge; keyboard
+ * and ticks use `GOTO`/`NEXT`/`PREV` and are not cooled.
  */
 
 /** A finished slide is left alone for a moment before it starts counting down. */

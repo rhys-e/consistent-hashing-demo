@@ -7,17 +7,8 @@ import { ZOOM_BEATS } from '../../components/DensityZoom';
 import { LANE_BEATS } from '../../components/FullScaleLanes';
 
 /**
- * The house rules for everything a viewer reads.
- *
- * Taken from ASD-STE100 Simplified Technical English, minus its approved-word
- * dictionary. The dictionary is built for maintenance procedures and would cost
- * this story words it needs — *absorb*, *density*, *share*, *even* — so what is
- * adopted is the sentence-level half: one idea per sentence, a hard word limit,
- * and no construction that hides a second clause inside a first.
- *
- * Enforced rather than intended, because prose is exactly the part of a codebase
- * that drifts back. Everything here is mechanical; the rules that are not — active
- * voice, no metaphor, one term per concept — are in the review, not the test.
+ * House rules for viewer-facing copy: STE sentence limits, no smuggled clauses,
+ * one term per concept. Tone is review, not this file.
  */
 
 const MAX_WORDS = 20;

@@ -17,23 +17,8 @@ import ServerLoadPanel from './ServerLoadPanel';
 import SceneAnnotation from './SceneAnnotation';
 
 /**
- * The bridge from Scene 4 to production scale, in three candidate treatments.
- *
- * All three make the same claim and are drawn by the same code, because the point
- * of reviewing them side by side is to judge the *staging* rather than three
- * separately-tuned pictures. What differs is only what happens before the ramp and
- * what sits beside it:
- *
- * - `fill-in` — the ramp alone, on the cast the following scenes use.
- * - `carry-over` — Scene 4's two survivors first, four more servers arriving, then
- *   the ramp. Nothing is ever cut: the cast changes, then the density does.
- * - `through-window` — the ramp with Scene 5's magnified strip up from the first
- *   frame, held on one section while the density rises under it.
- *
- * The thing that makes any of it work is in `densityRamp.js`: raising the position
- * count appends positions and never moves one. So the marks already on the ring
- * stay exactly where they are and the new ones arrive between them, which is a
- * subdivision the eye can follow rather than a dissolve it has to accept.
+ * Bridge from Scene 4 to production density. Treatments differ only in staging;
+ * new positions append and never move. See `densityRamp.js`.
  */
 
 const RING_WIDTH = 13;
@@ -56,17 +41,7 @@ const READING_REST = 5;
 const JOIN = { each: 0.5, stagger: 0.45 };
 const CLOSING_REST = 2;
 
-/**
- * The first density step of the multiply treatment, where every new position is
- * dealt out individually on a tether from the one its server started with.
- *
- * Longer and staggered far finer than a plain `ARRIVE`, because this one is meant
- * to be *watched* rather than crossed. It is Scene 4's split played again at the
- * next order of magnitude, and the reason it can be is that the ring is still
- * sparse enough to draw a mark per position.
- */
 const MULTIPLY = { move: 3.4, each: 0.55 };
-/** The notation change, given a movement of its own rather than smuggled into one. */
 const MORPH = 1.1;
 
 export const TREATMENTS = ['fill-in', 'carry-over', 'through-window', 'multiply'];

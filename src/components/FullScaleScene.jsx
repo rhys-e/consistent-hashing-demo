@@ -54,9 +54,6 @@ function LanesScene({
     if (status === 'ended') onComplete?.();
   }, [onComplete, status]);
 
-  // Hands off until the viewer takes over — and only then. Revealing the transport
-  // when a scene finishes put it on screen at the exact moment the deck was about
-  // to move on, which is clutter arriving too late to be useful.
   const showControls = !isPinned && engaged;
 
   return (
@@ -101,14 +98,7 @@ function StripScene({ model, showRemap, active = true }) {
   );
 }
 
-/**
- * Scene 6, in both treatments the plan named.
- *
- * 6A is now the animated candidate, because the risk it carries is not whether
- * the still frame is honest — it is whether a viewer can follow one ring becoming
- * seven without losing the thread. 6C stays as the static comparison that decision
- * was made against.
- */
+/** Scene 6. `lanes` is the story; `strip` is the static comparison. */
 export function FullScaleScene({
   treatment = 'lanes',
   serverCount = 6,
@@ -141,15 +131,7 @@ export function FullScaleScene({
   );
 }
 
-/**
- * Scene 6 and Scene 7 are one implementation and two scenes.
- *
- * They share every layer, every timing rule and one model, so keeping them as one
- * component is right; but they are separate beats of the story with separate
- * arguments, and the deck reaches them separately. These are the names the story
- * uses, so nothing outside this file has to know that `showRemap` is the seam
- * between two scenes.
- */
+/** Scene 6 and Scene 7 share an implementation; `showRemap` is the seam. */
 export function LanesSeparateScene(props) {
   return <FullScaleScene {...props} showRemap={false} />;
 }

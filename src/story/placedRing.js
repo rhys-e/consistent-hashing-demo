@@ -2,47 +2,10 @@ import { hashPosition } from './ringModel';
 import { DEPARTING_SERVER_ID, REMOVAL_SERVERS } from './topology';
 
 /**
- * Scene 4's positions, placed rather than hashed.
- *
- * A hash throws thirty points at the ring and thirteen of the thirty neighbouring
- * pairs land closer together than a dot is wide, two of them a pixel apart. That
- * is not bad luck — for thirty random points it is the expected outcome, and no
- * choice of names or key format gets the collisions below seven. So the picture
- * cannot be fixed by re-rolling it.
- *
- * It can be fixed by not rolling it. These positions are chosen, and the honesty of
- * that rests on one distinction: what the scene *claims* is that a server holding
- * ten positions has its failure absorbed by several neighbours rather than one, and
- * that claim is a fact about counting, not about this particular sample. Nothing on
- * screen is asserted about where any individual position fell. The names and hash
- * values are already gone from the ring by the time the split runs, precisely
- * because the scene has stopped asking the viewer to look at any one of them.
- *
- * The rule kept in exchange is that the ring must not look *designed*. Perfectly
- * spaced positions would be a different lie and a worse one, because evenness is
- * the thing consistent hashing has to work for. So:
- *
- * - The three positions each server starts with are the real hashed ones. Scene 4
- *   opens on Scene 3's ring, and that frame is untouched.
- * - The twenty-seven added are spaced with a floor and then jittered, so gaps vary
- *   by about three to one and nothing is regular enough to count.
- * - The resulting shares are deliberately *not* a third each. They land near 30-35%,
- *   which is what a good hash gets you and what the panel beside the ring reports.
- */
-
-/**
- * How many positions each server holds once the split has run.
- *
- * Under a hash this was not a free choice: ten was the only count from one to
- * twelve whose ring started anywhere near even, so every airier option was ruled
- * out by the balance rather than by the argument. Placing the positions removes
- * that constraint — evenness is built rather than drawn for — and six is then
- * plainly better. Eighteen dots rather than thirty, a minimum gap of three dot
- * widths rather than two, and the argument comes out *stronger*: the bigger
- * survivor takes exactly half of what was lost, in six pieces.
- *
- * It must stay in step with `SPREAD_LEVELS`, which is what the scene actually
- * builds; this is the count the table is generated for.
+ * Scene 4 positions, placed not hashed. A hash of this many points collides; the
+ * scene claims a counting fact, not a particular sample. Opening three positions
+ * stay hashed. Added ones are spaced with a floor, then jittered, so the ring
+ * does not look designed. Keep in step with `SPREAD_LEVELS`.
  */
 export const POSITIONS_EACH = 6;
 

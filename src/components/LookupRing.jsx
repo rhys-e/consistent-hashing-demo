@@ -16,15 +16,7 @@ import { LAYOUT, KEY_INSET, KeyMark, OwnershipArc, ServerMarker } from './RingPa
 import SceneAnnotation from './SceneAnnotation';
 
 /**
- * The scene as durations laid end to end.
- *
- * The order is the argument. Keys land on the ring as Scene 1 left them; servers
- * arrive on the same ring, and the keys step inside to make room, because the band
- * is about to stop being a number line and start being ownership. One key is then
- * routed slowly enough to be read as a rule, two more confirm it is a rule and not
- * a special case, and the rest follow at once. Only then do the arcs sweep — so a
- * range arrives as *the set of positions that route to a server*, which is the one
- * step the story has never shown and every later scene assumes.
+ * Keys, then servers, then one slow lookup, then the rest, then ownership arcs.
  */
 const OPENING = 0.5;
 const KEYS = { move: 2.2 };
@@ -40,14 +32,7 @@ const SWEEP = { each: 1.4, stagger: 0.9 };
 const REST = 0.5;
 const READING_REST = 5;
 
-/**
- * The three keys routed one at a time, one per server, so every server is named by
- * the rule before the rule is generalised.
- *
- * `user:1842` goes first because the opening scene introduced it: the viewer has
- * already watched this exact key take this exact position, so the only new thing
- * in the first lookup is the lookup.
- */
+/** One key per server, taught before the rule is generalised. `user:1842` first: already seen. */
 const TAUGHT = ['user:1842', 'user:6177', 'user:4570'];
 
 function staggered({ from, to, count, each }, index) {
@@ -62,9 +47,7 @@ const group = (window, count, each) => ({ ...window, count, each });
 export function buildLookupTimeline(model) {
   const timeline = createTimeline({ readingRest: READING_REST });
   const servers = model.servers.length;
-  // Mapped over `TAUGHT`, not filtered by it: the model is sorted by position, so
-  // filtering would silently teach whichever of the three happens to sit nearest
-  // the seam rather than the one chosen for the job.
+  // Map, do not filter: the model is sorted by position, not by teaching order.
   const taught = TAUGHT.map(name => model.keys.find(key => key.name === name));
   const rest = model.keys.filter(key => !TAUGHT.includes(key.name));
 
@@ -73,8 +56,6 @@ export function buildLookupTimeline(model) {
   const keys = group(timeline.move(KEYS.move), model.keys.length, KEYS.move * 0.4);
   timeline.rest(REST, 'Keys placed');
 
-  // The servers arriving and the keys standing aside are one movement, because
-  // they are one fact: the band now belongs to whoever owns it.
   timeline.annotate(
     'Each server hashes onto the ring from its name. It takes a position, the same way a key does.'
   );
@@ -119,9 +100,6 @@ export function buildLookupTimeline(model) {
   });
   timeline.rest(REST, 'Every key routed');
 
-  // The jump the whole story rests on: from eleven keys to every position between
-  // them. Said here because it is the one claim the picture cannot make on its own
-  // — the positions that are not drawn are exactly the ones being generalised to.
   timeline.annotate(
     'Every position between two servers follows the same rule. That whole range belongs to the server at its clockwise end.'
   );
@@ -280,29 +258,7 @@ function RoutingTrail({ progress, sampleKey, model, timeline }) {
   );
 }
 
-/**
- * The lookups, written down as they happen.
- *
- * The column exists because Scene 3 puts its share panel there, and a scene that
- * leaves it empty makes the two slides look like different compositions. But it
- * earns its place rather than merely filling the space: the ring shows a key
- * *arriving somewhere*, and this says what that means as a fact — this key, this
- * hash, this server. It is the same hexadecimal readout the opening scene used to
- * turn a key into a position, now used to turn a position into a server.
- *
- * Only the three taught lookups get a line. The other eight are a count, because
- * eleven rows would be a table and the point is not the table.
- */
-/**
- * Every key, not a chosen few.
- *
- * The readout used to list the three keys the scene routes one at a time, which
- * made those three look significant — they are not, they are simply the ones
- * slow enough to watch. Listing all of them says the opposite and truer thing:
- * the rule is the same for every key, and the table fills as the ring answers.
- *
- * Set small enough that eleven rows sit above the line of commentary beneath.
- */
+/** Every key, as it is routed. Fills the column Scene 3 will use for shares. */
 const READOUT = { x: LAYOUT.panel.x, y: 138, width: LAYOUT.panel.width };
 const ROW = { height: 21, hashX: 96 };
 

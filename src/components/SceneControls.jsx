@@ -1,20 +1,6 @@
 import React, { useEffect } from 'react';
 
-/**
- * Transport for a scene: one button, and the space bar.
- *
- * It used to offer Back and Next as well, on the reasoning that a scene which has
- * finished has nothing to give but a replay, and stepping lets somebody return to
- * the one moment they missed. The reasoning holds and the control did not. A step
- * is only meaningful at a rest, the rests are unevenly spaced, and pressing Next
- * twice in a row lands somewhere the viewer has no way to predict — so the thing
- * that reads as a scrubber behaves like a chapter list nobody has seen.
- *
- * What is left is the one action that is always unambiguous: put the scene back to
- * its beginning. The timeline still keeps its steps, because that is what
- * `sceneRests` checks the scenes against — they are the scene's structure, not
- * only a control surface.
- */
+/** Replay the scene. Space bar does the same. */
 
 const BUTTON =
   'shrink-0 border border-cyber-border px-4 py-2 text-[11px] uppercase tracking-[0.28em] ' +

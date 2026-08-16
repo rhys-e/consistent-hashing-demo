@@ -41,26 +41,10 @@ function frameAt(renderScene, beat) {
   return frame.join('\n');
 }
 
-/**
- * A step is the middle of a rest, and a rest is an interval in which nothing
- * moves. This is the check that keeps that true: render either side of every
- * step and require the frame to be identical.
- *
- * Without it, steps drift silently. Every timing change is a chance for a movement
- * to grow into the quiet moment that was supposed to follow it, and the symptom —
- * stepping onto a half-finished fade, or onto the start of the next movement — is
- * only visible to someone clicking through the whole scene.
- */
+/** Either side of each step, the frame must be identical. Assert a frame exists first. */
 function expectRestsAt(renderScene, steps) {
   const failures = [];
 
-  /**
-   * The guard only guards if it can see something. It could not, for a long time:
-   * the collector keys off `data-layer`, the full-scale scene emitted none, and so
-   * both of its rest tests compared two empty strings and passed unconditionally —
-   * on the scene with much the most complicated timeline. Assert there is a frame
-   * before asserting anything about it.
-   */
   expect(frameAt(renderScene, steps[0].at).length).toBeGreaterThan(0);
 
   steps.forEach(step => {

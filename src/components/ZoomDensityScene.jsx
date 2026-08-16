@@ -6,14 +6,7 @@ import SceneControls from './SceneControls';
 import DensityZoom, { ZOOM_BEATS, ZOOM_MODEL, ZOOM_STEPS } from './DensityZoom';
 
 /**
- * Scene 5: what the dense ring is actually made of.
- *
- * A fiftieth of the ring is bracketed and unrolled into a strip, where a dozen or
- * two changes of owner become legible. Then the window sweeps, and the strip stays
- * exactly as mixed — which is the claim the full-scale scenes are built on, shown
- * rather than asserted.
- *
- * It ends on the dense ring it started from, which is the frame Scene 6 opens on.
+ * Scene 5: magnify a section of the dense ring, then sweep. Ends on Scene 6's opening frame.
  */
 export function ZoomDensityScene({
   secondsPerBeat,

@@ -210,11 +210,6 @@ describe('story deck', () => {
     expect(currentTick().getAttribute('aria-label')).toBe('First');
   });
 
-  /**
-   * The deck opens settled, because the first slide is not transitioned into. It
-   * was briefly the other way round, and the effect was a story that never
-   * started: nothing was ever active, so nothing ever played.
-   */
   it('makes the opening slide live immediately', () => {
     render(<StoryDeck slides={SLIDES} initialIndex={1} />);
 
@@ -241,21 +236,7 @@ describe('the story as slides', () => {
   const slides = STORY_SLIDES;
   const kinds = slides.map(slide => slide.kind);
 
-  /**
-   * Scene 2 finishes on the exact frame Scene 3 opens on, asserted
-   * attribute-for-attribute in `lookupScene.test.jsx`, and for a while the two ran
-   * straight into each other so the pair read as one continuous movement.
-   *
-   * What that cost was the question. Everything before Scene 3 builds a ring and
-   * puts a key on it, and then Scene 3 fails a server, having never said that
-   * servers fail — so it opens with an *answer* to a question the story last asked
-   * on the opening slide. One slide now asks it, and the frame identity survives
-   * intact: a viewer reads it and looks up to find the ring where they left it.
-   *
-   * The pair is still a pair, and this holds that. If a second slide ever appears
-   * between them, or the question slide drifts away from the scene it sets up, the
-   * two halves have stopped being adjacent in any sense worth having.
-   */
+  /** Lookup and removal stay adjacent, with one question slide between them. */
   it('puts exactly one question between the lookup and the removal', () => {
     const lookup = slides.findIndex(slide => slide.key === 'key-routes');
     const removal = slides.findIndex(slide => slide.key === 'server-leaves');

@@ -35,30 +35,14 @@ import SceneFrame from './SceneFrame';
 import SceneAnnotation from './SceneAnnotation';
 
 /**
- * The opening: a hash space drawn as a number line, and the same line wrapped
- * into a ring.
- *
- * These were two scenes, and keeping them apart cost more than it bought. The
- * bend only means anything because the line before it and the ring after it are
- * demonstrably the same object, which took a shared drawing layer and a test
- * asserting that one scene's last frame equalled the next one's first. Making it
- * one scene makes that structural: there is no seam to keep closed, because there
- * is no longer a join.
- *
- * Every element positions itself through one projection parameterised by how far
- * the rail has bent, so the whole composition — ticks, labels, keys, the seam —
- * follows from a single scalar running from "straight" to "closed".
+ * Hash space as a number line, then the same line wrapped into a ring. One
+ * projection scalar, from straight to closed, places every element.
  */
 
 const PREFIX = 'hash-space';
 const { width, height, centreY, anchorX } = STAGE;
 
-/**
- * The rail grows as it curls, because a straight line of length L closes into a
- * ring only 0.318L across. Scaling keeps the ring a usable size on screen while
- * relative spacing between positions is preserved, which is what lets a viewer
- * track individual keys through the bend.
- */
+/** Scaled as it curls so the closed ring stays a usable size. Spacing is preserved. */
 const RAIL_LENGTH = STAGE.railLength;
 
 const BEAM = { top: centreY - 162, bottom: centreY + 100, width: 14 };
@@ -82,21 +66,9 @@ const MORPH = { move: 1.8 };
 /** The pulse starts just before the ends meet and outlasts the bend. */
 const SEAM = { lead: 0.2, peak: 0.2, tail: 0.7 };
 const CLOSE_REST = 0.5;
-/**
- * The card, held before the bend. Long enough to be read without hurrying, and
- * the bend that follows keeps it up for a while longer.
- */
 const CARD_REST = 3;
-/** Long enough to read a standing line without hurrying. */
 const READING_REST = 4.5;
-/**
- * Top left, which is the only corner clear in *both* shapes.
- *
- * Bottom left looks free while the rail is straight and is not: `user:1842` is the
- * leftmost key, so the bend carries its label down into that corner. A card has to
- * be placed against the frame the scene ends on as well as the one it starts on,
- * or it collides with something that was nowhere near it when it was positioned.
- */
+/** Top left: the only corner clear in both shapes. Bottom left collides after the bend. */
 const CARD = { x: 60, y: 96, width: 250 };
 
 /** How far into the bend the ring's own atmosphere starts to resolve. */
@@ -108,10 +80,6 @@ const POLAR_GRID = {
   circles: [0.45, 0.72],
 };
 
-/**
- * The scene as durations laid end to end, so the quiet moments a viewer steps
- * between are part of the timing rather than whatever gap is left over.
- */
 const TIMELINE = (() => {
   const timeline = createTimeline();
 
@@ -125,9 +93,6 @@ const TIMELINE = (() => {
     return { beatStart, rest: timeline.rest(KEY.rest, `${sampleKey.keyName} landed`) };
   });
 
-  // Said while it is still a line, and the one thing three keys landing cannot
-  // show: that landing there was not a choice and will not change. The bend then
-  // has something to preserve.
   timeline.annotate(
     'Each key hashes to a position in this fixed range. Anyone can compute that from the key alone.'
   );
@@ -141,15 +106,10 @@ const TIMELINE = (() => {
     to: morph.to + SEAM.tail,
   };
 
-  // The pulse is decoration, but a step landing inside one shows a scene still
-  // animating after the viewer has arrived, so the rest waits for it.
+  // Wait out the seam pulse so a step does not land on a still-moving scene.
   timeline.skip(SEAM.tail);
   const closed = timeline.rest(CLOSE_REST, 'Ring closed');
 
-  // Said once the shape has finished changing, because the point of it is that
-  // nothing else did. A viewer who has just watched a line become a ring will
-  // reasonably wonder what the ring added, and the answer is only that the two
-  // ends of the range are now neighbours.
   timeline.annotate(
     'Nothing about the numbers changed. The range is now a ring, so the highest value sits beside the lowest.'
   );

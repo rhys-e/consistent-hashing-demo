@@ -12,28 +12,15 @@ import SceneFrame from './SceneFrame';
 import SandboxRing from './SandboxRing';
 
 /**
- * Scene 8: the story's claims, with the numbers unlocked.
- *
- * Everything before this is fixed — three servers, or six becoming seven, at
- * counts chosen to make a point. Here the counts are the viewer's, and the two
- * readouts are the two things the story spent nine slides establishing: how far
- * from even the split is, and how much of the ring moves when the topology
- * changes.
- *
- * It is the one scene not driven by a beat. A timeline is how you tell somebody
- * something; this is how they ask.
+ * Scene 8: the same claims, with the counts unlocked. Not beat-driven.
  */
 
 /** Long enough to see ownership change hands, short enough to feel like a click. */
 const SETTLE = { duration: 0.55, ease: [0.65, 0, 0.35, 1] };
 
 /**
- * Split into a base and two states rather than an override appended to the base.
- *
- * Tailwind resolves two utilities for the same property by their order in the
- * *stylesheet*, not by their order in the attribute, so `border-ui-border` and
- * `border-ui-text-bright` on the same element is a coin toss — and the selected
- * position silently looked identical to the other five.
+ * Base plus two states, not two borders on one class. Tailwind resolves same-
+ * property utilities by stylesheet order, so the selected step would look idle.
  */
 const CONTROL =
   'rounded-sm border px-3 py-1 font-mono text-[12px] uppercase tracking-[0.18em] ' +

@@ -4,27 +4,8 @@ import theme from '../themes';
 import { useScramble } from '../story/useScramble';
 
 /**
- * A remark that sits beside the picture instead of over it.
- *
- * `SceneNote` earns its scrim by running over an opening frame not yet worth
- * looking at. Everywhere else the frame *is* the explanation, and three of the
- * lines this replaces were deictic — they pointed at a picture the blur had just
- * removed. So this takes the reading rest and none of the occlusion.
- *
- * It renders in the share panel's column, under the numbers, because that is where
- * the eye already goes for a claim about quantity, and because the column is empty
- * below the panel's last line. Inside the SVG rather than beside it so it travels
- * with the artwork under `preserveAspectRatio` — a note anchored to the viewport
- * would drift away from the panel it belongs to at other stage sizes.
- *
- * The box is about thirty words at this size, and that ceiling is the point: it
- * makes the paragraph-long narration this replaces impossible to write here.
- *
- * There is no countdown rule under it, unlike `SceneNote`. That rule answers "how
- * long until I get the picture back", which is a question a note that hides the
- * picture has to answer. This one never took it away, so it can simply stay — and
- * a line that stays is one the viewer can come back to rather than one they have
- * to catch.
+ * Standing commentary in the share-panel column, inside the SVG so it travels
+ * with the artwork. About thirty words at this size. Does not blur the picture.
  */
 
 export function SceneAnnotation({ progress, x, y, width, height = 110, textFor, presenceFor }) {

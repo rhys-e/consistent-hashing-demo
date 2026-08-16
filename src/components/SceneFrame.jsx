@@ -4,33 +4,8 @@ import { useScramble } from '../story/useScramble';
 import SceneNote from './SceneNote';
 
 /**
- * Shared chrome for the guided story scenes.
- *
- * The scene fills whatever it is given as a three-row column, so the artwork
- * claims the space the narration and transport do not need. It sizes to `h-full`
- * rather than `h-screen` on purpose: inside a deck a scene occupies a slide, and a
- * scene that assumes the viewport instead overflows its slide by however much the
- * two differ.
- *
- * There is no scene title and no rule across the top. The narration slide that
- * precedes a scene has already named the chapter, so a title repeats it — and a
- * boxed frame on every scene puts a visible seam between slides that should read
- * as one continuous canvas.
- *
- * ## Where the words go
- *
- * Two modes, because this is the part that has been hardest to get right.
- *
- * `overlay` is the default: the artwork carries no text at all while it moves, and
- * an explanation arrives over a paused, softened scene at the moments the scene
- * holds for one. See `SceneNote`.
- *
-
- * `header` keeps the caption in the top left throughout, which is what a scene with
- * nothing to say at intervals — a static comparison, say — actually wants. It was
- * also the default for a while, and the reason it is not any more is worth
- * recording: a line of prose beside a moving picture gets read *or* watched, never
- * both, and the viewer loses whichever they come to second.
+ * Scene chrome. `h-full`, not `h-screen`, so a slide does not overflow the deck.
+ * `overlay` (default) speaks over a pause; `header` keeps a caption up throughout.
  */
 
 function HeaderCaption({ caption, active }) {

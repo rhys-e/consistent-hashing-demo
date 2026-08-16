@@ -16,18 +16,7 @@ import { LAYOUT, ServerRing } from './RingParts';
 import SceneAnnotation from './SceneAnnotation';
 
 /**
- * Scene 5: the boundaries are real, and they are everywhere.
- *
- * The scene before this one asserts production density and the scene after it
- * replaces the ring with a summary, which leaves a gap: nothing has shown that
- * the smear on the dense ring is *structure* rather than noise. Magnifying a
- * sliver shows that it is. Sweeping the sliver around shows it is the same
- * wherever you point it, which is the claim the whole full-scale treatment rests
- * on and the one it currently states in a sentence.
- *
- * The magnifier is not new machinery: a window of the ring renormalised to nought
- * and one is the same set of ranges, so the strip is drawn by the dash pattern
- * that draws everything else — on a straight line rather than a circle.
+ * Magnify a window of the dense ring onto a strip. Same dash pattern, on a line.
  */
 
 /** One fiftieth. Small enough to be a hairline on the ring, wide enough to read. */
@@ -57,8 +46,6 @@ export function buildZoomTimeline() {
   timeline.rest(REST, 'One fiftieth of it');
 
   const magnify = timeline.move(MAGNIFY.move);
-  // Said after the strip has arrived, not with it. Two things appearing in the
-  // same column at the same moment compete, and the picture should land first.
   timeline.skip(SETTLE_BEFORE_SPEAKING);
   timeline.annotate(
     "This is one small section of the ring, unrolled. Each colour change is a different server's range."
@@ -66,9 +53,6 @@ export function buildZoomTimeline() {
   timeline.rest(READING_REST, 'Magnified');
 
   const pan = timeline.move(PAN.move);
-  // Said in distance, not in duration. "Nobody holds it for long" measures the
-  // wrong thing: a viewer reads it as a server letting go after a while, when the
-  // claim is about how little of the ring any one of them holds in one piece.
   timeline.annotate(
     'Look anywhere on the ring and the mix is the same. The load is shared evenly across every section.'
   );
@@ -118,13 +102,7 @@ const spanAt = (timeline, progressValue) =>
     easeInOutCubic(rangeProgress(progressValue, timeline.close.from, timeline.close.to))
   );
 
-/**
- * The strip arrives and stays.
- *
- * It used to fade out with the calipers, which left the scene ending on an empty
- * column and undid the thing the whole scene had just shown. Only the brackets
- * retract; what they found is still worth looking at.
- */
+/** The strip stays after the calipers retract. */
 const magnifiedAt = (timeline, progressValue) =>
   easeInOutCubic(rangeProgress(progressValue, timeline.magnify.from, timeline.magnify.to));
 

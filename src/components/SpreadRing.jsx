@@ -18,53 +18,17 @@ import ServerLoadPanel from './ServerLoadPanel';
 import SceneAnnotation from './SceneAnnotation';
 
 /**
- * The scene as durations laid end to end.
- *
- * It is Scene 3 run twice with one thing changed. The same three servers, the same
- * server failing, the same sweep filling the gap it leaves — but each server now
- * holds six positions instead of one, and that is the only difference the viewer
- * is asked to account for. Everything else is deliberately identical, because a
- * comparison in which two things differ proves neither.
- *
- * The keys leave during the split, and that is the scene's second job. Six
- * positions each puts eighteen boundaries on the ring, which is past the point
- * where a viewer can follow an individual key — so the story stops asking them to,
- * and starts reading the ring as quantities. Scene 6 assumes exactly that.
- */
-/**
- * Long, and the longest rest in the scene before the closing one.
- *
- * This frame is Scene 3's ring, and the whole of what follows is a comparison
- * against it — so it has to be looked at rather than glanced past. The scene is
- * asking the viewer to hold one picture in mind while a second is built on top of
- * it, which is more than a beat's worth of work.
+ * Scene 3 again, with six positions per server. Keys leave during the split:
+ * eighteen boundaries is too many to follow individually.
  */
 const OPENING = 3;
-/** Each server's other five positions arriving, staggered so they read as arriving. */
 const SPLIT = { move: 2.6, stagger: 0.12, tether: 0.9 };
 const KEYS_OUT = { move: 1 };
 const PANEL = 0.5;
-/**
- * The same failure as Scene 3, at the same pace. Anything faster here would be
- * read as the failure mattering less, when what has changed is only who absorbs it.
- */
 const FAIL = { waver: 2, drop: 1.4 };
 const ORPHANED_REST = 2.4;
 const ABSORB = { move: 3.4 };
-/**
- * The closing statement: everything dims except what changed hands, and then
- * everything comes back.
- *
- * The coming back is not a flourish, it is the correction to what the highlight
- * would otherwise say. The claim these scenes make is a *negative* — that the rest
- * of the ring was untouched — and a highlight makes the changed parts the figure
- * and the untouched parts the ground, which is the argument upside down. Ending on
- * it would leave a viewer with "those pieces are the result", when the result is
- * the whole ring and the pieces are merely the cost of it.
- *
- * So the highlight is a moment passed through: it answers what moved, and the
- * frame the scene rests on afterwards answers what did not.
- */
+/** Highlight what moved, then restore so the untouched ring is the last frame. */
 const HIGHLIGHT = { move: 0.9, restore: 0.8 };
 /** The last frame of the scene: the ring entire, and mostly where it was. */
 const WHOLE_REST = 1.6;
@@ -84,8 +48,6 @@ export function buildSpreadTimeline(model) {
   const [, dense] = model.levels;
   const extras = dense.before.topology.vnodes.length - model.servers.length;
 
-  // Said before the pause rather than after it, so the rest is spent reading the
-  // line *and* looking at the ring it is about.
   timeline.annotate('This time each server gets six positions around the ring, not one.');
   const opening = timeline.rest(OPENING, 'One position each');
 
@@ -108,10 +70,6 @@ export function buildSpreadTimeline(model) {
   const absorbed = timeline.rest(REST, 'Absorbed');
 
   const highlight = timeline.move(HIGHLIGHT.move);
-  // Written against Scene 3's closing line rather than on its own. That one says
-  // the failed keys all went to one neighbour, and this scene exists to be held
-  // against it — so the line has to name what changed between the two, not only
-  // report where things ended up.
   timeline.annotate(
     'Last time one neighbour took all of it. This time the extra positions split the load, and each neighbour took about half.'
   );
@@ -143,15 +101,7 @@ export function buildSpreadTimeline(model) {
   };
 }
 
-/**
- * Scene 4's ring, with its positions placed rather than hashed — see `placedRing`.
- *
- * A hash puts twelve of the thirty neighbouring pairs closer together than a dot is
- * wide, two of them a pixel apart, and re-rolling does not help: 52,800 candidate
- * casts and key formats were measured and none got below seven collisions, because
- * for thirty random points a tight pair is the expected outcome. Placing them is
- * the only thing that clears the picture, and it costs nothing the scene claims.
- */
+/** Positions placed, not hashed. See `placedRing`. */
 export const SPREAD_MODEL = buildSpreadModel(PLACED_SPREAD);
 export const SPREAD_BEATS = buildSpreadTimeline(SPREAD_MODEL);
 
@@ -352,16 +302,7 @@ export function SpreadRing({ model, progress, timeline, treatment = SPREAD_TREAT
         );
       })}
 
-      {/* What changed hands, in the colours of whoever took it. Drawn over the
-          dimmed ring rather than instead of it, because the point is how little
-          of the ring these pieces are and how scattered they are across it.
-
-          Above the arcs and below the marks. It used to be last of all, which put
-          a highlighted stretch in front of the dots at either end of it — and a
-          dot is the *boundary* of that stretch, so covering it hid exactly the
-          thing the highlight is pointing at. Everything on this ring is drawn in
-          the order of what it is: the band, then what happened to the band, then
-          the positions that divide it. */}
+      {/* Remapped ranges over the dimmed ring, under the marks so boundaries stay visible. */}
       {dense.remap.ranges.map(range => (
         <OwnershipArc
           key={`moved-${range.from}`}

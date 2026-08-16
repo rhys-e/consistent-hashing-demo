@@ -1,32 +1,7 @@
 /**
- * Ownership ranges expressed as a dash pattern rather than as arc paths.
- *
- * A circle with `pathLength="1"` measures its own circumference as 1, so a dash
- * array written in position units means the same thing at any radius. That is
- * what makes the full-scale scene animate at all: a server's ranges are computed
- * once, and moving them between the shared ring and their own lane is a change to
- * one number, `r`, rather than several thousand rebuilt path coordinates.
- *
- * It also makes the claim structurally: the arcs on the single ring and the arcs
- * in a lane are not two drawings of the same data, they are the same drawing.
- *
- * ## Never emit a zero-length dash or gap
- *
- * This is the rule the whole module is arranged around, and it was learned twice.
- * A renderer handed a degenerate segment has no tangent to orient the stroke by,
- * and draws a disc the width of the stroke instead — a mark orders of magnitude
- * larger than the range it stands for, which spins as the geometry moves because
- * its orientation is undefined.
- *
- * The first cause was real but rare: two vnodes hashing within a hair of each
- * other. The second was self-inflicted and systematic. An SVG dash array begins
- * with a dash, so a pattern whose first range does not start at the seam used to
- * open with a zero-length one — and the server that *does* own the seam closed
- * with a zero-length gap instead. Both sat exactly at the seam, which is why the
- * artefact always appeared at the bottom of the ring.
- *
- * The phase now lives in the dash *offset*, which is what it is for, so the array
- * can begin with a real dash and close with a single gap that wraps around.
+ * Ownership as a dash pattern on `pathLength="1"`. Same pattern at any radius;
+ * only `r` changes. Never emit a zero-length dash or gap: SVG draws a spinning
+ * disc. Phase lives in the dash offset so the array can start with a real dash.
  */
 
 /**

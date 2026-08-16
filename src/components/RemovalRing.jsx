@@ -29,59 +29,21 @@ const palette = {
   orphan: theme.colors.ui.text.secondary,
 };
 
-/**
- * Further left than the panel's default, because the point of the scene is one
- * server ending at nearly twice an even share and the bar has to have somewhere
- * to go. At the default it would clamp at the end of its track, and the doubling —
- * the whole argument — would stop being measurable.
- */
+/** Left of the default: the absorbing bar nearly doubles and must not clamp. */
 const EVEN_MARK = 0.4;
 /**
- * The scene as durations laid end to end.
- *
- * One movement carries the whole scene, and the story plays it twice. Each
- * server's arc sweeps *backwards* from its own position to the one before it —
- * that is the ownership rule, animated rather than asserted. Scene 2 does that
- * sweep; this scene is the second playing of it, where a server leaves and its
- * neighbour performs the identical sweep again across the ground it left. The
- * second reads as an answer because the first taught the grammar.
- *
- * Which is why nothing here establishes anything. Scene 2 ends on precisely the
- * frame this scene opens on — three servers, eleven keys, every range claimed —
- * and `Story.jsx` puts no slide between them in order to keep it. This scene used
- * to land the markers, sweep the arcs and place the keys all over again, which
- * spent the first twelve seconds rebuilding a picture already on screen and threw
- * away the continuity the pair was arranged to have.
+ * Opens on Scene 2's last frame. Zero-length windows read as already complete, so
+ * the ring is assembled without a second settled code path.
  */
 const PANEL = 0.45;
 const OPENING_REST = 1.2;
-/**
- * A server does not vanish, it fails: it wavers first, which is the difference
- * between something being removed from a diagram and something going wrong.
- *
- * Deliberately slow. Everything before this is setup, and a failure that is over
- * before the eye has found it turns the point of the scene into a cut. The waver
- * is long enough to be read as trouble rather than as a flicker, and the drop long
- * enough that a viewer watching the panel sees the bar drain rather than blink.
- */
 const FAIL = { waver: 2, drop: 1.4 };
-/** The unowned gap, held. The one frame in the story where a range has no owner. */
+/** The unowned gap. The one frame where a range has no owner. */
 const ORPHANED_REST = 2.4;
-/** Slower than the establishing sweep: this one is the answer, not the grammar. */
 const ABSORB = { move: 3.4 };
 /**
- * The closing statement: everything dims except what changed hands, and then
- * everything comes back.
- *
- * The coming back is not a flourish, it is the correction to what the highlight
- * would otherwise say. The claim these scenes make is a *negative* — that the rest
- * of the ring was untouched — and a highlight makes the changed parts the figure
- * and the untouched parts the ground, which is the argument upside down. Ending on
- * it would leave a viewer with "those pieces are the result", when the result is
- * the whole ring and the pieces are merely the cost of it.
- *
- * So the highlight is a moment passed through: it answers what moved, and the
- * frame the scene rests on afterwards answers what did not.
+ * Highlight what moved, then restore. Ending on the highlight would make the
+ * slivers the result; the result is the rest of the ring, untouched.
  */
 const HIGHLIGHT = { move: 0.9, restore: 0.8, dim: 0.12 };
 /** The last frame of the scene: the ring entire, and mostly where it was. */
@@ -110,31 +72,14 @@ export function buildRemovalTimeline(model) {
   const timeline = createTimeline({ readingRest: READING_REST });
   const servers = model.servers.length;
 
-  /**
-   * The establishing movements, kept as windows of no length at the very start.
-   *
-   * Every layer describes itself as "how far through my window are we", and
-   * `rangeProgress` reads a zero-length window as complete from the first frame.
-   * So the ring arrives assembled without any layer needing a second, settled code
-   * path — which is the version of this that would rot, because the drawing and the
-   * timeline would then hold separate opinions about what the scene opens on.
-   */
   const arrived = { from: 0, to: 0 };
   const markers = group(arrived, servers, 0);
   const sweep = group(arrived, servers, 0);
   const keys = group(arrived, model.keys.length, 0);
 
-  // The one thing that does arrive, because it is the one thing Scene 2 never put
-  // on screen. The ring carries straight over and the measurement of it turns up:
-  // that is a scene beginning, rather than the previous slide being redrawn.
   const panel = timeline.move(PANEL);
-  // Long enough to register as a frame the viewer has arrived at rather than one
-  // the previous slide left behind, and short enough that a scene which opens on a
-  // picture the viewer already read does not make them wait to be told why.
   const settled = timeline.rest(OPENING_REST, 'Shares shown');
 
-  // The claim the scene is here to make, said while it is still true of nothing on
-  // screen, and left standing until the second half qualifies it.
   timeline.annotate(
     "Only the failed server's keys have to move. Every other key stays where it is."
   );
@@ -180,10 +125,7 @@ export function buildRemovalTimeline(model) {
 export const REMOVAL_MODEL = buildRemovalModel();
 export const REMOVAL_BEATS = buildRemovalTimeline(REMOVAL_MODEL);
 
-/**
- * Where the scene rests, in the order it rests there — derived from the timeline's
- * own rests rather than re-listed, so there is one place a beat can be wrong.
- */
+/** Steps from the timeline's own rests. */
 export function buildRemovalSteps(timeline) {
   return buildSteps(
     timeline.rests.filter(rest => rest.label).map(rest => stepAtRest(rest, rest.label)),

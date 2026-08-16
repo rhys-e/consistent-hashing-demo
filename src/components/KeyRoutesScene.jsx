@@ -7,15 +7,7 @@ import LookupRing, { LOOKUP_BEATS, LOOKUP_MODEL, LOOKUP_STEPS } from './LookupRi
 
 /**
  * Scene 2: a key belongs to the first server clockwise from it.
- *
- * The rule in isolation, before anything is at stake — and the scene that earns
- * the notation every later one uses. Keys arrive on the ring as Scene 1 left them
- * and step inside it when the servers arrive, so the band changing meaning from
- * "the number line" to "who owns what" is something the viewer watches happen
- * rather than a difference between two slides.
- *
- * It ends on exactly the frame Scene 3 opens on: three servers, eleven keys, every
- * range claimed.
+ * Ends on the frame Scene 3 opens on.
  */
 export function KeyRoutesScene({
   secondsPerBeat,

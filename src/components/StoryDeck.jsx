@@ -14,75 +14,19 @@ import DeckCountdown, { COUNTDOWN_SECONDS, ScrollHint } from './DeckCountdown';
 import NarrationSlide from './NarrationSlide';
 
 /**
- * The story as vertical slides, alternating narration and scene.
- *
- * The problem this solves is not layout, it is pressure. Holding one continuous
- * visual thread across every scene means each scene's composition is dictated by
- * whatever the previous one ended on — the full-scale scene needs the ring
- * off-centre to make room for its share panel, the opening leaves it centred, and
- * there is no honest animation between those two facts. A slide of narration
- * between them absorbs the discontinuity, and costs nothing, because a cut after a
- * full stop is not a cut.
- *
- * **This is a tool for chapter breaks, not a uniform pattern.** Where a seamless
- * transition is possible it is always better, which is why the number line and the
- * ring it bends into are one scene on one slide rather than two.
- *
- * ## Hands off until you take over
- *
- * The default is that the story runs itself: each slide plays, a thin bar counts
- * down the last few seconds, and the deck moves on. Nothing is on screen but the
- * story. Touch anything — a click, or a scene's own keys — and the deck stops
- * advancing for good, shows the scene transport, and waits. Watching and studying
- * are different activities, and the interface for the second is clutter during the
- * first.
- *
- * ## Why this drives itself rather than scrolling
- *
- * A viewer is on one slide or the next, never suspended between them, so the deck
- * animates between whole slides instead of snapping a free scroll. That is a
- * deliberate trade: scroll snapping gets keyboard, trackpad and assistive
- * technology for free, and taking the transition over means owing all of it back.
- * Arrow and page keys, Home and End, touch, and progress ticks that are real
- * buttons are that debt being paid; `prefers-reduced-motion` cuts instead of
- * sliding.
+ * Vertical slides. The story advances itself until the viewer takes over.
+ * Animates between whole slides; `prefers-reduced-motion` shortens the travel.
  */
 
-/**
- * Long and symmetric, so a slide change reads as being carried down a page rather
- * than cut to. An ease-out alone starts at full speed, which lands as a jump no
- * matter how long it runs.
- */
 const SLIDE_TRANSITION = { duration: 1.05, ease: [0.65, 0, 0.35, 1] };
-/**
- * Reduced motion asks for less movement, not for none. Cutting instantly between
- * slides is the harshest possible transition, and it was what this did — the
- * setting turned a considered movement into a jump.
- */
 const REDUCED_SLIDE_TRANSITION = { duration: 0.25, ease: 'linear' };
 const SWIPE_THRESHOLD = 40;
 /** Prefixes every history entry, so a back button offers legible choices. */
 const SITE_TITLE = 'Consistent Hashing';
 
 /**
- * Ticks down the right-hand edge: how many slides there are, which one this is,
- * and a way to reach any of them.
- *
- * Hairlines rather than pills. The deck is the thing being looked at, and a
- * column of filled dots down the edge of a dark composition reads as part of it.
- * The generous hit area is padding, so the mark stays thin without being fiddly.
- *
- * **Hidden until the viewer takes over**, like the scene transport and the scroll
- * hint. While the deck is running itself there is nothing to steer, so a column of
- * marks down the edge is a control offered to somebody who has not asked for one —
- * and the whole point of the automatic mode is that nothing is on screen but the
- * story. Engagement brings all three out together.
- *
- * Focus brings them out too, and has to. Hiding them means hiding the only pointer
- * -free way to see where you are, so tabbing into the column reveals it — the
- * marks stay in the document and stay focusable, and only their opacity goes.
- * Making them `display: none` or `aria-hidden` would leave a keyboard user with
- * focus somewhere invisible, which is worse than the clutter this removes.
+ * Slide ticks. Hidden until the viewer takes over, but stay in the document so
+ * focus can reveal them. Do not use `display: none` or `aria-hidden`.
  */
 function DeckProgress({ slides, index, onSelect, shown }) {
   const [focused, setFocused] = useState(false);
@@ -125,24 +69,8 @@ function DeckProgress({ slides, index, onSelect, shown }) {
 }
 
 /**
- * Slide travel is measured in *layout* pixels.
- *
- * This took three attempts, and the third one is the point. A percentage resolves
- * against the moving element's own box, which is only the slide height if every
- * slide is exactly as tall as the deck — so that went. `getBoundingClientRect()`
- * replaced it, and was still wrong, for a reason that is easy to miss: it reports
- * the *visual* box, after any transform on an ancestor. Storybook's preview can be
- * scaled, and a scaled measurement is smaller than the height the browser actually
- * laid the slides out at, so every slide undershoots by the same fraction — and a
- * constant error per slide accumulates into a deck that sits visibly too low by
- * the time you are a few slides in.
- *
- * `clientHeight` is the layout box, which is the space the transform is expressed
- * in, so the two agree. Observed as well as measured, so a resize keeps it true.
- *
- * Not covered by a test, deliberately: jsdom has no layout, so `clientHeight` is
- * always zero there and only the fallback would ever run. A test that cannot
- * observe the property it guards is worse than none, because it reads as coverage.
+ * Slide travel in layout pixels (`clientHeight`). `getBoundingClientRect` is the
+ * visual box and undershoots when an ancestor is scaled. Untested: jsdom has no layout.
  */
 function useSlideHeight(ref) {
   const [height, setHeight] = useState(0);
@@ -168,16 +96,8 @@ function useSlideHeight(ref) {
 }
 
 /**
- * The address bar, kept in step with the deck both ways.
- *
- * Opt-in rather than automatic, because it is a claim about the *page*: a deck
- * that is the whole page may own the address, and one rendered as an example
- * beside other examples may not. Storybook does not pass it.
- *
- * Deliberate moves push and automatic ones replace. Without that split a story
- * that plays itself fills the history with entries nobody asked for, and the back
- * button stops being a way out of the page and becomes a way to walk backwards
- * through it a slide at a time.
+ * Address bar, opt-in. Viewer moves push; automatic ones replace, so a playing
+ * story does not fill history.
  */
 function useSlideAddress({ slides, index, viaViewer, enabled, onNavigate }) {
   useEffect(() => {

@@ -29,98 +29,27 @@ export const LAYOUT = {
   panel: { x: 760, y: 150, width: 300 },
 };
 
-/**
- * The scene as durations rather than timestamps.
- *
- * Every movement here is a lane changing radius, and every one is followed by a
- * rest: an interval in which nothing at all moves. The rests are what the viewer
- * steps between, so they are part of the timing rather than whatever gap happens
- * to be left over — laying the scene out as durations is what stops a movement
- * growing into the quiet moment that was supposed to follow it.
- */
 const OPENING = 1;
 const FAN_OUT = 1.5;
 const PANEL = 0.45;
 const JOIN = 0.45;
-/**
- * The roster changes before the ring does.
- *
- * Watching six lanes give something up only means anything if you already know a
- * seventh server has turned up and why. So the newcomer arrives first as a row
- * sliding into the table — the smallest, most legible statement of "there is one
- * more of these now" — and the ring is left alone while that lands.
- */
+/** Roster first, then the ring. The newcomer is a row before it is a lane. */
 const ROSTER = { slide: 0.7, rest: 2 };
-/** Far enough out to be a row arriving from somewhere, not a row fading up. */
 const ROSTER_SLIDE_FROM = 44;
-/**
- * A handover is four moments: the lane about to give something up crossfades into
- * the light, holds while nothing moves so the viewer can see which one it is, the
- * ranges cross, and everything rests. The hold matters because without it the
- * answer to "which server just lost that?" arrives after the movement that would
- * have answered it.
- *
- * ## Teach one, montage five
- *
- * Six handovers at one speed taught the mechanic six times and none of them well:
- * fast enough to be a rhythm, too fast to follow the first time, and by the third
- * the viewer is watching a texture rather than reading an event. So the first one
- * is slow enough to be read as a sentence — this lane lights, *these* ranges leave
- * it, they arrive *there* — and the other five run at a pace that says "and again,
- * and again" without asking to be parsed individually.
- *
- * The repetition is still doing work: what the montage proves is that every server
- * gives up a share, not what a handover consists of. That was already established.
- */
+/** First handover is slow enough to read; the rest are a montage. */
 const TEACH = { cross: 0.25, hold: 0.6, flight: 0.85, rest: 0.55 };
 const MONTAGE = { cross: 0.15, hold: 0.1, flight: 0.3, rest: 0.3 };
 const handoverShape = index => (index === 0 ? TEACH : MONTAGE);
-/**
- * After the last server hands over, everything stays back with only the newcomer
- * lit. Without it the last handover has nowhere to land: its lane fades out just as
- * the others fade in, so it blinks instead of taking its turn. That hold is also
- * where the result gets stated on its own terms, so it is a narration rest: the
- * one lane built entirely out of slivers is what you look at while reading why.
- */
+/** Hold the newcomer alone so the last handover has somewhere to land. */
 const NEWCOMER = { hold: 1.8, restore: 0.45 };
-/** The long rest on the assembled lanes: the seam between two scenes. */
 const ASSEMBLED_REST = 0.7;
 const MERGE = { move: 0.28, rest: 0.24 };
-/**
- * The closing highlight, and the restore that follows it.
- *
- * The restore is not a flourish, it is the correction to what the highlight would
- * otherwise say. This scene's claim is a *negative* — that the rest of the ring
- * was untouched — and dimming everything else makes the slivers the figure and the
- * untouched majority the ground, which is the argument upside down. Ending there
- * leaves a viewer with "these slivers are the result", when the result is the ring
- * shared seven ways and the slivers are what it cost.
- *
- * So the highlight is passed through: it answers what moved, and the frame the
- * scene rests on afterwards answers what did not.
- */
+/** Highlight what moved, then restore so the untouched ring is the last frame. */
 const HIGHLIGHT = { move: 0.55, restore: 0.8 };
-/** The last frame: the ring entire, seven ways, and mostly where it was. */
 const WHOLE_REST = 1.6;
-/** Long enough that a step lands clear of the movement either side of it. */
 const REST = 0.35;
-/**
- * The empty lane, held. Longer than a structural rest because this is where the
- * standing commentary arrives, and the first sentence wants stillness under it —
- * the deliberate first handover that follows gives it the rest of its reading time.
- */
 const NEW_LANE_REST = 1.5;
-/**
- * A rest that follows new narration, long enough to actually read it in.
- *
- * Around six seconds at the scene's pace. Captions used to change often and
- * briefly, which pulled the eye back and forth between the words and the ring and
- * gave neither enough attention — so there are now fewer of them, each saying more.
- * Six seconds rather than eight because the note has the screen to itself: reading
- * something is faster when it is not also asking you to watch something.
- */
 const READING_REST = 5;
-/** The last frame of the scene, with the last thing said about it still up. */
 const CLOSING_REST = READING_REST;
 
 /** A flare is an event. It peaks on contact and is gone before the pause is. */
@@ -128,15 +57,8 @@ const FLARE_DECAY = 0.18;
 
 const LANE_OPACITY = { full: 0.92, dim: 0.14, highlighted: 0.12 };
 
-/**
- * Beat boundaries depend on how many lanes there are, because the sequence is a
- * list: one entry per server handing over, then one per lane folding back in.
- */
-/** Everything from the seventh server arriving to what it took being picked out. */
 function addJoin(timeline, laneCount, sources) {
   const roster = timeline.move(ROSTER.slide);
-  // Left standing through the empty lane, every handover and the fold back out:
-  // the whole of that movement is this one sentence happening.
   timeline.annotate(
     'A seventh server joins. Each existing server gives up a few of its ranges to the newcomer.'
   );
@@ -155,9 +77,7 @@ function addJoin(timeline, laneCount, sources) {
   }
   const handoverTo = timeline.at();
 
-  // The last lane needs its own crossfade out before the newcomer stands alone.
-  // Recorded as a phase of its own so that asking for "the handover after the last
-  // one" gets a real answer — that is where the outgoing lane's fade out ends.
+  // Extra phase: the last outgoing lane's fade, so "handover after the last" is real.
   phases.push({ start: handoverTo, cross: MONTAGE.cross, hold: 0, flight: 0, rest: 0 });
   timeline.skip(MONTAGE.cross);
   const newcomer = timeline.rest(NEWCOMER.hold, 'The newcomer alone');
@@ -173,11 +93,6 @@ function addJoin(timeline, laneCount, sources) {
   const mergeTo = timeline.at();
 
   const highlight = timeline.move(HIGHLIGHT.move);
-  // The one thing the picture cannot say. Absence of change looks identical to
-  // nothing happening, so the claim at the heart of consistent hashing — that the
-  // rest of the ring was untouched — is the one claim worth spending words on.
-  // Nothing replaces it: it is the last word of the scene and stays up until the
-  // slide does.
   timeline.annotate(
     'Only these ranges changed hands. Most keys stayed put, and the load stays even, with no map to update.'
   );
@@ -192,24 +107,15 @@ function addJoin(timeline, laneCount, sources) {
     handover: { from: handoverFrom, to: handoverTo, count: sources, phases, cross: TEACH.cross },
     newcomer,
     restore,
-    /** All lanes lit, the handover complete: the seam between two scenes. */
     assembled: assembledRest.to,
     merge: { from: mergeFrom, to: mergeTo, step: MERGE.move + MERGE.rest, move: MERGE.move },
     highlight,
-    // Not `restore`: that name already belongs to the newcomer coming back up,
-    // and shadowing it here silently repoints `laneOpacityAt` at this window.
+    // Not `restore`: that name is the newcomer's fade-up; shadowing it retargets opacity.
     highlightRestore: restoreHighlight,
   };
 }
 
-/**
- * `fromSettled` starts the scene on lanes that have already separated. Kept for a
- * scene that wants to begin part-way, but *not* used by the join: taking the ring
- * apart and putting it back has to happen in one movement, or the concentric lanes
- * start to look like a structure the system has rather than a way of looking at
- * one. A zero-length window reads as "finished" to everything that consumes it.
- */
-/** What a built timeline carries forward from the one that recorded it. */
+/** `fromSettled` skips the fan-out. The join scene does not use it. */
 const snapshot = timeline => ({
   rests: timeline.rests(),
   captions: timeline.captions(),
@@ -237,11 +143,6 @@ export function buildLaneTimeline(laneCount, { hasRemap = true, fromSettled = fa
     };
   }
 
-  // No opening note. The Scale slide states the density and Scene 5 shows it, so
-  // a third telling arrived over a ring the viewer had already been told about —
-  // and blurring the artwork to say it meant the ring was on screen unblurred for
-  // a moment first, which read as the note being late rather than the scene
-  // starting.
   timeline.skip(OPENING);
   const fanOut = timeline.move(FAN_OUT);
   timeline.rest(REST, 'Lanes separated');
@@ -271,11 +172,7 @@ export function buildLaneTimeline(laneCount, { hasRemap = true, fromSettled = fa
   };
 }
 
-/**
- * Where the scene rests, in the order it rests there. Steps come from the
- * timeline's own rests rather than being re-derived, so there is one place a
- * moment can be mistimed instead of two that can disagree.
- */
+/** Steps from the timeline's own rests. */
 export function buildLaneSteps(timeline, servers) {
   const named = timeline.rests.map(rest => {
     const handover = /^handover:(\d+)$/.exec(rest.label);
@@ -294,11 +191,7 @@ export function buildLaneSteps(timeline, servers) {
 /** The timeline the join stories pin against: six servers plus the one that joins. */
 export const LANE_BEATS = buildLaneTimeline(7);
 
-/**
- * Lanes are laid out for the final server count from the first frame, so that a
- * server joining never nudges the others. "Only its ranges moved" has to be true
- * of the drawing, not just of the narration.
- */
+/** Laid out for the final count from frame one, so a join never nudges the others. */
 function laneGeometry(laneCount) {
   const step = (LAYOUT.band.outer - LAYOUT.band.inner) / Math.max(1, laneCount);
 
@@ -308,22 +201,12 @@ function laneGeometry(laneCount) {
   };
 }
 
-/**
- * Every lane separates on the same curve. The fan is produced by the inner lanes
- * having further to travel, not by staggering their starts, which keeps the gaps
- * between lanes even at every moment. The curve front-loads the movement because
- * lanes only stop overlapping once they are about half separated, and that is the
- * moment the picture starts making sense.
- */
+/** Same curve for every lane. Inner lanes travel further, so gaps stay even. */
 function separationAt(timeline, progressValue) {
   return easeOutCubic(rangeProgress(progressValue, timeline.fanOut.from, timeline.fanOut.to));
 }
 
-/**
- * One handover, as the four windows it is made of. Every timing in the sequence
- * comes from here so that the rests the viewer steps between stay the rests the
- * scene was laid out with.
- */
+/** One handover as its four windows. */
 const NO_HANDOVER = { start: Infinity, cross: 0, hold: 0, flight: 0, rest: 0 };
 
 export function handoverPhasesOf(timeline, sourceIndex) {
@@ -352,12 +235,7 @@ function travelAt(timeline, progressValue, sourceIndex) {
   return easeInOutCubic(rangeProgress(progressValue, flightFrom, flightTo));
 }
 
-/**
- * How much of the floor a lane has: it crossfades in, holds it through its own
- * handover and the rest that follows, then crossfades out as the next lane takes
- * over. One lane's fade out is the next one's fade in, so the sequence reads as a
- * baton passed rather than as lanes blinking independently.
- */
+/** Floor of the current handover: fade in, hold, fade out as the next takes over. */
 function turnAt(timeline, progressValue, laneIndex) {
   const phases = handoverPhasesOf(timeline, laneIndex);
   const nextPhases = handoverPhasesOf(timeline, laneIndex + 1);
@@ -378,14 +256,7 @@ function landingAt(timeline, progressValue, sourceIndex) {
   );
 }
 
-/**
- * The fold back in, as a step index and how far through that step we are.
- *
- * Lanes recombine from the inside out: the new lane rises onto the one outside it,
- * then the pair onto the next, and so on until the ring is whole again. Each step
- * puts more of the circle back, so the ring visibly refills rather than simply
- * reappearing.
- */
+/** Fold-back step index and progress. Inside-out, so the ring refills. */
 function mergeAt(timeline, progressValue) {
   // A scene that only separates the lanes never folds them back, so it has no
   // merge phase at all.
@@ -403,18 +274,10 @@ function mergeAt(timeline, progressValue) {
   };
 }
 
-/**
- * The merge step at which a lane stops being a lane of its own: either it starts
- * moving, or the group arrives alongside it. Its empty track means "the space this
- * server does not own", which stops being true the moment it shares a radius.
- */
+/** Merge step where a lane shares a radius and its empty track stops being true. */
 const laneMergeStep = (laneCount, laneIndex) => Math.max(0, laneCount - 2 - laneIndex);
 
-/**
- * Tracks fade one lane at a time as the ring reassembles, mirroring the way they
- * arrived. Dropping them all at once made the fold-back read as a different kind
- * of movement from the fan-out, when it is the same one reversed.
- */
+/** Tracks fade one lane at a time, the fan-out reversed. */
 function trackFadeAt(timeline, progressValue, laneIndex) {
   if (!timeline.merge) return 1;
 
@@ -447,14 +310,7 @@ function laneRadiusAt(timeline, geometry, progressValue, laneIndex) {
   );
 }
 
-/**
- * Ranges that are not moving step back while ranges that are moving cross between
- * lanes, and come back up once everything has settled. Holding still is the claim
- * being made about them, and it is invisible unless the moving ones are louder.
- *
- * A lane brightens for its own handover, so the sequence reads as a list of
- * servers each giving something up rather than as one undifferentiated shuffle.
- */
+/** Still ranges dim while moving ones cross, so holding still is visible. */
 /** How far into the table the newcomer's row has slid. Instant where there is none. */
 function rosterAt(timeline, progressValue) {
   if (!timeline.roster) return 1;
@@ -505,17 +361,7 @@ function laneOpacityAt(timeline, progressValue, laneIndex, isJoining) {
 /** How far outside its lane a label sits, on the ring's left. */
 const LABEL_GAP = 12;
 
-/**
- * How visible a lane's own name is.
- *
- * Only ever one at a time, and only when that lane is the subject: the source
- * during its handover, the newcomer while it stands alone. Seven names on screen
- * at once would be a legend, and the panel already is one — what the artwork was
- * missing is which of these rings the thing currently moving belongs to.
- *
- * Taken from `turnAt`, the same signal that decides which lane is lit, so a name
- * cannot appear on a lane that has stepped back or linger past its turn.
- */
+/** One name at a time, from `turnAt`: the source during handover, or the newcomer. */
 function laneLabelAt(timeline, progressValue, laneIndex, isJoining) {
   if (isJoining) {
     const hold = timeline.newcomer;
@@ -535,11 +381,7 @@ function laneLabelAt(timeline, progressValue, laneIndex, isJoining) {
   return pulseProgress(progressValue, phases.start, phases.lit, phases.restTo, next.lit);
 }
 
-/**
- * The name, right-aligned just outside its lane on the vertical midline, where the
- * composition is empty. It tracks the lane's radius, so it stays attached through
- * the fan-out and the fold back in.
- */
+/** Name outside its lane on the left midline, tracking radius. */
 function LaneLabel({ progress, timeline, geometry, lane }) {
   const x = useTransform(
     progress,
@@ -565,11 +407,7 @@ function LaneLabel({ progress, timeline, geometry, lane }) {
   );
 }
 
-/**
- * A server's ranges as one dashed circle. Because the dash pattern is in position
- * units, the same element is the arc on the shared ring, the arc in a lane, and
- * every frame in between; only `r` changes.
- */
+/** One dashed circle per server. Only `r` changes between ring and lane. */
 function LaneRing({
   progress,
   radiusFor,
@@ -606,14 +444,7 @@ function LaneRing({
   );
 }
 
-/**
- * The ranges one server loses, carried from its lane to the joining server's.
- *
- * They are the same dashed circle as a lane, so they cross at a fixed angle and
- * arrive already in formation. The colour changes hands on the way, which is the
- * whole of what a remap is, and the batch flares as it lands so that each arrival
- * registers as a separate event.
- */
+/** Ranges crossing from a source lane to the newcomer. Colour changes on the way. */
 function TravellingRanges({
   progress,
   timeline,
@@ -639,12 +470,7 @@ function TravellingRanges({
   const widthFor = latest =>
     geometry.width * (1 + 0.35 * Math.sin(travelAt(timeline, latest, sourceIndex) * Math.PI));
 
-  /**
-   * A batch belongs to the lane it is leaving until it leaves, and to the lane it
-   * is joining once it arrives. Holding it at full brightness throughout meant a
-   * dimmed lane still showed its about-to-move ranges lit, which pre-announced
-   * every handover several turns early.
-   */
+  /** Dim with the source until it leaves; do not pre-announce the next handover. */
   const opacityFor = latest =>
     mix(
       laneOpacityAt(timeline, latest, sourceIndex, false),
@@ -681,24 +507,7 @@ function TravellingRanges({
   );
 }
 
-/**
- * Treatment 6A: one lane per server, each carrying that server's own ranges.
- *
- * The claim it makes is the one that survives at scale: every server is
- * everywhere, and the ink in a lane is its share. Nothing is coloured by "who owns
- * this slice of the ring", so there is no point at which the picture states
- * something the data does not support.
- *
- * The scene begins and ends on the same single ring. In between it takes the ring
- * apart to show what it is made of, hands one server's worth of ranges over, and
- * puts it back — and because nothing ever moves around the ring, only across it,
- * every one of those steps can be followed by holding on to one arc.
- *
- * The timeline is handed in rather than built here. It used to be built in both
- * places, and the two promptly disagreed: the scene asked for a join that starts
- * from settled lanes and the artwork, holding its own copy, went on separating them
- * from scratch.
- */
+/** One lane per server. Timeline is passed in so the scene and artwork cannot disagree. */
 export function FullScaleLanes({ model, progress, timeline }) {
   const { centreX, centreY } = LAYOUT;
   const { servers, remap, stolenFrom, beforeShares, shares } = model;
@@ -716,12 +525,7 @@ export function FullScaleLanes({ model, progress, timeline }) {
 
   const radiusFor = index => latest => laneRadiusAt(timeline, geometry, latest, index);
 
-  /**
-   * Shares follow the handover itself rather than settling afterwards, so a bar
-   * moving is the same event as the ranges arriving. The newcomer's bar tracks how
-   * much of the moved space has actually landed, weighted by size, which is why it
-   * climbs in the same uneven steps the ring does.
-   */
+  /** Shares follow the handover, so a bar moving is the ranges arriving. */
   const stolenTotal = stolenFrom.reduce(
     (sum, source) => sum + source.ranges.reduce((span, range) => span + (range.to - range.from), 0),
     0
