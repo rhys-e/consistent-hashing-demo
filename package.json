@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@babel/core": "7.29.7",
-    "@babel/preset-env": "7.29.6",
+    "@babel/preset-env": "7.29.8",
     "@babel/preset-react": "7.29.7",
     "@storybook/addon-essentials": "8.6.18",
     "@storybook/addon-interactions": "8.6.18",
