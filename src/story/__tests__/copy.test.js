@@ -141,8 +141,10 @@ describe('the words a viewer reads', () => {
    *
    * The column has a fixed width, so a paragraph shorter than about two and a half
    * lines stops before the right edge and the block stops reading as one column.
-   * This is the rule that is easiest to break by editing one sentence, and the
-   * hardest to see in a diff.
+   * The ceiling is a little over three and a half lines: the opening and the recap
+   * each need a third sentence, and past that the slide starts to look like an
+   * essay. This is the rule that is easiest to break by editing one sentence, and
+   * the hardest to see in a diff.
    */
   it('writes paragraphs of one length', () => {
     const lengths = STORY_SLIDES.filter(slide => slide.body).flatMap(slide =>
@@ -151,7 +153,7 @@ describe('the words a viewer reads', () => {
 
     lengths.forEach(([where, length]) => {
       expect({ where, tooShort: length < 140 }).toEqual({ where, tooShort: false });
-      expect({ where, tooLong: length > 190 }).toEqual({ where, tooLong: false });
+      expect({ where, tooLong: length > 240 }).toEqual({ where, tooLong: false });
     });
   });
 });

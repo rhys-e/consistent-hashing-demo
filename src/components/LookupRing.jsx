@@ -93,7 +93,9 @@ export function buildLookupTimeline(model) {
   const teach = timeline.move(TEACH.travel);
   routes.set(taught[0].name, { ...teach, land: TEACH.land });
   timeline.skip(TEACH.land);
-  timeline.annotate('A key belongs to the first server clockwise from its position.');
+  timeline.annotate(
+    'A key belongs to the first server clockwise from its position. Anyone who knows the rule can find the owner.'
+  );
   timeline.rest(REST, 'First key routed');
 
   const echo = group(

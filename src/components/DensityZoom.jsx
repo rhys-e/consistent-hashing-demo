@@ -70,7 +70,7 @@ export function buildZoomTimeline() {
   // wrong thing: a viewer reads it as a server letting go after a while, when the
   // claim is about how little of the ring any one of them holds in one piece.
   timeline.annotate(
-    'Look anywhere on the ring and the mix is the same. Any small section holds several servers.'
+    'Look anywhere on the ring and the mix is the same. The load is shared evenly across every section.'
   );
   timeline.rest(READING_REST, 'Everywhere the same');
 

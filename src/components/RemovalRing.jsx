@@ -147,7 +147,7 @@ export function buildRemovalTimeline(model) {
 
   const highlight = timeline.move(HIGHLIGHT.move);
   timeline.annotate(
-    'Those keys all went to one neighbour. That neighbour now owns about twice the range it did.'
+    'Those keys all went to one neighbour. That neighbour now owns about twice the range, so the load is no longer even.'
   );
   const closing = timeline.rest(READING_REST, 'What it cost');
 

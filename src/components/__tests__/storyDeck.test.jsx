@@ -234,13 +234,31 @@ describe('the story as slides', () => {
 
   /**
    * Interstitials are for chapter breaks, not a rhythm to be kept up: they sit
-   * where the thread is already broken, and nowhere else.
+   * where the thread is already broken, and nowhere else. The one exception is
+   * the end, where a recap and the sandbox handoff are two jobs and have to sit
+   * next to each other.
    */
   it('opens on narration and never runs two of them together', () => {
     expect(kinds[0]).toBe('interstitial');
+
+    const pairs = [];
     kinds.forEach((kind, index) => {
-      if (index > 0 && kind === 'interstitial') expect(kinds[index - 1]).toBe('scene');
+      if (index > 0 && kind === 'interstitial' && kinds[index - 1] === 'interstitial') {
+        pairs.push(index);
+      }
     });
+
+    expect(pairs).toEqual([slides.findIndex(slide => slide.key === 'yours')]);
+  });
+
+  it('recaps the claim before the sandbox handoff', () => {
+    const recap = slides.findIndex(slide => slide.key === 'recap');
+    const yours = slides.findIndex(slide => slide.key === 'yours');
+
+    expect(recap).toBeGreaterThan(-1);
+    expect(yours).toBe(recap + 1);
+    expect(slides[recap].kind).toBe('interstitial');
+    expect(slides[yours].kind).toBe('interstitial');
   });
 
   /**

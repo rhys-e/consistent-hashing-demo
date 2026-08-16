@@ -129,7 +129,7 @@ const TIMELINE = (() => {
   // show: that landing there was not a choice and will not change. The bend then
   // has something to preserve.
   timeline.annotate(
-    'Each key hashes to a position in this fixed range. The same key always lands in the same place.'
+    'Each key hashes to a position in this fixed range. Anyone can compute that from the key alone.'
   );
   const card = timeline.rest(CARD_REST, 'Positions fixed');
 

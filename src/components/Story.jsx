@@ -26,7 +26,8 @@ import SandboxScene from './SandboxScene';
  * to hide. Everywhere else an interstitial earns its place by asking the question
  * the scene after it answers — which is why one now sits between Scenes 2 and 3
  * even though those two share a frame, and why Scenes 5 and 6 still have nothing
- * between them.
+ * between them. The recap is the exception: it answers rather than asks, and it
+ * sits against the sandbox handoff because those are two jobs, not one.
  */
 export const STORY_SLIDES = [
   // The opening names the subject and states the problem it solves. `lead` sets it
@@ -38,8 +39,8 @@ export const STORY_SLIDES = [
     lead: true,
     title: 'Consistent hash ring',
     body: [
-      'A cache is a group of machines, and each key must live on exactly one of them. The simple method hashes the key and assigns it using the current machine count.',
-      'That assignment depends on the machine count, so adding one remaps almost every key. Consistent hashing places keys in a fixed number range instead, so most of them stay put.',
+      'Keys must spread evenly across machines. One way is a map: a stored table of which machine holds each key. Every request then reads that table, and you must rewrite it whenever a machine joins or fails.',
+      'Hashing needs no table. Each machine computes the owner from the key alone. The simple method uses the machine count, so adding one remaps almost every key. Consistent hashing keeps that shared rule on a fixed range, so most keys stay put.',
     ],
   },
   // One slide, because the line and the ring it bends into are one movement.
@@ -53,8 +54,8 @@ export const STORY_SLIDES = [
     key: 'ownership',
     title: 'Which server holds it?',
     body: [
-      'Keys already have positions on the ring we just closed. Servers need positions too, each hashed from its own name the same way a key is hashed.',
-      'Keys and servers now both sit on this same ring. The next scene answers the lookup question: which server holds the key at a given position.',
+      'Keys already have positions, computed from the key alone. Servers need positions too, hashed from their names the same way, still with no map to store.',
+      'A shared rule will decide which server holds each key, with no map to look up. The next scene shows that rule: the first server clockwise from the key.',
     ],
   },
   {
@@ -81,8 +82,8 @@ export const STORY_SLIDES = [
     key: 'servers-change',
     title: 'Servers come and go',
     body: [
-      'So far the ring has held still. Real caches do not. A server fails, or somebody adds one to carry the load. Either way the group sharing the keys is a different size.',
-      'That is the moment consistent hashing is built for, and one question decides whether it works. When a server leaves or a new one joins, how many keys have to move?',
+      'So far no server has left or joined. In a real cache a server fails, or a new one is added to carry the load. Either way the group sharing the keys changes size.',
+      'The simple method would remap almost every key if that group changed size. The question is how many keys have to move when a server leaves or a new one joins.',
     ],
   },
   {
@@ -98,8 +99,8 @@ export const STORY_SLIDES = [
     key: 'spread',
     title: 'Many positions each',
     body: [
-      "Only the failed server's keys moved, which is what consistent hashing promised. The rest stayed put. The problem is that they all went to one neighbour.",
-      'With one position per server, only one neighbour sits next to the gap, so it inherits the whole range. The fix is to give each server many positions.',
+      "Only the failed server's keys moved, so most of the cache stayed put. The load across the machines is not even: those keys all went to one neighbour.",
+      'With one position per server, only one neighbour sits next to the gap, so it inherits the whole range. Many positions each will spread that load.',
     ],
   },
   {
@@ -112,7 +113,7 @@ export const STORY_SLIDES = [
     key: 'scale',
     title: 'At production scale',
     body: [
-      'Six positions already split the failure instead of sending it all to one neighbour. Real systems give each server hundreds of positions, so a failure is spread across many more neighbours.',
+      'Six positions already split the load instead of sending it all to one neighbour. Real systems give each server hundreds of positions, so the load stays even when one fails.',
       'Every ring so far was small enough to inspect position by position. The next ring is near production scale. At that density the whole ring cannot be read by eye.',
     ],
   },
@@ -133,6 +134,18 @@ export const STORY_SLIDES = [
     key: 'full-scale',
     render: props => <ServerJoinsScene {...props} />,
   },
+  // The argument, said once without a picture. The join just showed the two
+  // results. This slide names them together so the sandbox is a test of a claim
+  // the viewer can already say, not a new lesson with the numbers unlocked.
+  {
+    kind: 'interstitial',
+    key: 'recap',
+    title: 'What hashing keeps',
+    body: [
+      'Each machine computes the owner from the key and the servers on the ring. Nobody stores a map of which machine holds each key, and nobody looks one up.',
+      "When a server fails or joins, only a small share of keys move. With many positions each, the load stays even. That is even spread without the simple method's remap.",
+    ],
+  },
   // The last break, and the only one that hands something over rather than
   // setting something up.
   {
@@ -140,8 +153,8 @@ export const STORY_SLIDES = [
     key: 'yours',
     title: 'Try your own numbers',
     body: [
-      'Every ring so far used fixed counts, chosen to make each point clear. Three servers, then six, then seven. The rules do not depend on those numbers.',
-      'This last ring has the server counts unlocked. Watch how even the split is. Also watch how much of the ring moves when a server joins or leaves.',
+      'Every ring so far used fixed counts, chosen to make each point clear. Three servers, then six, then seven. The shared rule does not depend on those numbers.',
+      'This last ring has the server counts unlocked. Watch how even the load stays, and how much of the ring moves, still from the same shared rule.',
     ],
   },
   {

@@ -179,7 +179,7 @@ function addJoin(timeline, laneCount, sources) {
   // Nothing replaces it: it is the last word of the scene and stays up until the
   // slide does.
   timeline.annotate(
-    'Only these ranges changed hands. Every other key stayed where it was, so adding a server no longer remaps almost every key.'
+    'Only these ranges changed hands. Most keys stayed put, and the load stays even, with no map to update.'
   );
   timeline.rest(CLOSING_REST, 'What it took');
 

@@ -113,7 +113,7 @@ export function buildSpreadTimeline(model) {
   // against it — so the line has to name what changed between the two, not only
   // report where things ended up.
   timeline.annotate(
-    'Last time one neighbour took all of it. This time the extra positions split the same failure, and each neighbour took about half.'
+    'Last time one neighbour took all of it. This time the extra positions split the load, and each neighbour took about half.'
   );
   const closing = timeline.rest(READING_REST, 'What it cost');
 
