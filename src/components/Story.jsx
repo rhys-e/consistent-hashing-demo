@@ -24,7 +24,8 @@ export const STORY_SLIDES = [
     lead: true,
     title: 'Consistent hash ring',
     body: [
-      'Keys must spread evenly across machines. One way is a map: a stored table of which machine holds each key. Every request then reads that table, and you must rewrite it whenever a machine joins or fails.',
+      'Consistent hashing is a way to share work across machines that come and go. The load stays even, and each machine can compute who holds an item. Nobody stores a map of which machine holds what.',
+      'The usual alternative is a map: a stored table of which machine holds each key. Every request then reads that table, and you must rewrite it whenever a machine joins or fails.',
       'Hashing needs no table. Each machine computes the owner from the key alone. The simple method uses the machine count, so adding one remaps almost every key. Consistent hashing keeps that shared rule on a fixed range, so most keys stay put.',
     ],
   },

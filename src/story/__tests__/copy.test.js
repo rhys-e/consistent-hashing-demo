@@ -116,14 +116,13 @@ describe('the words a viewer reads', () => {
   });
 
   /**
-   * Short sentences want fewer paragraphs, not more. Splitting each pair into its
-   * own block turned the slides into a list of fragments with a gap between every
-   * one — the sentence limit is a limit on sentences, and STE allows six of them
-   * in a descriptive paragraph.
+   * Short sentences want fewer paragraphs, not more. The opening is allowed a
+   * third block so it can name the idea before the map and the hash.
    */
   it('gathers short sentences into two paragraphs', () => {
     STORY_SLIDES.filter(slide => slide.body).forEach(slide => {
-      expect(slide.body.length).toBe(2);
+      const allowed = slide.key === 'intro' ? [2, 3] : [2];
+      expect(allowed).toContain(slide.body.length);
     });
   });
 
