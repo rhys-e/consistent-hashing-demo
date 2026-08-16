@@ -135,7 +135,9 @@ export function buildRemovalTimeline(model) {
 
   // The claim the scene is here to make, said while it is still true of nothing on
   // screen, and left standing until the second half qualifies it.
-  timeline.annotate('A server fails, and only the keys it was holding have to move anywhere.');
+  timeline.annotate(
+    "Only the failed server's keys have to move. Every other key stays where it is."
+  );
   const waver = timeline.move(FAIL.waver);
   const drop = timeline.move(FAIL.drop);
   const orphaned = timeline.rest(ORPHANED_REST, 'Nobody owns it');
@@ -145,7 +147,7 @@ export function buildRemovalTimeline(model) {
 
   const highlight = timeline.move(HIGHLIGHT.move);
   timeline.annotate(
-    'All of them went to the same neighbour, which now owns roughly twice what it did.'
+    'Those keys all went to one neighbour. That neighbour now owns about twice the range it did.'
   );
   const closing = timeline.rest(READING_REST, 'What it cost');
 

@@ -3,15 +3,6 @@ import ReactDOM from 'react-dom/client';
 import Story from './components/Story';
 import './index.css';
 
-/**
- * The whole application is the story.
- *
- * There is no shell around it and nothing to route between: the deck is fixed to
- * the viewport, owns its own navigation, and every scene inside it is a pure
- * function of one beat value. A layout, a header or a container here would be
- * furniture around something that is already the full page.
- */
-
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);

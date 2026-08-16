@@ -138,7 +138,7 @@ function addJoin(timeline, laneCount, sources) {
   // Left standing through the empty lane, every handover and the fold back out:
   // the whole of that movement is this one sentence happening.
   timeline.annotate(
-    'A new server joins, so the ring has to be shared out between seven instead of six.'
+    'A seventh server joins. Each existing server gives up a few of its ranges to the newcomer.'
   );
   timeline.rest(ROSTER.rest, 'A cache joins');
 
@@ -178,7 +178,9 @@ function addJoin(timeline, laneCount, sources) {
   // rest of the ring was untouched — is the one claim worth spending words on.
   // Nothing replaces it: it is the last word of the scene and stays up until the
   // slide does.
-  timeline.annotate('Only these ranges changed hands. Every other key stayed where it was.');
+  timeline.annotate(
+    'Only these ranges changed hands. Every other key stayed where it was, so adding a server no longer remaps almost every key.'
+  );
   timeline.rest(CLOSING_REST, 'What it took');
 
   const restoreHighlight = timeline.move(HIGHLIGHT.restore);

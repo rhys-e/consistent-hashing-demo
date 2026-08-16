@@ -60,7 +60,9 @@ export function buildZoomTimeline() {
   // Said after the strip has arrived, not with it. Two things appearing in the
   // same column at the same moment compete, and the picture should land first.
   timeline.skip(SETTLE_BEFORE_SPEAKING);
-  timeline.annotate('Each server holds hundreds of small ranges rather than one long one.');
+  timeline.annotate(
+    "This is one small section of the ring, unrolled. Each colour change is a different server's range."
+  );
   timeline.rest(READING_REST, 'Magnified');
 
   const pan = timeline.move(PAN.move);
@@ -68,7 +70,7 @@ export function buildZoomTimeline() {
   // wrong thing: a viewer reads it as a server letting go after a while, when the
   // claim is about how little of the ring any one of them holds in one piece.
   timeline.annotate(
-    'Look anywhere on the ring and it is the same. Any small section holds several servers.'
+    'Look anywhere on the ring and the mix is the same. Any small section holds several servers.'
   );
   timeline.rest(READING_REST, 'Everywhere the same');
 

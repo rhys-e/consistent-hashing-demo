@@ -709,6 +709,48 @@ says six pieces. `spreadModel.test.js` asserts the whole thing, including a test
 whose only job is to record _why_ six needs the placement: it holds hashed-six
 above fifteen points of spread and placed-six below six.
 
+## A slide between Scenes 2 and 3, against a decision that said not to
+
+`Story.jsx` had this written down: "Two slides, no break. Scene 2 ends on the frame
+Scene 3 opens on and a narration slide between them would spend the continuity the
+pair was built to have." Scene 3's opening establishing sequence was removed to
+build that seam, and `lookupScene.test.jsx` asserts the two frames match
+attribute-for-attribute at beat zero.
+
+The seam was real and it was being spent on the wrong thing. Everything up to Scene
+3 builds a ring and puts a key on it. Then Scene 3 fails a server, having never
+said that servers fail — so it opens with an _answer_ to a question the story last
+asked four slides earlier on the opening slide. A demonstration of something nobody
+has been told is a problem is only a thing that happens.
+
+So one slide now asks it:
+
+> **Servers come and go**
+>
+> So far the ring has held still. Real caches do not. A server fails, or somebody
+> adds one to carry the load. Either way the group sharing the keys is a different
+> size.
+>
+> That is the moment consistent hashing is built for, and one question decides
+> whether it works. When a server leaves or a new one joins, how many keys have to
+> move?
+
+It also names _joining_, which nothing had until Scene 7 did it, so the leave-and-
+rejoin pair the story spends five scenes on is finally framed as one problem.
+
+**What survives.** The frame identity is untouched and still asserted — a viewer
+reads the slide and looks up to find the ring exactly where they left it, which is
+a weaker continuity than unbroken motion but a better place to spend it, since the
+slide gives them something to come back _from_. The deck's guard was rewritten
+rather than deleted: it now requires exactly one interstitial there and checks the
+slide is the question rather than any interstitial that happens to have drifted in.
+
+The rule in `Story.jsx` is restated to match. An interstitial earns its place by
+asking the question the scene after it answers, which is why Scenes 5 and 6 still
+have nothing between them.
+
+The deck is now thirteen slides, six of them narration, ~50 seconds of reading.
+
 ### Scene 4's closing line names what changed, not just what happened
 
 It read "The same failure broke into six pieces, and neither neighbour took much

@@ -23,11 +23,10 @@ import SandboxScene from './SandboxScene';
  *
  * The opening is one slide rather than two, because the line bending into the ring
  * is a single movement and the seam it used to have was one the story had to work
- * to hide. Scenes 2 and 3 are two slides with nothing between them, because Scene
- * 2 ends on precisely the frame Scene 3 opens on and a slide there would throw
- * that away. Interstitials sit at the two places the thread really does break: the
- * ring changes size and position on the way into Scene 2, and the whole picture
- * changes on the way into the full-scale view.
+ * to hide. Everywhere else an interstitial earns its place by asking the question
+ * the scene after it answers — which is why one now sits between Scenes 2 and 3
+ * even though those two share a frame, and why Scenes 5 and 6 still have nothing
+ * between them.
  */
 export const STORY_SLIDES = [
   // The opening names the subject and states the problem it solves. `lead` sets it
@@ -39,8 +38,8 @@ export const STORY_SLIDES = [
     lead: true,
     title: 'Consistent hash ring',
     body: [
-      'A cache is a group of machines, and every key has to live on exactly one of them. The obvious way to choose is to divide the key by the number of machines.',
-      'That works until you add a machine. Then almost every key moves at once, and a cache that has to be refilled is worth very little. Consistent hashing is how you avoid it.',
+      'A cache is a group of machines, and each key must live on exactly one of them. The simple method hashes the key and assigns it using the current machine count.',
+      'That assignment depends on the machine count, so adding one remaps almost every key. Consistent hashing places keys in a fixed number range instead, so most of them stay put.',
     ],
   },
   // One slide, because the line and the ring it bends into are one movement.
@@ -54,17 +53,37 @@ export const STORY_SLIDES = [
     key: 'ownership',
     title: 'Which server holds it?',
     body: [
-      'A ring of numbers does nothing on its own, so the servers have to go on it as well. Each one takes its position from its own name, hashed exactly the way a key is.',
-      'That leaves a single question, and the rest of consistent hashing is the answer to it. A key sits at one point and the servers sit at others. Which server holds the key?',
+      'Keys already have positions on the ring we just closed. Servers need positions too, each hashed from its own name the same way a key is hashed.',
+      'Keys and servers now both sit on this same ring. The next scene answers the lookup question: which server holds the key at a given position.',
     ],
   },
-  // Two slides, no break. Scene 2 ends on the frame Scene 3 opens on — three
-  // servers, eleven keys, every range claimed — and a narration slide between them
-  // would spend the continuity the pair was built to have.
   {
     kind: 'scene',
     key: 'key-routes',
     render: props => <KeyRoutesScene {...props} />,
+  },
+  // A break between two scenes that share a frame, which is a trade rather than a
+  // free addition. Scene 2 ends on precisely the frame Scene 3 opens on — three
+  // servers, eleven keys, every range claimed — and for a while there was nothing
+  // between them so that the pair read as one continuous movement.
+  //
+  // What that cost was the question. Everything up to here builds a ring and puts
+  // a key on it, and then Scene 3 fails a server, having never said that servers
+  // fail. The claim it opens with is an *answer* to a question the story last
+  // asked four slides ago, on the opening slide. A demonstration of something
+  // nobody has been told is a problem is just a thing that happens.
+  //
+  // The frame identity survives the slide, and is still asserted. A viewer reads
+  // this and looks up to find the ring exactly where they left it, which is a
+  // weaker continuity than unbroken motion and a better place to spend it.
+  {
+    kind: 'interstitial',
+    key: 'servers-change',
+    title: 'Servers come and go',
+    body: [
+      'So far the ring has held still. Real caches do not. A server fails, or somebody adds one to carry the load. Either way the group sharing the keys is a different size.',
+      'That is the moment consistent hashing is built for, and one question decides whether it works. When a server leaves or a new one joins, how many keys have to move?',
+    ],
   },
   {
     kind: 'scene',
@@ -79,8 +98,8 @@ export const STORY_SLIDES = [
     key: 'spread',
     title: 'Many positions each',
     body: [
-      'The ring kept its promise. Only the keys of the failed server had to move, and every other key stayed where it was. The trouble is where they all went.',
-      'With one position each there is only one server next to the gap, so it inherits the lot. The fix is to stop giving a server one position, and give it many.',
+      "Only the failed server's keys moved, which is what consistent hashing promised. The rest stayed put. The problem is that they all went to one neighbour.",
+      'With one position per server, only one neighbour sits next to the gap, so it inherits the whole range. The fix is to give each server many positions.',
     ],
   },
   {
@@ -93,8 +112,8 @@ export const STORY_SLIDES = [
     key: 'scale',
     title: 'At production scale',
     body: [
-      'Six positions each cut the damage in half, and real systems give each server hundreds. The more positions there are, the more efficiently a failure is spread.',
-      'Every ring so far has been a simplified one, small enough to point at. What follows is the same ring at close to production scale. At that size you cannot read it by eye.',
+      'Six positions already split the failure instead of sending it all to one neighbour. Real systems give each server hundreds of positions, so a failure is spread across many more neighbours.',
+      'Every ring so far was small enough to inspect position by position. The next ring is near production scale. At that density the whole ring cannot be read by eye.',
     ],
   },
   // Two dense-ring slides in a row, and no break between them. Scene 5 ends on the
@@ -121,8 +140,8 @@ export const STORY_SLIDES = [
     key: 'yours',
     title: 'Try your own numbers',
     body: [
-      'Every example so far has used fixed numbers. Three servers, or six and then seven, at counts chosen to make a point clearly. None of the argument depends on them.',
-      'So here is the same ring with the numbers unlocked. Two things are worth watching. How far the split sits from even, and how much of the ring moves when you change it.',
+      'Every ring so far used fixed counts, chosen to make each point clear. Three servers, then six, then seven. The rules do not depend on those numbers.',
+      'This last ring has the server counts unlocked. Watch how even the split is. Also watch how much of the ring moves when a server joins or leaves.',
     ],
   },
   {

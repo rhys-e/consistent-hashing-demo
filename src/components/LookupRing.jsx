@@ -76,7 +76,7 @@ export function buildLookupTimeline(model) {
   // The servers arriving and the keys standing aside are one movement, because
   // they are one fact: the band now belongs to whoever owns it.
   timeline.annotate(
-    'The servers go on the same ring, and the same hash decides where each one sits.'
+    'Each server hashes onto the ring from its name. It takes a position, the same way a key does.'
   );
   const arrive = group(
     timeline.move(ARRIVE.move + ARRIVE.stagger * (servers - 1)),
@@ -93,7 +93,7 @@ export function buildLookupTimeline(model) {
   const teach = timeline.move(TEACH.travel);
   routes.set(taught[0].name, { ...teach, land: TEACH.land });
   timeline.skip(TEACH.land);
-  timeline.annotate('A key belongs to the first server clockwise from it. That is the whole rule.');
+  timeline.annotate('A key belongs to the first server clockwise from its position.');
   timeline.rest(REST, 'First key routed');
 
   const echo = group(
@@ -121,7 +121,7 @@ export function buildLookupTimeline(model) {
   // them. Said here because it is the one claim the picture cannot make on its own
   // — the positions that are not drawn are exactly the ones being generalised to.
   timeline.annotate(
-    'Every position between two servers routes the same way, and that range is its own.'
+    'Every position between two servers follows the same rule. That whole range belongs to the server at its clockwise end.'
   );
   const sweep = group(
     timeline.move(SWEEP.each + SWEEP.stagger * (servers - 1)),

@@ -129,7 +129,7 @@ const TIMELINE = (() => {
   // show: that landing there was not a choice and will not change. The bend then
   // has something to preserve.
   timeline.annotate(
-    "A key's hash is its position, and the same key always hashes to the same place."
+    'Each key hashes to a position in this fixed range. The same key always lands in the same place.'
   );
   const card = timeline.rest(CARD_REST, 'Positions fixed');
 
@@ -151,7 +151,7 @@ const TIMELINE = (() => {
   // reasonably wonder what the ring added, and the answer is only that the two
   // ends of the range are now neighbours.
   timeline.annotate(
-    'Nothing about the numbers changed. The line closed into a loop, so the highest value now sits beside the lowest.'
+    'Nothing about the numbers changed. The range is now a ring, so the highest value sits beside the lowest.'
   );
   const joined = timeline.rest(READING_REST, 'Ends joined');
 

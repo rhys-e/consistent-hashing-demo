@@ -135,14 +135,16 @@ export function buildRampTimeline(model, { treatment = 'fill-in' } = {}) {
     // neighbouring step it would be a thing that happened while something else was
     // happening, which is the one way to make it unreadable.
     if (dealt) {
-      timeline.annotate('There are too many now to look at one at a time. Each becomes a tick.');
+      timeline.annotate(
+        'There are too many now to inspect one by one. Each position becomes a tick.'
+      );
       morph = timeline.move(MORPH);
       timeline.rest(REST, 'Positions become ticks');
     }
   });
 
   timeline.annotate(
-    'The pieces are much smaller now. No single one is big enough to matter when it moves.'
+    'The ranges are much smaller now. No single range is big enough to matter when it moves.'
   );
   const closing = timeline.rest(CLOSING_REST, 'Production density');
 

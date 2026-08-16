@@ -86,7 +86,7 @@ export function buildSpreadTimeline(model) {
 
   // Said before the pause rather than after it, so the rest is spent reading the
   // line *and* looking at the ring it is about.
-  timeline.annotate('Give each server six positions instead of one, spread around the whole ring.');
+  timeline.annotate('This time each server gets six positions around the ring, not one.');
   const opening = timeline.rest(OPENING, 'One position each');
 
   const split = {
@@ -109,12 +109,11 @@ export function buildSpreadTimeline(model) {
 
   const highlight = timeline.move(HIGHLIGHT.move);
   // Written against Scene 3's closing line rather than on its own. That one says
-  // "All of them went to the same neighbour, which now owns roughly twice what it
-  // did", and this scene exists to be held against it — so the line has to name
-  // what changed between the two, not only report where things ended up. The old
-  // wording stated the result and left the viewer to supply the cause.
+  // the failed keys all went to one neighbour, and this scene exists to be held
+  // against it — so the line has to name what changed between the two, not only
+  // report where things ended up.
   timeline.annotate(
-    'One neighbour took all of it last time. This time the extra positions broke the same failure into six pieces, and each neighbour took about half.'
+    'Last time one neighbour took all of it. This time the extra positions split the same failure, and each neighbour took about half.'
   );
   const closing = timeline.rest(READING_REST, 'What it cost');
 
