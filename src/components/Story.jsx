@@ -26,7 +26,7 @@ export const STORY_SLIDES = [
     body: [
       'Consistent hashing is a way to share work across machines that come and go. The load stays even, and each machine can compute who holds an item. Nobody stores a map of which machine holds what.',
       'The usual alternative is a map: a stored table of which machine holds each key. Every request then reads that table, and you must rewrite it whenever a machine joins or fails.',
-      'Hashing needs no table. Each machine computes the owner from the key alone. The simple method uses the machine count, so adding one remaps almost every key. Consistent hashing keeps that shared rule on a fixed range, so most keys stay put.',
+      'Hashing needs no table. Each machine computes the owner from the key alone. The simple method uses the machine count, so adding one remaps almost every key. Consistent hashing does the same on a fixed range, so most keys stay put.',
     ],
   },
   {
@@ -39,8 +39,8 @@ export const STORY_SLIDES = [
     key: 'ownership',
     title: 'Which server holds it?',
     body: [
-      'Keys already have positions, computed from the key alone. Servers need positions too, hashed from their names the same way, still with no map to store.',
-      'A shared rule will decide which server holds each key, with no map to look up. The next scene shows that rule: the first server clockwise from the key.',
+      'Keys already have positions, computed from the key alone. Servers need positions too, hashed from their names the same way, so both live on the same ring.',
+      'From those positions, anyone can compute which server holds each key. The next scene shows how that works: the first server clockwise from the key.',
     ],
   },
   {
@@ -104,7 +104,7 @@ export const STORY_SLIDES = [
   {
     kind: 'interstitial',
     key: 'recap',
-    title: 'What hashing keeps',
+    title: 'Efficient load management',
     body: [
       'Each machine computes the owner from the key and the servers on the ring. Nobody stores a map of which machine holds each key, and nobody looks one up.',
       "When a server fails or joins, only a small share of keys move. With many positions each, the load stays even. That is even spread without the simple method's remap.",
@@ -115,8 +115,8 @@ export const STORY_SLIDES = [
     key: 'yours',
     title: 'Try your own numbers',
     body: [
-      'Every ring so far used fixed counts, chosen to make each point clear. Three servers, then six, then seven. The shared rule does not depend on those numbers.',
-      'This last ring has the server counts unlocked. Watch how even the load stays, and how much of the ring moves, still from the same shared rule.',
+      'Every ring so far used fixed counts, chosen to make each point clear. Three servers, then six, then seven. Who holds a key does not depend on those numbers.',
+      'This last ring has the server counts unlocked. Watch how even the load stays, and how much of the ring moves, with ownership still computed from the key.',
     ],
   },
   {

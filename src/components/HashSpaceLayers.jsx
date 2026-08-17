@@ -121,7 +121,30 @@ function buildCapsPath(railState) {
  * bounding box, and a percentage region around that collapses to nothing. The
  * glow would vanish at exactly the moment Scene 1 has to match Scene 0.
  */
-export function HashSpaceDefs({ prefix, railEndColor = palette.railEdge, railEndOpacity = 0.25 }) {
+export function HashSpaceDefs({
+  prefix,
+  railEndColor = palette.railEdge,
+  railEndOpacity = 0.25,
+  /**
+   * Where the rail's gradient begins and ends, in stage coordinates.
+   *
+   * It has to be stage coordinates. A gradient with the default
+   * `objectBoundingBox` units is measured against the bounding box of whatever
+   * references it, and the rail is a *perfectly horizontal line* for the whole of
+   * the number-line scene — `M 90 310 L 550 310 L 1010 310`, a box 920 wide and
+   * **zero high**. SVG says an element with a degenerate bounding box referencing
+   * such a gradient is not rendered, so the rail's core stroke was not drawn at
+   * all until the bend gave the box some height, and then appeared at full
+   * strength in the frame that did. Everything visible before that was the glow
+   * and the scaffold around a line that was not there.
+   *
+   * In user space the gradient does not care what shape the thing referencing it
+   * is. The span is the rail at its straight length, so its two ends land exactly
+   * where the fade is meant to be; once it bends it is shorter than this and sits
+   * in the middle of the gradient, which is uniform core colour by then anyway.
+   */
+  railSpan,
+}) {
   return (
     <>
       <pattern id={`${prefix}-grid`} width="40" height="40" patternUnits="userSpaceOnUse">
@@ -141,7 +164,14 @@ export function HashSpaceDefs({ prefix, railEndColor = palette.railEdge, railEnd
       {/* The rail dims towards its ends while it is a line with two ends. As it
           closes, the end stops are brought up to the core so the seam is not a
           dark patch in an otherwise continuous ring. */}
-      <linearGradient id={`${prefix}-rail`} x1="0%" y1="0" x2="100%" y2="0">
+      <linearGradient
+        id={`${prefix}-rail`}
+        gradientUnits="userSpaceOnUse"
+        x1={railSpan.from}
+        y1="0"
+        x2={railSpan.to}
+        y2="0"
+      >
         <motion.stop offset="0%" stopColor={railEndColor} stopOpacity={railEndOpacity} />
         <stop offset="20%" stopColor={palette.railCore} stopOpacity="0.85" />
         <stop offset="80%" stopColor={palette.railCore} stopOpacity="0.85" />
@@ -332,18 +362,25 @@ export function BoundsLabel({ progress, railStateFor, position, label, opacityFo
 }
 
 /** The settled key: a tick on the rail once its position is known. */
-export function KeyMarker({ progress, railStateFor, sampleKey, scaleFor = always(1) }) {
+export function KeyMarker({
+  progress,
+  railStateFor,
+  sampleKey,
+  scaleFor = always(1),
+  opacityFor = always(1),
+}) {
   const { position, color } = sampleKey;
 
   const point = useProjectedPoint(progress, latest =>
     projectPosition({ position, ...railStateFor(latest) })
   );
+  const opacity = useTransform(progress, opacityFor);
   const haloRadius = useTransform(progress, latest => Math.max(0, scaleFor(latest) * 14));
   const midRadius = useTransform(progress, latest => Math.max(0, scaleFor(latest) * 8));
   const coreRadius = useTransform(progress, latest => Math.max(0, scaleFor(latest) * 4));
 
   return (
-    <g data-layer="key-marker" data-key={sampleKey.slug}>
+    <motion.g data-layer="key-marker" data-key={sampleKey.slug} style={{ opacity }}>
       <motion.circle
         data-layer="marker-halo"
         cx={point.x}
@@ -367,7 +404,7 @@ export function KeyMarker({ progress, railStateFor, sampleKey, scaleFor = always
         r={coreRadius}
         fill={color}
       />
-    </g>
+    </motion.g>
   );
 }
 

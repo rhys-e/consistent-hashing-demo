@@ -25,6 +25,20 @@ export const easeOutCubic = t => 1 - (1 - t) ** 3;
 
 export const easeInOutCubic = t => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
+/**
+ * The gentle S, for things that appear rather than move.
+ *
+ * `easeInOutCubic` is the right curve for a thing travelling: it leaves and arrives
+ * softly and spends its speed in the middle, where there is somewhere to spend it.
+ * Its peak slope is *three*, though, and a fade has nowhere to put that — an
+ * opacity crossing its whole range at three times the average rate reads as being
+ * switched on, whatever the total duration says.
+ *
+ * This peaks at π/2, a little over half as steep, and looks like something
+ * resolving rather than appearing.
+ */
+export const easeInOutSine = t => -(Math.cos(Math.PI * t) - 1) / 2;
+
 export function easeOutBack(t, overshoot = 1.70158) {
   return 1 + (overshoot + 1) * (t - 1) ** 3 + overshoot * (t - 1) ** 2;
 }

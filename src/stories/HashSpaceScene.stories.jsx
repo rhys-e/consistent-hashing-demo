@@ -1,4 +1,4 @@
-import HashSpaceScene, { SCENE_STEPS } from '../components/HashSpaceScene';
+import HashSpaceScene, { HASH_SPACE_BEATS, SCENE_STEPS } from '../components/HashSpaceScene';
 
 const beatOf = label => SCENE_STEPS.find(step => step.label === label)?.at ?? 0;
 
@@ -57,4 +57,55 @@ export const HalfBent = {
 
 export const RingClosed = {
   args: { pinnedProgress: beatOf('Ring closed') },
+};
+
+/**
+ * Mid-clear: everything the slide used to say what it had to say is going at once —
+ * the two bounds labels, the standing commentary, and the three named keys with
+ * their hash values.
+ *
+ * One number, not five. Taking the writing away first and the keys one at a time
+ * makes the ending a sequence to follow, on a slide whose argument finished a beat
+ * ago; together it is the slide letting go.
+ */
+export const ClearingUp = {
+  args: { pinnedProgress: HASH_SPACE_BEATS.clear.from + 0.75 },
+};
+
+/**
+ * The ring on its own, which is the beat the clearing lands on and a step the story
+ * stops at. Nothing on it, nothing around it, and nothing arriving yet.
+ */
+export const TheRingAlone = {
+  args: { pinnedProgress: beatOf('The ring alone') },
+};
+
+/**
+ * The closing frame, where the ring is doing something rather than sitting there.
+ *
+ * The three named keys have gone and keys keep landing and leaving in their place,
+ * on their own clock rather than on the scene's beat — which is what lets it carry
+ * on while the slide is being taken off the screen, and is the difference between
+ * a diagram of a ring and a ring that was running before you arrived.
+ *
+ * Pinned, so this is one frame of it. Play `Animated` to watch it run.
+ */
+export const KeysKeepArriving = {
+  // The traffic runs on wall time rather than on the beat, so a pinned frame needs
+  // its clock held too — a quarter turn in, where the layer has filled to the three
+  // or four it settles at.
+  args: { pinnedProgress: beatOf('Keys keep arriving'), pinnedTurns: 0.25 },
+};
+
+/**
+ * The first few seconds of the layer, where they come in one at a time.
+ *
+ * A pool of eighteen with each on the ring for a fifth of a turn settles at three
+ * or four, but they used to reach that in one frame: every key whose window
+ * contained the starting instant appeared together. The clock counts turns rather
+ * than resetting, and a key has not started until the clock has come round to it,
+ * so the first turn deals them out about a second apart.
+ */
+export const TrafficArriving = {
+  args: { pinnedProgress: beatOf('Keys keep arriving'), pinnedTurns: 0.06 },
 };

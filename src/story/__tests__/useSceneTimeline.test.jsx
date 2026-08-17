@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 
 import { useSceneTimeline } from '../useSceneTimeline';
 
@@ -22,8 +22,12 @@ const mount = props => {
 
   return {
     beat: () => progress.get(),
-    set: value => progress.set(value),
-    to: next => rerender(<Probe {...props} {...next} onBeat={value => (progress = value)} />),
+    // Setting the beat runs the hook's own listeners, which update state.
+    set: value => act(() => progress.set(value)),
+    to: next =>
+      act(() => {
+        rerender(<Probe {...props} {...next} onBeat={value => (progress = value)} />);
+      }),
   };
 };
 

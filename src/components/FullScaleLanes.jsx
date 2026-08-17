@@ -94,7 +94,7 @@ function addJoin(timeline, laneCount, sources) {
 
   const highlight = timeline.move(HIGHLIGHT.move);
   timeline.annotate(
-    'Only these ranges changed hands. Most keys stayed put, and the load stays even, with no map to update.'
+    'Only these ranges changed hands. Most keys stayed put, and the load stays even after the join.'
   );
   timeline.rest(CLOSING_REST, 'What it took');
 

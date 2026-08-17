@@ -19,7 +19,7 @@ const MIN_VISIBLE = 1e-6;
  * A straight path starts where it starts, so anything drawing one passes
  * `pathStart: 0` — the same pattern, measured from a different origin.
  */
-const CIRCLE_START = 0.75;
+export const CIRCLE_START = 0.75;
 export const LINE_START = 0;
 
 const PRECISION = 7;

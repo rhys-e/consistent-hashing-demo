@@ -3,6 +3,7 @@ import { motion, useTransform } from 'motion/react';
 import { getArcHeight, getArcRadius, projectOffset, projectPosition } from '../story/projection';
 import {
   easeInOutCubic,
+  easeInOutSine,
   easeOutBack,
   easeOutCubic,
   mix,
@@ -33,6 +34,7 @@ import {
 import SceneControls from './SceneControls';
 import SceneFrame from './SceneFrame';
 import SceneAnnotation from './SceneAnnotation';
+import RingTraffic from './RingTraffic';
 
 /**
  * Hash space as a number line, then the same line wrapped into a ring. One
@@ -44,6 +46,11 @@ const { width, height, centreY, anchorX } = STAGE;
 
 /** Scaled as it curls so the closed ring stays a usable size. Spacing is preserved. */
 const RAIL_LENGTH = STAGE.railLength;
+/** The rail at full straight length, which is what its gradient is measured over. */
+const RAIL_SPAN = {
+  from: anchorX - RAIL_LENGTH.straight / 2,
+  to: anchorX + RAIL_LENGTH.straight / 2,
+};
 
 const BEAM = { top: centreY - 162, bottom: centreY + 100, width: 14 };
 
@@ -66,13 +73,95 @@ const MORPH = { move: 1.8 };
 /** The pulse starts just before the ends meet and outlasts the bend. */
 const SEAM = { lead: 0.2, peak: 0.2, tail: 0.7 };
 const CLOSE_REST = 0.5;
+/**
+ * The three named keys giving the ring back, and the traffic taking it over.
+ *
+ * It comes after the reading rest rather than with it, because the scene's last
+ * claim is about the ring and wants the three keys still on it while it is read.
+ * Only once that has landed does the picture change from "here is where three keys
+ * are" to "here is a ring things keep arriving on", and those are two statements
+ * rather than one.
+ *
+ * The traffic starts first and the three fade behind it, so the ring is never
+ * empty and the handover reads as being taken over rather than as being cleared.
+ */
+/**
+ * The scene clearing itself, and what is left behind running afterwards.
+ *
+ * This is a postscript rather than a further argument. The slide has said what it
+ * has to say, and everything that said it goes: the two bounds labels, the standing
+ * commentary in the corner, and the three keys the scene was about. What is left is
+ * a ring with keys landing on it, which is nice to look at, marks the end of the
+ * slide, and is about to be carried off the screen anyway.
+ *
+ * The clearing is the event, so the quiet ring that follows is a beat rather than a
+ * gap — which is what an earlier version got wrong by trying to fill it. Things go
+ * in the order they stop being needed: the furniture around the ring first, then the
+ * examples on it, one at a time in the order they arrived.
+ */
+/**
+ * How long everything the slide said takes to go.
+ *
+ * A second and a half. Slow enough to read as the slide letting go rather than as a
+ * cut, and no slower: there is nothing to look at while it happens, and the frame it
+ * lands on is the one worth waiting for.
+ */
+const CLEAR = { move: 1 };
+/** The ring on its own, before anything starts landing on it. */
+const BARE_REST = 0.9;
+/** The first of the traffic fading up. */
+const ARRIVE = 0.8;
+/** Long enough to watch a few land and go before the deck offers to move on. */
+const BUSY_REST = 3;
 const CARD_REST = 3;
-const READING_REST = 4.5;
+/**
+ * How long the closing line has to be read before the scene starts clearing itself.
+ *
+ * Three beats, which is four and a half seconds, against the story's own reading
+ * model of roughly three for a line this length — plus whatever of the fade it
+ * stays legible through. It was four and a half beats, and the extra second and a
+ * half was spent on a sentence that had already been read, immediately before a
+ * postscript that also has to be waited out. The scene dragged at exactly the point
+ * where it should be handing over.
+ */
+const READING_REST = 3;
 /** Top left: the only corner clear in both shapes. Bottom left collides after the bend. */
 const CARD = { x: 60, y: 96, width: 250 };
 
-/** How far into the bend the ring's own atmosphere starts to resolve. */
-const RING_PRESENCE = { from: 0.55, to: 1 };
+/**
+ * How far into the bend the ring's furniture resolves — and there are two answers,
+ * because one scalar was driving two things that want different ones.
+ *
+ * Both are measured against the *linear* progress of the morph and eased
+ * afterwards. Thresholding the already-eased bend, which is what this did, is the
+ * same mistake as easing twice: `easeInOutCubic` is steepest through its middle, so
+ * taking its last 45% and stretching that to nothing-to-everything crammed the
+ * arrival into the fastest part of the movement. It looked switched on rather than
+ * resolved.
+ *
+ * `RAIL_GLOW` is the cyan edge along the rail itself, and it can start almost as
+ * soon as the bend does, because it is drawn *on* the rail and works at any
+ * curvature. Coming in over most of the movement, it grows with the ring rather
+ * than arriving once the ring has finished.
+ *
+ * `RING_PRESENCE` is the polar grid and the atmosphere behind it, and those cannot
+ * come early however much one might like them to. They are drawn from the arc's
+ * centre, and at a shallow bend that centre is a long way off the stage — the
+ * spokes would be near-parallel lines running across the whole composition. They
+ * need something recognisable as a ring before they mean anything.
+ */
+const RAIL_GLOW = { from: 0.08, to: 0.92 };
+/**
+ * When the ticks, the caps and the bounds labels resolve onto the drawn rail.
+ *
+ * They used to ramp *linearly* over the last 45% of the rail being drawn, and a
+ * linear fade has a corner at each end: it starts at full speed and stops dead. On
+ * a mark that is only ever there or not there, those corners are the whole of what
+ * you see, and it reads as switched on however long the ramp is. Eased, and started
+ * earlier so there is more of the rail to arrive over.
+ */
+const SCAFFOLD_IN = 0.25;
+const RING_PRESENCE = { from: 0.4, to: 1 };
 
 const POLAR_GRID = {
   spokeInner: 0.32,
@@ -115,6 +204,11 @@ const TIMELINE = (() => {
   );
   const joined = timeline.rest(READING_REST, 'Ends joined');
 
+  const clear = timeline.move(CLEAR.move);
+  const bare = timeline.rest(BARE_REST, 'The ring alone');
+  const arrive = timeline.move(ARRIVE);
+  const busy = timeline.rest(BUSY_REST, 'Keys keep arriving');
+
   return {
     opening,
     rail,
@@ -125,6 +219,10 @@ const TIMELINE = (() => {
     seam,
     closed,
     joined,
+    clear,
+    bare,
+    arrive,
+    busy,
     annotations: timeline.annotations(),
     end: timeline.at(),
   };
@@ -143,6 +241,8 @@ export const SCENE_STEPS = buildSteps(
     stepAtRest(TIMELINE.card, TIMELINE.card.label),
     stepAtRest(TIMELINE.closed, 'Ring closed'),
     stepAtRest(TIMELINE.joined, TIMELINE.joined.label),
+    stepAtRest(TIMELINE.bare, TIMELINE.bare.label),
+    stepAtRest(TIMELINE.busy, TIMELINE.busy.label),
   ],
   BEAT_COUNT
 );
@@ -165,8 +265,53 @@ function railStateFor(progressValue) {
   return { bend, length, anchorX, anchorY: centreY - arcHeight / 2 };
 }
 
+const morphProgressFor = progressValue =>
+  rangeProgress(progressValue, TIMELINE.morph.from, TIMELINE.morph.to);
+
+// Sine rather than cubic, because these appear rather than travel — see easing.js.
+const railGlowFor = progressValue =>
+  easeInOutSine(rangeProgress(morphProgressFor(progressValue), RAIL_GLOW.from, RAIL_GLOW.to));
+
+/** Everything drawn *on* the rail, arriving once enough of the rail is there. */
+const scaffoldPresenceFor = progressValue =>
+  easeInOutSine(
+    rangeProgress(
+      progressValue,
+      mix(TIMELINE.rail.from, TIMELINE.rail.to, SCAFFOLD_IN),
+      TIMELINE.rail.to
+    )
+  );
+
 const ringPresenceFor = progressValue =>
-  rangeProgress(morphAt(progressValue), RING_PRESENCE.from, RING_PRESENCE.to);
+  easeInOutSine(
+    rangeProgress(morphProgressFor(progressValue), RING_PRESENCE.from, RING_PRESENCE.to)
+  );
+
+/** The traffic fading up, once the scene has finished clearing itself. */
+const trafficPresenceFor = progressValue =>
+  easeInOutSine(rangeProgress(progressValue, TIMELINE.arrive.from, TIMELINE.arrive.to));
+
+/**
+ * How much of the scene is still on screen: the bounds labels, the standing
+ * commentary, and the three keys it was about.
+ *
+ * One scalar for all of them, because it is one gesture. Taking the writing away
+ * first and then the keys one at a time was tried, and it makes the ending a
+ * *sequence* — five separate departures to follow, on a slide whose argument
+ * finished a beat ago. Everything at once is the slide letting go, which is the
+ * only thing left for it to say.
+ */
+const clearedFor = progressValue =>
+  1 - easeInOutSine(rangeProgress(progressValue, TIMELINE.clear.from, TIMELINE.clear.to));
+
+/**
+ * The three go one after another, in the order they arrived.
+ *
+ * Together they leave as a set, which is a cut: three things vanish and something
+ * else is there. One at a time they leave as *keys* — this one has had its turn,
+ * and this one, and this one — which is the same reading the scene gave them
+ * arriving, and it hands the ring over rather than swapping its contents.
+ */
 
 function railPoint(position) {
   return projectPosition({ position, ...railStateFor(0) });
@@ -175,6 +320,7 @@ function railPoint(position) {
 function getSceneKeys() {
   return decorateSampleKeys().map((sampleKey, index) => ({
     ...sampleKey,
+    index,
     x: railPoint(sampleKey.position).x,
     beatStart: TIMELINE.keys[index].beatStart,
   }));
@@ -427,7 +573,7 @@ function DecodingAnnotation({ sampleKey, progress }) {
           latest,
           beatStart + KEY_BEAT.annotationFrom,
           beatStart + KEY_BEAT.annotationTo
-        )
+        ) * clearedFor(latest)
       }
       stemFor={latest =>
         easeOutCubic(
@@ -448,6 +594,12 @@ export function HashSpaceScene({
   active = true,
   // Arriving, not merely inactive. See `useSceneTimeline`.
   current,
+  /**
+   * Holds the traffic's own clock, in turns of its pool. The layer runs on wall
+   * time rather than on the beat, so this is the only way a pinned frame can show
+   * it — see `RingTraffic`.
+   */
+  pinnedTurns,
   engaged = false,
   onComplete,
 }) {
@@ -498,6 +650,7 @@ export function HashSpaceScene({
             prefix={PREFIX}
             railEndColor={railEndColor}
             railEndOpacity={railEndOpacity}
+            railSpan={RAIL_SPAN}
           />
 
           <radialGradient id={`${PREFIX}-atmosphere`} cx="50%" cy="50%" r="50%">
@@ -559,9 +712,7 @@ export function HashSpaceScene({
         <RailScaffold
           progress={progress}
           railStateFor={railStateFor}
-          opacityFor={latest =>
-            rangeProgress(latest, mix(TIMELINE.rail.from, TIMELINE.rail.to, 0.55), TIMELINE.rail.to)
-          }
+          opacityFor={scaffoldPresenceFor}
         />
 
         <BoundsLabel
@@ -569,18 +720,14 @@ export function HashSpaceScene({
           railStateFor={railStateFor}
           position={0}
           label={toHashLabel(0)}
-          opacityFor={latest =>
-            rangeProgress(latest, mix(TIMELINE.rail.from, TIMELINE.rail.to, 0.55), TIMELINE.rail.to)
-          }
+          opacityFor={latest => scaffoldPresenceFor(latest) * clearedFor(latest)}
         />
         <BoundsLabel
           progress={progress}
           railStateFor={railStateFor}
           position={1}
           label={toHashLabel(1)}
-          opacityFor={latest =>
-            rangeProgress(latest, mix(TIMELINE.rail.from, TIMELINE.rail.to, 0.55), TIMELINE.rail.to)
-          }
+          opacityFor={latest => scaffoldPresenceFor(latest) * clearedFor(latest)}
         />
 
         <RailPath
@@ -590,7 +737,7 @@ export function HashSpaceScene({
           drawnFor={latest =>
             easeOutCubic(rangeProgress(latest, TIMELINE.rail.from, TIMELINE.rail.to))
           }
-          haloFor={ringPresenceFor}
+          haloFor={railGlowFor}
         />
 
         {sceneKeys.map(sampleKey => (
@@ -615,6 +762,16 @@ export function HashSpaceScene({
           />
         ))}
 
+        {/* Traffic, under the named keys so it never sits on top of one. It runs
+            on its own clock rather than on the beat, which is what carries it on
+            while the slide is being taken off the screen. */}
+        <RingTraffic
+          progress={progress}
+          railStateFor={railStateFor}
+          presenceFor={trafficPresenceFor}
+          pinnedTurns={pinnedTurns}
+        />
+
         {sceneKeys.map(sampleKey => (
           <KeyMarker
             key={`marker-${sampleKey.slug}`}
@@ -630,6 +787,7 @@ export function HashSpaceScene({
                 )
               )
             }
+            opacityFor={clearedFor}
           />
         ))}
 
@@ -639,7 +797,7 @@ export function HashSpaceScene({
           y={CARD.y}
           width={CARD.width}
           textFor={latest => annotationAt(TIMELINE, latest)}
-          presenceFor={latest => annotationPresenceAt(TIMELINE, latest)}
+          presenceFor={latest => annotationPresenceAt(TIMELINE, latest) * clearedFor(latest)}
         />
       </svg>
     </SceneFrame>

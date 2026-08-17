@@ -8,6 +8,7 @@ import { useScramble } from '../story/useScramble';
  */
 
 const RESOLVE = { duration: 0.5, ease: [0.16, 1, 0.3, 1] };
+
 const TITLE_IN = { duration: 0.3, ease: 'linear' };
 const BODY_DELAY = 0.3;
 const BODY_STAGGER = 0.12;
@@ -57,18 +58,6 @@ export function NarrationSlide({
 
   return (
     <div className="relative flex h-full w-full flex-col justify-center overflow-hidden bg-body-bg px-14 py-11 font-mono">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, rgb(255 255 255 / 3%) 1px, transparent 1px), linear-gradient(to bottom, rgb(255 255 255 / 3%) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-          maskImage: 'radial-gradient(ellipse at center, black 25%, transparent 72%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, black 25%, transparent 72%)',
-        }}
-      />
-
       <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-9">
         <div className="relative">
           <h2 aria-hidden="true" className={`invisible ${heading}`}>

@@ -714,6 +714,132 @@ says six pieces. `spreadModel.test.js` asserts the whole thing, including a test
 whose only job is to record _why_ six needs the placement: it holds hashed-six
 above fifteen points of spread and placed-six below six.
 
+## The polar ground stays in Scene 1, and nowhere else
+
+Scene 1 has two grids and neither is decoration: a cartesian one under the number
+line and a polar one that resolves in as the line bends. The scene's central move is
+that the _coordinate system_ changes, and those two grids are what make that
+something a viewer sees rather than something they are told.
+
+That looked like an argument for carrying the polar grid forward — the story spends
+seven more scenes on the ring it describes, and drew none of it. So it was built:
+one component from `LAYOUT`, on every single-ring scene, and on the narration slides
+too, on the reasoning that an interstitial should read as a moment in the same
+object rather than as a separate page.
+
+**Looked at, and removed.** On the interstitials it was plainly wrong: a slide of
+prose has no geometry, and a polar figure behind it is a motif rather than a ground.
+On the scenes it was closer, and still lost — by the time a scene has a ring, arcs,
+marks, a panel and its own animation on it, a grid underneath is one more thing
+happening. The rule it would have justified was a good one and it did not save it.
+
+Two things survive the experiment, both worth keeping written down:
+
+- **The narration slides' cartesian wash is gone**, and it should have gone
+  regardless of any of this. Three percent white at thirty-five percent opacity is
+  about one percent over the background — roughly a tenth of what Scene 1 draws, and
+  invisible. It had a comment arguing it put the slides "on the same surface" as the
+  scenes, which is an argument that was never actually delivered to anyone.
+- **Scenes 6 and 7 could never have had it anyway.** The ground's circles land at
+  112 and 180 against a lane band running 92 to 226, so they would have read as more
+  lanes. If this is ever revisited, that is the measurement to start from.
+
+## The opening scene has a postscript
+
+Scene 1 ended on three keys sitting still on a closed ring. True about where three
+keys are, poor about what a hash ring is — a cache is not three values at rest, it
+is a stream of them, and every one lands somewhere by the rule that put those three
+where they are.
+
+So the scene now **clears itself and then runs**. The slide has said what it has to
+say, and everything that said it goes: the two bounds labels, the standing
+commentary in the corner, and the three keys the scene was about. What is left is a
+ring with keys landing on it, which is nice to look at, marks the end of the slide,
+and is about to be carried off the screen anyway.
+
+|                    | beat        |                                                 |
+| ------------------ | ----------- | ----------------------------------------------- |
+| ends joined        | 11.8 → 16.3 | the last line read, everything still up         |
+| clear              | 16.3 → 18.7 | writing goes, then the three keys one at a time |
+| **the ring alone** | 18.7 → 19.6 | a step, and the frame the clearing lands on     |
+| arrive             | 19.6 → 20.4 | the first of the traffic fades up               |
+| keys keep arriving | 20.4 → 23.4 | four and a half seconds of a working ring       |
+
+**Things go in the order they stop being needed.** The furniture around the ring
+first, then the examples on it. A key's _name_ goes ahead of its mark, because the
+name is the part that stops being true first — the mark is still a position on the
+ring after nobody is being told which key is at it.
+
+**And the quiet ring is a beat, not a gap.** An earlier version interlocked the
+arrivals with the departures so the ring was never empty, on the reasoning that a
+gap is a stall. It is — when the only thing leaving is three keys. Once the labels
+and the commentary go with them, the clearing is the event and the quiet ring is
+what it lands on.
+
+Two departures were tried before the fade. **Shrinking** reads as the mark being
+deleted, and these are not deleted. **Sinking them inside the ring**, along the path
+the traffic rises from, was meant to say the examples were going back into the
+stream; it read as them falling out of the picture.
+
+### The traffic itself
+
+About three or four keys on the ring at a time, out of a pool of eighteen, each
+there for five and a half seconds and landing about a second and a half apart —
+slow enough that watching one is a choice rather than a reflex. Two earlier speeds
+were quicker and both read as a shimmer, where the _rate_ is what you notice, which
+is a texture and not a fact.
+
+Two things make it decoration rather than content:
+
+- **It is marked `data-ephemeral`.** A step lands where nothing is moving and this
+  never stops moving, so the two are irreconcilable unless the rest guard steps over
+  it. Same exemption the arrival glow and the seam pulse take.
+- **It runs on its own clock**, not on the scene's beat. That is what carries it
+  through the slide being taken off the screen — and it only works because leaving a
+  scene now holds its last frame instead of rewinding it.
+
+**They are named, and that took a correction.** The first version gave them no
+labels and half opacity, on the reasoning that anything unreadable cannot compete
+with the three keys the scene made claims about. It could not compete with anything:
+an unnamed dot is a particle, and a ring with particles landing on it is being
+decorated rather than used. They now carry names in the shapes the story's own keys
+take. Names sit **inside** the ring, which is arithmetic rather than taste: the
+closed ring is 263 units across a stage 620 deep, so it clears the top and bottom by
+about forty and there is nowhere outside it to put a label at those angles.
+
+**The pool is placed, not hashed**, and for once that is not Scene 4's argument.
+Eighteen raw hash positions put the closest pair nine ten-thousandths of the ring
+apart — about a pixel and a half — so two keys arrived on top of each other. But
+evenly spacing them would be worse in the other direction: keys that arrive one
+after another are neighbours in the pool, so even spacing marches them round the
+ring like a clock hand. Evenly spaced slots with a bounded wobble give the
+separation, and a stride co-prime to the count gives the scatter in time.
+
+**They arrive one at a time.** A pool of eighteen with each on the ring for a fifth
+of a turn settles at three or four, and it used to reach that in a single frame:
+every key whose window contained the starting instant appeared together. The clock
+counts turns rather than resetting, and a key has not started until the clock has
+come round to it.
+
+**Which is also why the clock can be held.** Everything else in the story is a pure
+function of a beat, so a frame can be pinned and looked at. This runs on wall time,
+so a pinned frame showed an empty ring and a review story had nothing in it.
+`pinnedTurns` holds the clock at a chosen point, which is how a still frame of a
+moving thing gets looked at.
+
+## The ring arrives from somewhere now
+
+Scene 2's ring was simply _there_ on the first frame — the one thing in the story
+that appeared without having come from anywhere, where every other mark grows,
+sweeps, falls or resolves. It now draws itself round from the seam over about a beat
+before anything lands on it, in the same `pathLength="1"` dash units the ownership
+arcs use, so it is made of the device the rest of the scene is made of rather than a
+second one.
+
+The seam tick waits for the ring to come back round to it. That makes the seam the
+place the ring was drawn _from_ rather than a mark that happened to be there first,
+which is a thing the scene otherwise asserts with a tick and never demonstrates.
+
 ## Arriving is not the same as leaving
 
 A slide is inactive for the whole of the deck's transition, at _both_ ends of it,

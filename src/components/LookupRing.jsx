@@ -1,8 +1,16 @@
 import React from 'react';
 import { motion, useTransform } from 'motion/react';
 import theme from '../themes';
-import { easeInOutCubic, easeOutCubic, mix, pulseProgress, rangeProgress } from '../story/easing';
+import {
+  clamp01,
+  easeInOutCubic,
+  easeOutCubic,
+  mix,
+  pulseProgress,
+  rangeProgress,
+} from '../story/easing';
 import { ringPoint } from '../story/projection';
+import { CIRCLE_START } from '../story/ringDash';
 import {
   annotationAt,
   annotationPresenceAt,
@@ -19,6 +27,16 @@ import SceneAnnotation from './SceneAnnotation';
  * Keys, then servers, then one slow lookup, then the rest, then ownership arcs.
  */
 const OPENING = 0.5;
+/**
+ * The ring drawing itself, before anything is on it.
+ *
+ * It used to be simply *there* on the first frame, which is the one thing in the
+ * story that arrives without having come from anywhere — every other mark grows,
+ * sweeps, falls or resolves. Drawn round from the seam it also says where the seam
+ * is before the seam has to matter, which is a thing the scene otherwise asserts
+ * with a tick and never demonstrates.
+ */
+const RING_IN = 1.1;
 const KEYS = { move: 2.2 };
 const ARRIVE = { move: 1.5, stagger: 0.55 };
 const STEP_IN = { move: 1.3 };
@@ -51,6 +69,7 @@ export function buildLookupTimeline(model) {
   const taught = TAUGHT.map(name => model.keys.find(key => key.name === name));
   const rest = model.keys.filter(key => !TAUGHT.includes(key.name));
 
+  const ringIn = timeline.move(RING_IN);
   const opening = timeline.rest(OPENING, 'Empty ring');
 
   const keys = group(timeline.move(KEYS.move), model.keys.length, KEYS.move * 0.4);
@@ -75,7 +94,7 @@ export function buildLookupTimeline(model) {
   routes.set(taught[0].name, { ...teach, land: TEACH.land });
   timeline.skip(TEACH.land);
   timeline.annotate(
-    'A key belongs to the first server clockwise from its position. Anyone who knows the rule can find the owner.'
+    'A key belongs to the first server clockwise from its position. Anyone can compute the owner the same way.'
   );
   timeline.rest(REST, 'First key routed');
 
@@ -101,7 +120,7 @@ export function buildLookupTimeline(model) {
   timeline.rest(REST, 'Every key routed');
 
   timeline.annotate(
-    'Every position between two servers follows the same rule. That whole range belongs to the server at its clockwise end.'
+    'Every position between two servers is claimed the same way. That whole range belongs to the server at its clockwise end.'
   );
   const sweep = group(
     timeline.move(SWEEP.each + SWEEP.stagger * (servers - 1)),
@@ -111,6 +130,7 @@ export function buildLookupTimeline(model) {
   const settled = timeline.rest(READING_REST, 'Ranges claimed');
 
   return {
+    ringIn,
     opening,
     keys,
     arrive,
@@ -348,19 +368,47 @@ export function LookupRing({ model, progress, timeline }) {
   const seam = ringPoint({ ...LAYOUT, radius, position: 0 });
   const seamOut = ringPoint({ ...LAYOUT, radius: radius + 24, position: 0 });
 
+  const drawnAt = latest =>
+    easeInOutCubic(rangeProgress(latest, timeline.ringIn.from, timeline.ringIn.to));
+  /**
+   * `pathLength="1"` puts the dash in the same units the ownership arcs use, so the
+   * ring draws itself round from the seam by the device the rest of the scene is
+   * made of rather than by a second one.
+   *
+   * The gap has to be the rest of the circle, not one whole one. `${drawn} 1` is a
+   * pattern two units long on a path one unit around, so with the offset that puts
+   * its start at the seam the visible dash is whatever is left of it — a quarter of
+   * the ring, at every value of `drawn`. The gap is `1 - drawn`, which makes the
+   * pattern exactly one turn and puts precisely one dash on the circle.
+   */
+  const ringDash = useTransform(progress, latest => {
+    const drawn = drawnAt(latest);
+    // Never a gap of nothing: a zero-length gap is a pattern renderers disagree on.
+    return `${drawn} ${Math.max(1e-4, 1 - drawn)}`;
+  });
+  // The tick waits for the ring to come back round to it, so the seam is the thing
+  // the ring was drawn from rather than a mark that happened to be there first.
+  const seamOpacity = useTransform(
+    progress,
+    latest => 0.5 * clamp01((drawnAt(latest) - 0.8) / 0.2)
+  );
+
   return (
     <g>
-      <circle
+      <motion.circle
         data-layer="reference-ring"
         cx={centreX}
         cy={centreY}
         r={radius}
+        pathLength="1"
         fill="none"
         stroke={theme.colors.primary.cyberBlue}
         strokeWidth="1.25"
+        strokeDasharray={ringDash}
+        strokeDashoffset={CIRCLE_START}
         opacity="0.3"
       />
-      <line
+      <motion.line
         data-layer="seam"
         x1={seam.x}
         y1={seam.y}
@@ -368,7 +416,7 @@ export function LookupRing({ model, progress, timeline }) {
         y2={seamOut.y}
         stroke={theme.colors.primary.cyberBlue}
         strokeWidth="1.25"
-        opacity="0.5"
+        opacity={seamOpacity}
       />
 
       {model.arcs.map((arc, index) => (

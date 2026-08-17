@@ -96,4 +96,53 @@ describe('the lookup scene', () => {
     expect(span(routes[0])).toBeGreaterThan(span(routes[1]));
     expect(first.travel).toBeGreaterThan(0.1);
   });
+
+  /**
+   * The ring was the one thing in the story that arrived without having come from
+   * anywhere — simply present on the first frame, where every other mark grows,
+   * sweeps, falls or resolves. It now draws itself round from the seam, in the same
+   * `pathLength="1"` dash units the ownership arcs use, so it is made of the device
+   * the rest of the scene is made of rather than a second one.
+   *
+   * The seam tick waits for the ring to come back round to it, which makes the seam
+   * the place the ring was drawn *from* rather than a mark that happened to be
+   * there first.
+   */
+  it('draws the ring round from the seam before anything is on it', () => {
+    const frameAt = beat => {
+      const { container } = render(<KeyRoutesScene pinnedProgress={beat} />);
+      const drawn = container
+        .querySelector('[data-layer="reference-ring"]')
+        .getAttribute('stroke-dasharray');
+
+      const [dash, gap] = drawn.split(' ').map(Number);
+
+      return {
+        drawn: dash,
+        // The gap has to be the *rest* of the circle. A pattern longer than the
+        // path draws whatever is left of its first dash after the offset and then
+        // stops, which is how this first shipped: a quarter of the ring, at every
+        // value of `drawn`.
+        pattern: dash + gap,
+        seam: Number(container.querySelector('[data-layer="seam"]').getAttribute('opacity')),
+      };
+    };
+
+    const { ringIn } = LOOKUP_BEATS;
+    expect(frameAt(0).drawn).toBe(0);
+    expect(frameAt(0).seam).toBe(0);
+
+    const half = frameAt((ringIn.from + ringIn.to) / 2);
+    expect(half.drawn).toBeGreaterThan(0.3);
+    expect(half.drawn).toBeLessThan(0.7);
+    // One turn of the circle, so exactly one dash goes on it.
+    expect(half.pattern).toBeCloseTo(1, 3);
+    // Still nothing at the seam: it arrives once the ring has come back to it.
+    expect(half.seam).toBe(0);
+
+    // Whole, and stays whole for the rest of the scene.
+    expect(frameAt(ringIn.to).drawn).toBe(1);
+    expect(frameAt(ringIn.to).seam).toBeGreaterThan(0.4);
+    expect(frameAt(LOOKUP_BEATS.settled).drawn).toBe(1);
+  });
 });
