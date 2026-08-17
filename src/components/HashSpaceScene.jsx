@@ -117,14 +117,21 @@ const CARD_REST = 3;
 /**
  * How long the closing line has to be read before the scene starts clearing itself.
  *
- * Three beats, which is four and a half seconds, against the story's own reading
- * model of roughly three for a line this length — plus whatever of the fade it
- * stays legible through. It was four and a half beats, and the extra second and a
- * half was spent on a sentence that had already been read, immediately before a
- * postscript that also has to be waited out. The scene dragged at exactly the point
- * where it should be handing over.
+ * Two beats, which is three seconds. It was four and a half beats, and the cuts
+ * since have taken two and a quarter seconds out of a sentence that had already
+ * been read, immediately before a postscript that also has to be waited out — the
+ * scene dragged at exactly the point where it should be handing over.
+ *
+ * **This is now under the floor, on the rest alone.** The story's own reading model,
+ * the one the deck uses to decide when a slide is done, puts this nineteen-word line
+ * at 3.27 seconds. What makes three work is that the line does not vanish when the
+ * rest ends: it fades over the following second and a half and stays legible through
+ * the first part of that, so the reading time is nearer four seconds than three.
+ *
+ * Which is also why it should not go lower. Below this the line starts fading while
+ * it is still being read for the first time, rather than after.
  */
-const READING_REST = 3;
+const READING_REST = 2;
 /** Top left: the only corner clear in both shapes. Bottom left collides after the bend. */
 const CARD = { x: 60, y: 96, width: 250 };
 

@@ -312,23 +312,12 @@ export function RingTraffic({ progress, railStateFor, presenceFor, pinnedTurns }
   const [running, setRunning] = React.useState(() => presenceFor(progress.get()) > 0);
 
   /**
-   * The clock starts with the layer and is put back when the layer goes.
-   *
    * Any presence at all is enough to start rendering — the opacity is what fades it
    * up, and waiting for full presence made the first keys arrive already landed.
-   *
-   * The reset matters more. A scene rewinds when its slide is travelled back to, and
-   * the clock used to keep running through that, so the next play-through opened on
-   * whatever the pool happened to be doing — often a key already half gone. The
-   * first thing a viewer sees now is always the first key of the pool, arriving from
-   * nothing.
    */
   useMotionValueEvent(progress, 'change', latest => {
     const present = presenceFor(latest) > 0;
-    if (present === running) return;
-
-    if (!present) drift.set(0);
-    setRunning(present);
+    if (present !== running) setRunning(present);
   });
 
   React.useEffect(() => {
@@ -337,6 +326,24 @@ export function RingTraffic({ progress, railStateFor, presenceFor, pinnedTurns }
       return undefined;
     }
     if (!running) return undefined;
+
+    /**
+     * The clock is put back to zero *here*, and that placement is the whole of it.
+     *
+     * It was reset where the layer is switched off, which is a motion value
+     * listener — and a listener runs during the frame, while the previous animation
+     * is still going. `animate` drives its value from its own start time and origin,
+     * so the very next frame wrote the clock straight back to where it had been, and
+     * by the time React committed and the cleanup stopped it the zero was long gone.
+     * The next run then picked up mid-cycle, which is a couple of keys already half
+     * faded as the first thing a viewer sees.
+     *
+     * An effect body runs *after* the previous effect's cleanup, so by this line the
+     * old animation is stopped and nothing can overwrite the value. Setting it as the
+     * layer starts is also the more honest place for it: the clock belongs to the
+     * run, not to the switch.
+     */
+    drift.set(0);
 
     /**
      * A clock that counts turns rather than one that resets every turn.
