@@ -503,6 +503,19 @@ ring the viewer had already been told about — and because the note blurs the
 artwork to say it, the ring was on screen unblurred for a moment first, which read
 as the note being late rather than as the scene starting.
 
+## The transport is one button, and it was not doing its one thing
+
+`SceneControls` called `timeline.reset()`, which stops playback and puts the beat
+back to zero — and nothing starts it again. The Replay button rewound the scene and
+left it sitting on its first frame, which looks so much like the beginning of a
+replay that it went unnoticed: the transport only appears once a viewer has taken
+over, so it is not on screen during an ordinary watch-through.
+
+`useSceneTimeline` has both `reset` and `replay` because both are wanted — a scene
+leaving the screen resets, a viewer asking for it again replays — and the button
+needed the one that plays. Two tests cover it now, the button and the space bar,
+because a transport of one button has exactly one thing to be right about.
+
 ## The transport is one button
 
 Back and Next are gone. The reasoning for them held — a scene that has finished
