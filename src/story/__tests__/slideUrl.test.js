@@ -49,7 +49,7 @@ describe('slide addresses', () => {
   });
 
   it('round-trips every slide in the real story', async () => {
-    const { STORY_SLIDES } = await import('../../components/Story');
+    const { STORY_SLIDES } = await import('../../components/deck/Story');
 
     STORY_SLIDES.forEach((slide, index) => {
       expect(indexForHash(STORY_SLIDES, hashFor(slide))).toBe(index);

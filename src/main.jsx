@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import Story from './components/Story';
+import Story from './components/deck/Story';
 import './index.css';
 
 class ErrorBoundary extends React.Component {

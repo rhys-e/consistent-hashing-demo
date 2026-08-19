@@ -1,10 +1,10 @@
-import { STORY_SLIDES } from '../../components/Story';
-import { HASH_SPACE_BEATS } from '../../components/HashSpaceScene';
-import { LOOKUP_BEATS } from '../../components/LookupRing';
-import { REMOVAL_BEATS } from '../../components/RemovalRing';
-import { SPREAD_BEATS } from '../../components/SpreadRing';
-import { ZOOM_BEATS } from '../../components/DensityZoom';
-import { LANE_BEATS } from '../../components/FullScaleLanes';
+import { STORY_SLIDES } from '../../components/deck/Story';
+import { HASH_SPACE_BEATS } from '../../components/scenes/HashSpaceScene';
+import { LOOKUP_BEATS } from '../../components/ring/LookupRing';
+import { REMOVAL_BEATS } from '../../components/ring/RemovalRing';
+import { SPREAD_BEATS } from '../../components/ring/SpreadRing';
+import { ZOOM_BEATS } from '../../components/ring/DensityZoom';
+import { LANE_BEATS } from '../../components/ring/FullScaleLanes';
 
 /**
  * House rules for viewer-facing copy: STE sentence limits, no smuggled clauses,
