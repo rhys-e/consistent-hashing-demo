@@ -20,6 +20,19 @@ import NarrationSlide from './NarrationSlide';
 
 const SLIDE_TRANSITION = { duration: 1.05, ease: [0.65, 0, 0.35, 1] };
 const REDUCED_SLIDE_TRANSITION = { duration: 0.25, ease: 'linear' };
+/**
+ * How long the ticks stay up after the mouse stops moving.
+ *
+ * Hiding them until the viewer takes over kept the composition clean and made the
+ * one control that says "you can go somewhere else" impossible to find without
+ * already knowing it was there. Moving the mouse now brings them back for a few
+ * seconds, which is the affordance every video player uses for the same reason.
+ *
+ * Long enough to notice them and reach them, short enough that a still cursor
+ * leaves the story alone. It does *not* count as taking over: a mouse crossing the
+ * screen is not a decision, and the deck goes on advancing.
+ */
+const POINTER_IDLE_MS = 2600;
 const SWIPE_THRESHOLD = 40;
 /** Prefixes every history entry, so a back button offers legible choices. */
 const SITE_TITLE = 'Consistent Hashing';
@@ -27,20 +40,38 @@ const SITE_TITLE = 'Consistent Hashing';
 /**
  * Slide ticks. Hidden until the viewer takes over, but stay in the document so
  * focus can reveal them. Do not use `display: none` or `aria-hidden`.
+ *
+ * The pointer being *on* them counts as much as the pointer moving. Without it the
+ * idle timer runs while the viewer is holding still to aim, and the ticks fade out
+ * from under the cursor at the moment they are being used — the one moment they
+ * are certainly wanted. Hover holds them up for as long as the pointer is there.
+ *
+ * They are also unclickable while faded out. A fully transparent nav that still
+ * takes clicks is a strip down the side of the story where a click does something
+ * invisible, and a stray one would jump the deck to a slide the viewer never saw.
  */
 function DeckProgress({ slides, index, onSelect, shown }) {
   const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const visible = shown || focused || hovered;
 
   return (
     <motion.nav
       aria-label="Story slides"
-      className="fixed right-7 top-1/2 z-20 flex -translate-y-1/2 flex-col"
+      className={`fixed right-7 top-1/2 z-20 flex -translate-y-1/2 flex-col ${
+        visible ? 'pointer-events-auto' : 'pointer-events-none'
+      }`}
       initial={false}
-      animate={{ opacity: shown || focused ? 1 : 0 }}
+      animate={{ opacity: visible ? 1 : 0 }}
       transition={{ duration: 0.4 }}
       onFocusCapture={() => setFocused(true)}
       onBlurCapture={() => setFocused(false)}
-      data-shown={shown || focused ? 'true' : 'false'}
+      onPointerEnter={event => {
+        if (event.pointerType === 'touch') return;
+        setHovered(true);
+      }}
+      onPointerLeave={() => setHovered(false)}
+      data-shown={visible ? 'true' : 'false'}
     >
       {slides.map((slide, slideIndex) => {
         const isCurrent = slideIndex === index;
@@ -52,13 +83,21 @@ function DeckProgress({ slides, index, onSelect, shown }) {
             onClick={() => onSelect(slideIndex)}
             aria-current={isCurrent ? 'true' : undefined}
             aria-label={slide.title ?? slide.key}
-            className="group flex h-4 w-10 items-center justify-end"
+            className="group flex h-5 w-10 items-center justify-end"
           >
+            {/* One tick, three states: where you are, where the pointer is, and
+                everywhere else. The hovered one reaches most of the way to the
+                current one's length and comes up to full strength, which is a large
+                enough change to answer the pointer at a mark this small.
+                It stays the secondary colour, though. White is what says "you are
+                here", and `bright` and `heading` are the same white — a hovered tick
+                painted in it would be a longer, whiter line than the current slide's
+                and would read as having already moved there. */}
             <span
               className={`h-px transition-all duration-normal ${
                 isCurrent
-                  ? 'w-7 bg-ui-text-heading/80'
-                  : 'w-3 bg-ui-text-secondary/35 group-hover:w-5 group-hover:bg-ui-text-secondary/70'
+                  ? 'w-7 bg-ui-text-heading/80 group-hover:bg-ui-text-heading'
+                  : 'w-3 bg-ui-text-secondary/35 group-hover:w-6 group-hover:bg-ui-text-secondary'
               }`}
             />
           </button>
@@ -152,6 +191,33 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
 
   const goTo = useCallback(next => send({ type: 'GOTO', index: next }), [send]);
   const engage = useCallback(() => send({ type: 'ENGAGE' }), [send]);
+
+  /**
+   * Whether a mouse has moved lately.
+   *
+   * Mouse only. A touch drag already moves the deck, which makes the viewer a
+   * steerer and shows the ticks for good, and firing this on every touch point
+   * would flash them on and off through a swipe.
+   */
+  const [pointerAwake, setPointerAwake] = useState(false);
+
+  useEffect(() => {
+    let timer = null;
+
+    const handle = event => {
+      if (event.pointerType && event.pointerType !== 'mouse') return;
+
+      setPointerAwake(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setPointerAwake(false), POINTER_IDLE_MS);
+    };
+
+    window.addEventListener('pointermove', handle);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointermove', handle);
+    };
+  }, []);
 
   useSlideAddress({
     slides,
@@ -312,7 +378,12 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
       ) : null}
       {isEngaged && !isLast ? <ScrollHint /> : null}
 
-      <DeckProgress slides={slides} index={index} onSelect={goTo} shown={isSteering(state)} />
+      <DeckProgress
+        slides={slides}
+        index={index}
+        onSelect={goTo}
+        shown={isSteering(state) || pointerAwake}
+      />
     </div>
   );
 }

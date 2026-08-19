@@ -25,3 +25,10 @@ export const Magnified = { args: { pinnedProgress: ZOOM_BEATS.pan.from - 0.4 } }
 export const MidSweep = {
   args: { pinnedProgress: (ZOOM_BEATS.pan.from + ZOOM_BEATS.pan.to) / 2 },
 };
+
+/** The closing act: the rule from Scene 2, at nine hundred positions. */
+export const KeyLanded = { args: { pinnedProgress: ZOOM_BEATS.land.to } };
+export const Walking = {
+  args: { pinnedProgress: (ZOOM_BEATS.route.from + ZOOM_BEATS.route.to) / 2 },
+};
+export const OwnerFound = { args: { pinnedProgress: ZOOM_BEATS.route.to + 0.6 } };

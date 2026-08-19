@@ -432,3 +432,103 @@ describe('a slide arriving against a slide leaving', () => {
     expect(shownOf(alone)).toBe('true');
   });
 });
+
+/**
+ * The discoverability half of hiding the ticks.
+ *
+ * Hidden until engagement alone, the one control that says "you can go somewhere
+ * else" could not be found without already knowing it was there. Reaching for a
+ * control is how anyone looks for one, so the mouse moving brings them back for a
+ * few seconds and then lets them go.
+ *
+ * Its own block because it needs the clock held, and the timers in `the countdown`
+ * belong to that one.
+ */
+describe('reaching for the ticks', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  const ticks = () => screen.getByLabelText('Story slides');
+  const settle = ms =>
+    act(() => {
+      jest.advanceTimersByTime(ms);
+    });
+
+  /**
+   * Hand-built, because jsdom has no `PointerEvent` and the `Event` it falls back
+   * to drops `pointerType` from its init. Fired through `fireEvent` with the field
+   * missing, every one of these tests would pass without the guard existing.
+   */
+  const move = pointerType =>
+    act(() => {
+      const event = new Event('pointermove', { bubbles: true });
+      Object.defineProperty(event, 'pointerType', { value: pointerType });
+      fireEvent(window, event);
+    });
+
+  /**
+   * Not taking over. A mouse crossing the screen is not a decision, and the deck
+   * goes on advancing — which is what separates this from every other way they
+   * appear.
+   */
+  it('shows them while the mouse is moving, then lets them go', () => {
+    render(<StoryDeck slides={SLIDES} />);
+    expect(ticks().dataset.shown).toBe('false');
+
+    move('mouse');
+    expect(ticks().dataset.shown).toBe('true');
+
+    settle(4000);
+    expect(ticks().dataset.shown).toBe('false');
+  });
+
+  /** Each move buys the full window again, rather than the first one timing out. */
+  it('keeps them up while the mouse keeps moving', () => {
+    render(<StoryDeck slides={SLIDES} />);
+
+    move('mouse');
+    settle(2000);
+    move('mouse');
+    settle(2000);
+
+    expect(ticks().dataset.shown).toBe('true');
+  });
+
+  /**
+   * The pointer resting on them is the one moment they are certainly being used,
+   * and it is the one moment the idle timer would otherwise take them away.
+   */
+  it('holds them up while the pointer rests on them', () => {
+    render(<StoryDeck slides={SLIDES} />);
+    move('mouse');
+
+    act(() => {
+      fireEvent.pointerEnter(ticks());
+    });
+    settle(4000);
+    expect(ticks().dataset.shown).toBe('true');
+
+    act(() => {
+      fireEvent.pointerLeave(ticks());
+    });
+    settle(4000);
+    expect(ticks().dataset.shown).toBe('false');
+  });
+
+  /** Faded out, they are not a strip down the side of the story that takes clicks. */
+  it('does not take a click while it is not there', () => {
+    render(<StoryDeck slides={SLIDES} />);
+    expect(ticks().className).toContain('pointer-events-none');
+
+    move('mouse');
+    expect(ticks().className).toContain('pointer-events-auto');
+  });
+
+  /** A touch drag already steers the deck, so it does not also flicker them. */
+  it('ignores a touch point, which has its own way of showing them', () => {
+    render(<StoryDeck slides={SLIDES} />);
+
+    move('touch');
+    expect(ticks().dataset.shown).toBe('false');
+  });
+});
