@@ -1,6 +1,30 @@
-# Consistent Hash Ring Demo
+# Consistent Hashing, explained
 
-A visualisation of consistent hashing using React and D3.
+A guided story rather than a sandbox. A hash space is drawn as a number line and
+bent into a ring; servers take positions on it by the same hash; a key routes to
+the first server clockwise from it; one server fails and a neighbour inherits all
+of its work; the same failure is shown again with ten positions per server, and
+then at production density with a server joining.
+
+It runs itself — each slide plays, a bar counts down, and it moves on. Touch
+anything and it hands over: arrow keys, wheel, swipe, and per-scene step controls.
+
+## How it is put together
+
+|                   |                                                                                                                                                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/story/`      | The domain. Hashing and ownership (`ringModel`, `ringDash`, `topology`), the projection a straight line and a ring share (`projection`), and how a scene is timed (`sceneSteps`, `useSceneTimeline`, `deckMachine`). No React components. |
+| `src/components/` | The scenes, and the deck that runs them. `RingParts` holds the marks the ring scenes share.                                                                                                                                               |
+| `src/stories/`    | Storybook, one file per scene, with every scene pinned at each of its beats.                                                                                                                                                              |
+
+Two rules the whole thing rests on:
+
+- **A scene is a pure function of one number.** Beats live in a motion value and
+  never in React state, so stepping backwards runs a scene backwards and no scene
+  stores a frame. `sceneRests.test.jsx` renders every scene either side of every
+  step and requires the frames to be identical.
+- **Discrete state is a chart, continuous state is not.** `deckMachine` owns which
+  slide is showing and whether the viewer has taken over; it never sees a beat.
 
 ## Development
 

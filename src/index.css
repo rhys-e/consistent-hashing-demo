@@ -179,6 +179,38 @@
     }
   }
 
+  @keyframes glitch-band-a {
+    0%,
+    100% {
+      transform: none;
+      text-shadow: none;
+    }
+    28% {
+      transform: translateX(7px);
+      text-shadow: -7px 0 var(--glitch-a);
+    }
+    58% {
+      transform: translateX(-4px);
+      text-shadow: 4px 0 var(--glitch-b);
+    }
+  }
+
+  @keyframes glitch-band-b {
+    0%,
+    100% {
+      transform: none;
+      text-shadow: none;
+    }
+    28% {
+      transform: translateX(-7px);
+      text-shadow: 7px 0 var(--glitch-b);
+    }
+    58% {
+      transform: translateX(4px);
+      text-shadow: -4px 0 var(--glitch-a);
+    }
+  }
+
   @keyframes glitch {
     0% {
       text-shadow:
@@ -201,6 +233,41 @@
 
 /* Custom component classes */
 @layer components {
+  /**
+   * A title that can tear along two horizontal lines.
+   *
+   * The bands are pseudo-elements taking their text from `data-text`, so the
+   * title exists once in the document. Drawing it as several real spans is the
+   * usual way to do this and puts four copies of every heading in the DOM, which
+   * a text query finds four of and a reader copies four times.
+   *
+   * The colours come in as custom properties from the component, so the effect
+   * does not have to know the palette.
+   */
+  .glitch-title::before,
+  .glitch-title::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .glitch-title::before {
+    clip-path: inset(0 0 52% 0);
+  }
+
+  .glitch-title::after {
+    clip-path: inset(52% 0 0 0);
+  }
+
+  .glitch-title[data-glitching='true']::before {
+    animation: glitch-band-a 340ms ease-out 1;
+  }
+
+  .glitch-title[data-glitching='true']::after {
+    animation: glitch-band-b 340ms ease-out 1;
+  }
+
   .panel-header {
     @apply flex cursor-pointer items-center justify-between;
     color: var(--colors-ui-text-heading);
