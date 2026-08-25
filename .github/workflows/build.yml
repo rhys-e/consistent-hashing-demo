@@ -25,7 +25,7 @@ jobs:
           mode: firewall-free
 
       - name: Install dependencies
-        run: npm ci
+        run: sfw npm ci
       - name: Run tests
         run: npm test
 
