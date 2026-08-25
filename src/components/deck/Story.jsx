@@ -26,7 +26,7 @@ export const STORY_SLIDES = [
     body: [
       'Consistent hashing is a way to share work across machines that come and go. The load stays even, and each machine can compute who holds an item. Nobody stores a map of which machine holds what.',
       'The usual alternative is a map: a stored table of which machine holds each key. Every request then reads that table, and you must rewrite it whenever a machine joins or fails.',
-      'Hashing needs no table. Each machine computes the owner from the key alone. The simple method uses the machine count, so adding one remaps almost every key. Consistent hashing does the same on a fixed range, so most keys stay put.',
+      'Hashing needs no table. A common shortcut assigns each key using the remainder after dividing its hash by the machine count. When that count changes, almost every key is reassigned. Consistent hashing instead places keys and machines on a fixed ring, so most keys stay put.',
     ],
   },
   {
@@ -56,7 +56,7 @@ export const STORY_SLIDES = [
     title: 'Servers come and go',
     body: [
       'So far no server has left or joined. In a real cache a server fails, or a new one is added to carry the load. Either way the group sharing the keys changes size.',
-      'The simple method would remap almost every key if that group changed size. The question is how many keys have to move when a server leaves or a new one joins.',
+      "Dividing each key's hash by the machine count would reassign almost every key when that count changes. The question is how many keys have to move when a server leaves or a new one joins.",
     ],
   },
   {
@@ -107,7 +107,7 @@ export const STORY_SLIDES = [
     title: 'Efficient load management',
     body: [
       'Each machine computes the owner from the key and the servers on the ring. Nobody stores a map of which machine holds each key, and nobody looks one up.',
-      "When a server fails or joins, only a small share of keys move. With many positions each, the load stays even. That is even spread without the simple method's remap.",
+      "When a server fails or joins, only a small share of keys move. With many positions each, the load stays even. That avoids the near-total remap caused by dividing each key's hash by the machine count.",
     ],
   },
   {
