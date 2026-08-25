@@ -26,7 +26,7 @@ export const STORY_SLIDES = [
     body: [
       'Consistent hashing is a way to share work across machines that come and go. The load stays even, and each machine can compute who holds an item. Nobody stores a map of which machine holds what.',
       'The usual alternative is a map: a stored table of which machine holds each key. Every request then reads that table, and you must rewrite it whenever a machine joins or fails.',
-      'Hashing needs no table. A common shortcut assigns each key using the remainder after dividing its hash by the machine count. When that count changes, almost every key is reassigned. Consistent hashing instead places keys and machines on a fixed ring, so most keys stay put.',
+      'Hashing needs no table. One approach assigns each key using the remainder when its hash is divided by the machine count. Changing that count reassigns almost every key. Consistent hashing instead uses a fixed ring, so most keys stay put.',
     ],
   },
   {
