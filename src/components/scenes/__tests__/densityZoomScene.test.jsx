@@ -4,6 +4,8 @@ import { render } from '@testing-library/react';
 import ZoomDensityScene from '../ZoomDensityScene';
 import { CLOSING_KEYS, STRIP, ZOOM_BEATS, ZOOM_MODEL } from '../../ring/DensityZoom';
 import { resolveOwner } from '../../../story/ringModel';
+import cyberTheme from '../../../themes/cyber';
+import holographicTheme from '../../../themes/holographic';
 
 const groupFor = (beat, name) => {
   const { container } = render(<ZoomDensityScene pinnedProgress={beat} />);
@@ -97,5 +99,68 @@ describe('the closing keys of the density scene', () => {
   it('waits for the sweep to stop', () => {
     expect(ZOOM_BEATS.land.from).toBeGreaterThanOrEqual(ZOOM_BEATS.pan.to);
     expect(ZOOM_BEATS.route.to).toBeLessThanOrEqual(ZOOM_BEATS.retract.from);
+  });
+});
+
+/**
+ * The walk ends in a handover: the key gives up the neutral colour it fell in and
+ * takes its owner's. A range whose colour is already near that neutral makes the
+ * arrival a frame that looks identical to the one before it, and the viewer sees a
+ * key travel and then nothing happen.
+ *
+ * This is a property of the *palette*, not of the ring, so it is checked against
+ * every theme rather than only the one the tests happen to load. It has been got
+ * wrong once: the widest range in the landing window belongs to `chromeSilver`,
+ * which against a white pin is the same frame twice.
+ */
+describe('the arrival colours', () => {
+  const channels = value => {
+    const hex = value.replace('#', '');
+    const full = hex.length === 3 ? [...hex].map(character => character + character).join('') : hex;
+    return [0, 2, 4].map(offset => parseInt(full.slice(offset, offset + 2), 16));
+  };
+
+  /** Plain RGB distance. Crude, but it is separating "another colour" from "the same colour". */
+  const apart = (left, right) =>
+    Math.hypot(...channels(left).map((channel, index) => channel - channels(right)[index]));
+
+  /**
+   * Comfortably below every colour a key does arrive at, and comfortably above
+   * silver-on-white. The nearest legitimate pair in either palette is about 114
+   * apart and the failing one is 29.
+   */
+  const DISTINCT = 80;
+
+  // Derived rather than restated: find each owner's colour in the palette the
+  // tests load, then read the same palette key out of the other theme. A hand
+  // written id-to-colour map here would be a second copy of `SAMPLE_SERVERS`.
+  const paletteKeyFor = colour =>
+    Object.entries(cyberTheme.colors.primary).find(([, value]) => value === colour)?.[0];
+
+  const THEMES = [
+    ['cyber', cyberTheme],
+    ['holographic', holographicTheme],
+  ];
+
+  it.each(THEMES)('separates every arrival from the neutral pin in %s', (name, theme) => {
+    const neutral = theme.colors.ui.text.bright;
+
+    CLOSING_KEYS.forEach(key => {
+      const owner = ZOOM_MODEL.servers.find(server => server.id === key.owner);
+      const paletteKey = paletteKeyFor(owner.color);
+      expect(paletteKey).toBeDefined();
+
+      const arrival = theme.colors.primary[paletteKey];
+      expect({
+        key: key.name,
+        colour: arrival,
+        apart: Math.round(apart(neutral, arrival)),
+      }).toEqual({
+        key: key.name,
+        colour: arrival,
+        apart: expect.any(Number),
+      });
+      expect(apart(neutral, arrival)).toBeGreaterThan(DISTINCT);
+    });
   });
 });

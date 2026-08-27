@@ -53,19 +53,27 @@ function buildClosingKey(model, { name, at }, windowStart) {
  * The window is chosen and the keys are put in it, rather than the other way
  * round. Two things choose it, and the second is not about the ring at all:
  *
- * - it holds four ranges wide enough to give a key a walk of thirty to forty
+ * - it holds four ranges wide enough to give a key a walk of twenty-five to forty
  *   pixels instead of a twitch, and three of them belong to different servers
  * - it sits beside the strip, at about four o'clock. The calipers reach from the
  *   ring to the strip, and a window on the far side of the ring makes that reach a
  *   long diagonal across the frame instead of the short one it is meant to be. The
  *   window is where the magnifier is pointing, so where it is on the ring is a
  *   composition decision like any other.
+ *
+ * A key is placed by which colour it will arrive at, not only by how far it has to
+ * walk. The whole point of the walk is the handover at the end of it — the key
+ * gives up the neutral colour it fell in and takes its owner's — so a range whose
+ * colour is already near that neutral has the key arrive and appear not to change.
+ * `cache-06` is the one that cannot be used: it is `chromeSilver`, and a white
+ * diamond turning silver is the same frame twice. The widest range in this window
+ * belongs to it, and it is passed over for the blue one two sections to its left.
  */
 const CLOSING_WINDOW = 0.78902;
 const PLACED_KEYS = [
   { name: 'user:2318', at: 0.09 },
   { name: 'user:5064', at: 0.38 },
-  { name: 'user:7241', at: 0.76 },
+  { name: 'user:7241', at: 0.615 },
 ];
 
 export const CLOSING_KEYS = PLACED_KEYS.map(entry =>
