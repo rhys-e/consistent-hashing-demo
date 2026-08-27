@@ -34,6 +34,24 @@ const REDUCED_SLIDE_TRANSITION = { duration: 0.25, ease: 'linear' };
  */
 const POINTER_IDLE_MS = 2600;
 const SWIPE_THRESHOLD = 40;
+/**
+ * A tick, undoing what `index.css` does to every `button` on the way.
+ *
+ * That base rule is v1's chrome and it is loud: `px-4 py-2`, a lift and a dip to
+ * 90% on hover, and a `::before` carrying a white gradient that sweeps across the
+ * element. On a bordered control it reads as a button. On a 1px hairline it is
+ * three animations nobody asked for, and it is most of what makes this hover feel
+ * like too much.
+ *
+ * The padding did something worse than decorate. A 40px border-box with 16px each
+ * side leaves 8px of content, so every width below clamped to 8px and the ticks
+ * have all been the same length whatever they asked for — including the current
+ * one, which is supposed to be the long one. Removing the padding is what makes
+ * the design work rather than a change to it.
+ */
+const TICK_BUTTON =
+  'group flex h-5 w-10 items-center justify-end p-0 ' +
+  'before:hidden hover:translate-y-0 hover:opacity-100 active:translate-y-0';
 /** Prefixes every history entry, so a back button offers legible choices. */
 const SITE_TITLE = 'Consistent Hashing';
 
@@ -83,21 +101,21 @@ function DeckProgress({ slides, index, onSelect, shown }) {
             onClick={() => onSelect(slideIndex)}
             aria-current={isCurrent ? 'true' : undefined}
             aria-label={slide.title ?? slide.key}
-            className="group flex h-5 w-10 items-center justify-end"
+            className={TICK_BUTTON}
           >
-            {/* One tick, three states: where you are, where the pointer is, and
-                everywhere else. The hovered one reaches most of the way to the
-                current one's length and comes up to full strength, which is a large
-                enough change to answer the pointer at a mark this small.
-                It stays the secondary colour, though. White is what says "you are
-                here", and `bright` and `heading` are the same white — a hovered tick
-                painted in it would be a longer, whiter line than the current slide's
-                and would read as having already moved there. */}
+            {/* Two states, not three: where you are, and everywhere else. Hover is
+                an acknowledgement, not a fourth thing to look at, so brightness
+                carries it and the length moves by four pixels.
+                It stays the secondary colour. White is what says "you are here",
+                and `bright` and `heading` are the same white, so a hovered tick
+                painted in it would read as having already moved there. The current
+                tick does not react at all: it is the one mark whose meaning does
+                not depend on where the pointer is. */}
             <span
-              className={`h-px transition-all duration-normal ${
+              className={`h-px transition-all duration-fast ${
                 isCurrent
-                  ? 'w-7 bg-ui-text-heading/80 group-hover:bg-ui-text-heading'
-                  : 'w-3 bg-ui-text-secondary/35 group-hover:w-6 group-hover:bg-ui-text-secondary'
+                  ? 'w-6 bg-ui-text-heading/80'
+                  : 'w-3 bg-ui-text-secondary/35 group-hover:w-4 group-hover:bg-ui-text-secondary/75'
               }`}
             />
           </button>
