@@ -24,9 +24,9 @@ export const STORY_SLIDES = [
     lead: true,
     title: 'Consistent hash ring',
     body: [
-      'Consistent hashing is a way to share work across machines that come and go. The load stays even, and each machine can compute who holds an item. Nobody stores a map of which machine holds what.',
-      'The usual alternative is a map: a stored table of which machine holds each key. Every request then reads that table, and you must rewrite it whenever a machine joins or fails.',
-      'Hashing needs no table. One approach assigns each key using the remainder when its hash is divided by the machine count. Changing that count reassigns almost every key. Consistent hashing instead uses a fixed ring, so most keys stay put.',
+      'An application cache spreads keys across several servers to balance the load. When one server fails, its keys need a new home. A poor assignment method can invalidate entries on every server, not only the failed one.',
+      "A common table-free method divides each key's hash by the number of servers and uses the remainder. This spreads keys evenly, but changing the server count changes almost every result. Most existing entries then become useless.",
+      'Consistent hashing solves this load-balancing problem with a fixed ring. Each server can still compute where a key belongs without a stored map. When servers join or fail, only a small share of keys moves.',
     ],
   },
   {
