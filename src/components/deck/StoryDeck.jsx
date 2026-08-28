@@ -12,43 +12,16 @@ import {
 import { hashFor, indexForHash, titleFor } from '../../story/slideUrl';
 import DeckCountdown, { COUNTDOWN_SECONDS, ScrollHint } from './DeckCountdown';
 import NarrationSlide from './NarrationSlide';
+import SmallScreenNotice, { useViewportFits } from './SmallScreenNotice';
 
-/**
- * Vertical slides. The story advances itself until the viewer takes over.
- * Animates between whole slides; `prefers-reduced-motion` shortens the travel.
- */
+/** Self-advancing vertical slides that yield control after viewer interaction. */
 
 const SLIDE_TRANSITION = { duration: 1.05, ease: [0.65, 0, 0.35, 1] };
 const REDUCED_SLIDE_TRANSITION = { duration: 0.25, ease: 'linear' };
-/**
- * How long the ticks stay up after the mouse stops moving.
- *
- * Hiding them until the viewer takes over kept the composition clean and made the
- * one control that says "you can go somewhere else" impossible to find without
- * already knowing it was there. Moving the mouse now brings them back for a few
- * seconds, which is the affordance every video player uses for the same reason.
- *
- * Long enough to notice them and reach them, short enough that a still cursor
- * leaves the story alone. It does *not* count as taking over: a mouse crossing the
- * screen is not a decision, and the deck goes on advancing.
- */
+/** Keep navigation visible briefly after mouse movement without taking control. */
 const POINTER_IDLE_MS = 2600;
 const SWIPE_THRESHOLD = 40;
-/**
- * A tick, undoing what `index.css` does to every `button` on the way.
- *
- * That base rule is v1's chrome and it is loud: `px-4 py-2`, a lift and a dip to
- * 90% on hover, and a `::before` carrying a white gradient that sweeps across the
- * element. On a bordered control it reads as a button. On a 1px hairline it is
- * three animations nobody asked for, and it is most of what makes this hover feel
- * like too much.
- *
- * The padding did something worse than decorate. A 40px border-box with 16px each
- * side leaves 8px of content, so every width below clamped to 8px and the ticks
- * have all been the same length whatever they asked for — including the current
- * one, which is supposed to be the long one. Removing the padding is what makes
- * the design work rather than a change to it.
- */
+/** Neutralise global button chrome so tick widths and hover styles remain local. */
 const TICK_BUTTON =
   'group flex h-5 w-10 items-center justify-end p-0 ' +
   'before:hidden hover:translate-y-0 hover:opacity-100 active:translate-y-0';
@@ -56,17 +29,8 @@ const TICK_BUTTON =
 const SITE_TITLE = 'Consistent Hashing';
 
 /**
- * Slide ticks. Hidden until the viewer takes over, but stay in the document so
- * focus can reveal them. Do not use `display: none` or `aria-hidden`.
- *
- * The pointer being *on* them counts as much as the pointer moving. Without it the
- * idle timer runs while the viewer is holding still to aim, and the ticks fade out
- * from under the cursor at the moment they are being used — the one moment they
- * are certainly wanted. Hover holds them up for as long as the pointer is there.
- *
- * They are also unclickable while faded out. A fully transparent nav that still
- * takes clicks is a strip down the side of the story where a click does something
- * invisible, and a stray one would jump the deck to a slide the viewer never saw.
+ * Keep hidden ticks focusable, reveal them on focus or hover, and disable pointer
+ * events while they are transparent.
  */
 function DeckProgress({ slides, index, onSelect, shown }) {
   const [focused, setFocused] = useState(false);
@@ -103,14 +67,7 @@ function DeckProgress({ slides, index, onSelect, shown }) {
             aria-label={slide.title ?? slide.key}
             className={TICK_BUTTON}
           >
-            {/* Two states, not three: where you are, and everywhere else. Hover is
-                an acknowledgement, not a fourth thing to look at, so brightness
-                carries it and the length moves by four pixels.
-                It stays the secondary colour. White is what says "you are here",
-                and `bright` and `heading` are the same white, so a hovered tick
-                painted in it would read as having already moved there. The current
-                tick does not react at all: it is the one mark whose meaning does
-                not depend on where the pointer is. */}
+            {/* White marks the current slide; hover only strengthens secondary ticks. */}
             <span
               className={`h-px transition-all duration-fast ${
                 isCurrent
@@ -125,10 +82,7 @@ function DeckProgress({ slides, index, onSelect, shown }) {
   );
 }
 
-/**
- * Slide travel in layout pixels (`clientHeight`). `getBoundingClientRect` is the
- * visual box and undershoots when an ancestor is scaled. Untested: jsdom has no layout.
- */
+/** Measure slide travel in layout pixels; visual bounds shrink under ancestor scaling. */
 function useSlideHeight(ref) {
   const [height, setHeight] = useState(0);
 
@@ -152,10 +106,7 @@ function useSlideHeight(ref) {
   return height;
 }
 
-/**
- * Address bar, opt-in. Viewer moves push; automatic ones replace, so a playing
- * story does not fill history.
- */
+/** Viewer navigation pushes history; automatic navigation replaces the current entry. */
 function useSlideAddress({ slides, index, viaViewer, enabled, onNavigate }) {
   useEffect(() => {
     if (!enabled) return undefined;
@@ -177,8 +128,6 @@ function useSlideAddress({ slides, index, viaViewer, enabled, onNavigate }) {
     document.title = titleFor(slide, SITE_TITLE);
 
     if (window.location.hash === hash) return;
-    // `pushState` rather than assigning `location.hash`, which would fire a
-    // `popstate` and send the deck an instruction it had just carried out.
     const write = viaViewer ? 'pushState' : 'replaceState';
     window.history[write](null, '', `${window.location.pathname}${window.location.search}${hash}`);
   }, [enabled, index, slides, viaViewer]);
@@ -210,13 +159,7 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
   const goTo = useCallback(next => send({ type: 'GOTO', index: next }), [send]);
   const engage = useCallback(() => send({ type: 'ENGAGE' }), [send]);
 
-  /**
-   * Whether a mouse has moved lately.
-   *
-   * Mouse only. A touch drag already moves the deck, which makes the viewer a
-   * steerer and shows the ticks for good, and firing this on every touch point
-   * would flash them on and off through a swipe.
-   */
+  /** Touch gestures already engage the deck, so only mouse movement wakes the ticks. */
   const [pointerAwake, setPointerAwake] = useState(false);
 
   useEffect(() => {
@@ -267,7 +210,7 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
         event.preventDefault();
         goTo(slides.length - 1);
       } else if (['ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(event.key)) {
-        // A scene's own keys: using them is taking control of the scene.
+        // Scene-specific keys still count as taking control.
         engage();
       }
     };
@@ -276,15 +219,7 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
     return () => window.removeEventListener('keydown', handle);
   }, [engage, goTo, index, slides.length]);
 
-  /**
-   * Any wheel gesture moves exactly one slide.
-   *
-   * Thresholding the travel meant a gentle scroll did nothing at all while a firm
-   * one sometimes counted twice — unresponsive and unpredictable in the same
-   * breath. Acting on the first event of a gesture and then refusing everything
-   * until the slide has settled makes one flick mean one slide at any strength,
-   * and the cooldown after settling is what swallows a trackpad's momentum tail.
-   */
+  /** Accept one wheel event per settled slide; the machine absorbs momentum events. */
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return undefined;
@@ -324,24 +259,19 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
     };
   }, [send, state]);
 
+  /** Small-screen dismissal lasts only for the current page session. */
+  const fits = useViewportFits();
+  const [ignoredSize, setIgnoredSize] = useState(false);
+
   const showCountdown = isCountingDown(state);
 
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-body-bg">
-      {/* Nothing until the deck has been measured.
-          The stack is positioned by `y = -index * height`, so mounting before the
-          height is known puts it at zero and then *animates* to where it should
-          have been. On the opening slide that is invisible, because zero is the
-          answer. On a link into the middle of the story it is a second of the deck
-          scrolling past a viewer who asked to be somewhere in particular. */}
+      {/* Wait for height so deep links mount at their final offset. */}
       {slideHeight ? (
         <motion.div
           onPointerDown={engage}
           className="h-full w-full will-change-transform"
-          // Start where the first slide actually is, rather than animating to it.
-          // Without this the stack mounts at zero and travels to its position, so
-          // a link into the middle of the story plays the deck scrolling past on
-          // the way to the slide somebody asked for.
           initial={false}
           animate={{ y: -index * slideHeight }}
           transition={reduceMotion ? REDUCED_SLIDE_TRANSITION : SLIDE_TRANSITION}
@@ -353,28 +283,21 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
             const onComplete = isCurrent ? () => send({ type: 'SCENE_COMPLETE' }) : undefined;
 
             return (
-              // `my-0` is load-bearing: a base style in `index.css` gives every
-              // `section` a 1.5rem vertical margin, which added 3rem to each slide
-              // and pushed the whole deck progressively further down. `overflow-hidden`
-              // keeps a slide's content inside its own slide, so a scene that
-              // overruns cannot appear under the top of the next one.
+              // Override global section margins and contain each slide's content.
               <section
                 key={slide.key}
                 className="my-0 h-full w-full overflow-hidden"
                 aria-hidden={!isCurrent}
               >
                 {slide.kind === 'scene' ? (
-                  // A scene plays once its slide has arrived and settled, and resets
-                  // when it leaves, so coming back to one finds it at its beginning
-                  // rather than part-way through the transition that brought it in.
+                  // Scenes play only when settled and reset while off-screen.
                   slide.render({ active, current: isCurrent, engaged: isEngaged, onComplete })
                 ) : (
                   <NarrationSlide
                     title={slide.title}
                     lead={slide.lead}
                     current={isCurrent}
-                    // The last moment of the slide, not the whole countdown: two
-                    // things changing at once splits the viewer between them.
+                    // Signal only the final countdown state.
                     imminent={isCurrent && isClosing(state)}
                     body={slide.body}
                     active={active}
@@ -402,6 +325,9 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
         onSelect={goTo}
         shown={isSteering(state) || pointerAwake}
       />
+
+      {/* Render last so the notice overlays the deck. */}
+      {!fits && !ignoredSize ? <SmallScreenNotice onDismiss={() => setIgnoredSize(true)} /> : null}
     </div>
   );
 }
