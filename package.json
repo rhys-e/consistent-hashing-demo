@@ -23,7 +23,7 @@
   "author": "rhys-e",
   "dependencies": {
     "@xstate/react": "6.1.0",
-    "motion": "12.42.2",
+    "motion": "12.43.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "xstate": "5.32.5"
@@ -53,8 +53,8 @@
     "husky": "9.1.7",
     "jest": "30.4.2",
     "jest-environment-jsdom": "30.4.1",
-    "lint-staged": "17.2.0",
-    "postcss": "8.5.23",
+    "lint-staged": "17.3.0",
+    "postcss": "8.5.25",
     "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "0.8.1",
     "storybook": "8.6.18",
@@ -71,7 +71,7 @@
     ]
   },
   "overrides": {
-    "brace-expansion": "5.0.8",
-    "minimatch": "10.2.5"
+    "brace-expansion": "5.0.9",
+    "minimatch": "10.2.6"
   }
 }
