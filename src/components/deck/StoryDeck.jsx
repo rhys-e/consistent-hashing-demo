@@ -165,28 +165,17 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
   const containerRef = useRef(null);
   const slideHeight = useSlideHeight(containerRef);
   /**
-   * Until the deck has a height, `-index * slideHeight` is zero for every slide, so
-   * the offset is not yet a position — it is the absence of one. Moving into the
-   * first real one has to be instant, or a deep link travels from the opening slide
-   * all the way to the one the viewer actually asked for.
-   *
-   * Knowing the height is not enough on its own to tell those apart: the height
-   * arrives in the same commit as the first real offset, so a test of "do we have a
-   * height" is still true on the render that must not animate. What distinguishes
-   * them is whether the deck has ever been *put* somewhere, which is what `placed`
-   * records — after the first placement, every later change of `index` is a viewer
-   * moving between slides and travels normally.
-   *
-   * State rather than a ref, and not only because reading a ref during render is
-   * against the rules: the extra render this costs is the point. It happens once,
-   * after the deck is already sitting at the right offset, and changes nothing but
-   * the transition that the *next* move will use.
+   * Height and the first offset arrive in the same commit, so "have we a height"
+   * is still true on the render that must not animate. `placed` records that a
+   * commit has happened; it has to be an effect, or that first pass already uses
+   * the travelling transition and a deep link scrolls from the opening slide.
    */
   const [placed, setPlaced] = useState(false);
   const slideTransition = reduceMotion ? REDUCED_SLIDE_TRANSITION : SLIDE_TRANSITION;
   const positioning = placed ? slideTransition : INSTANT;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- must land after the commit, see above
     if (slideHeight > 0) setPlaced(true);
   }, [slideHeight]);
 

@@ -52,7 +52,6 @@ export default [
       'react/jsx-uses-vars': 'error',
       ...reactHooks.configs['recommended-latest'].rules,
       'react-hooks/exhaustive-deps': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
 
       // Function style rules
       'func-style': [

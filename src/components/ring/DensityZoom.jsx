@@ -406,8 +406,10 @@ function ClosingKey({ progress, model, timeline, sampleKey, land, route }) {
   // the question.
   const labelOpacity = useTransform(progress, latest => landedAt(latest));
 
-  // Colour is not something a motion value can drive out of render, and it changes
-  // once, on arrival — the same handover Scene 2 makes.
+  /**
+   * Colour is a React attribute, so subscribe rather than transform. Snapshot as a
+   * string: a fresh object from `getSnapshot` would re-render forever.
+   */
   const answeredAt = React.useCallback(
     latest =>
       easeInOutCubic(rangeProgress(latest, route.from, route.to)) >= 1
@@ -415,11 +417,9 @@ function ClosingKey({ progress, model, timeline, sampleKey, land, route }) {
         : theme.colors.ui.text.bright,
     [route, server]
   );
-  const [color, setColor] = React.useState(() => answeredAt(progress.get()));
-  React.useEffect(() => {
-    setColor(answeredAt(progress.get()));
-    return progress.on('change', latest => setColor(answeredAt(latest)));
-  }, [answeredAt, progress]);
+  const subscribe = React.useCallback(notify => progress.on('change', notify), [progress]);
+  const readColor = React.useCallback(() => answeredAt(progress.get()), [answeredAt, progress]);
+  const color = React.useSyncExternalStore(subscribe, readColor, readColor);
 
   const landing = useTransform(progress, latest => stripX(timeline, latest, sampleKey.arrival));
   const flare = useTransform(progress, latest =>
@@ -537,13 +537,16 @@ function StripReadout({ progress, model, timeline }) {
     [model, timeline]
   );
 
-  // Counted per frame while the window sweeps, which is the point: the numbers
-  // barely move. Not a motion value, because they are text.
-  const [counts, setCounts] = React.useState(() => countsAt(progress.get()));
-  React.useEffect(() => {
-    setCounts(countsAt(progress.get()));
-    return progress.on('change', latest => setCounts(countsAt(latest)));
+  /**
+   * Text React owns, counted as the window sweeps. Snapshot the finished sentence:
+   * a new `{ranges, servers}` object each call would never compare equal.
+   */
+  const subscribe = React.useCallback(notify => progress.on('change', notify), [progress]);
+  const readCounts = React.useCallback(() => {
+    const { ranges, servers } = countsAt(progress.get());
+    return `${ranges} ranges, ${servers} different servers`;
   }, [countsAt, progress]);
+  const counts = React.useSyncExternalStore(subscribe, readCounts, readCounts);
 
   /**
    * The count belongs to one window, so it is only shown while the window is
@@ -588,7 +591,7 @@ function StripReadout({ progress, model, timeline }) {
         letterSpacing="1.2"
         style={{ opacity: settled }}
       >
-        {`${counts.ranges} ranges, ${counts.servers} different servers`}
+        {counts}
       </motion.text>
     </g>
   );

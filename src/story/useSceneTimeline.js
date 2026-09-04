@@ -128,6 +128,8 @@ export function useSceneTimeline({
     if (isPinned) {
       stop();
       progress.set(pinnedProgress);
+      // Tell the machine after the imperative stop/seek; there is no render-time form.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- commanding an external animation
       send({ type: SCENE_EVENT.seek, atEnd: pinnedProgress >= beatCount });
       return undefined;
     }

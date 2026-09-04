@@ -49,13 +49,19 @@ export function useScramble({
   const [revealed, setRevealed] = useState(active ? 0 : idleRevealed);
   const [tick, setTick] = useState(0);
 
-  useEffect(() => {
-    if (!active) {
-      setRevealed(idleRevealed);
-      return undefined;
-    }
+  /**
+   * Reset derived progress during render when the text changes. An effect would
+   * paint one frame of the old title's progress against the new title.
+   */
+  const [showing, setShowing] = useState({ text, active });
+  if (showing.text !== text || showing.active !== active) {
+    setShowing({ text, active });
+    setRevealed(active ? 0 : idleRevealed);
+  }
 
-    setRevealed(0);
+  useEffect(() => {
+    if (!active) return undefined;
+
     let count = 0;
     const timer = setInterval(() => {
       count += 1;
