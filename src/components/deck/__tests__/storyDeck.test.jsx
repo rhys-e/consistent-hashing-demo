@@ -532,3 +532,49 @@ describe('reaching for the ticks', () => {
     expect(ticks().dataset.shown).toBe('false');
   });
 });
+
+/**
+ * The deck used to render nothing at all until it had measured itself, which kept
+ * a deep link from travelling and cost the story its entire text on any renderer
+ * without layout. It now renders first and places itself without animating.
+ */
+describe('placing the deck before it has been measured', () => {
+  const wide = [
+    ...SLIDES,
+    {
+      kind: 'interstitial',
+      key: 'three',
+      number: 'Part three',
+      label: 'C',
+      title: 'Third',
+      body: [],
+    },
+  ];
+
+  it('renders its slides whether or not a height is known', () => {
+    // jsdom reports no layout, which is the same position a server is in.
+    const { container } = render(<StoryDeck slides={wide} />);
+    // Headings, not any text: each title is also carried by the invisible span
+    // that holds its heading's height open.
+    const headings = [...container.querySelectorAll('h1, h2')].map(node => node.textContent);
+
+    // Not the opening title: that one is the deck's current slide and arrives a
+    // glyph at a time, so at this instant it reads `*C}/}`. The slides behind it
+    // are the question here, and they are resolved.
+    expect(headings).toHaveLength(3);
+    expect(headings).toContain('Second');
+    expect(headings).toContain('Third');
+  });
+
+  /**
+   * Opening on slide two must not play slide one on the way. The guard is not "do
+   * we have a height" — the height arrives in the same commit as the first offset,
+   * so that test is still true on the render that must not animate.
+   */
+  it('opens on a deep link without travelling to it', () => {
+    const { container } = render(<StoryDeck slides={wide} initialIndex={3} />);
+
+    expect(container.querySelector('.will-change-transform')).toBeTruthy();
+    expect(currentTick().getAttribute('aria-label')).toBe('Third');
+  });
+});

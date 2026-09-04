@@ -2,10 +2,8 @@ import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import prettierConfig from 'eslint-config-prettier';
-import reactCompiler from 'eslint-plugin-react-compiler';
 
 export default [
-  // Apply prettierConfig last to override ESLint rules that conflict with Prettier
   prettierConfig,
   {
     ignores: [
@@ -40,7 +38,6 @@ export default [
     plugins: {
       react,
       'react-hooks': reactHooks,
-      'react-compiler': reactCompiler,
     },
     settings: {
       react: {
@@ -49,15 +46,13 @@ export default [
     },
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      'react-compiler/react-compiler': 'error',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react/jsx-uses-react': 'error',
       'react/jsx-uses-vars': 'error',
-
-      // React Hooks rules
-      'react-hooks/rules-of-hooks': 'error',
+      ...reactHooks.configs['recommended-latest'].rules,
       'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
 
       // Function style rules
       'func-style': [

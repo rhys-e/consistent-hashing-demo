@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useMachine } from '@xstate/react';
 import {
@@ -18,6 +18,8 @@ import SmallScreenNotice, { useViewportFits } from './SmallScreenNotice';
 
 const SLIDE_TRANSITION = { duration: 1.05, ease: [0.65, 0, 0.35, 1] };
 const REDUCED_SLIDE_TRANSITION = { duration: 0.25, ease: 'linear' };
+/** Arriving somewhere without having travelled: the first positioning, and only it. */
+const INSTANT = { duration: 0 };
 /** Keep navigation visible briefly after mouse movement without taking control. */
 const POINTER_IDLE_MS = 2600;
 const SWIPE_THRESHOLD = 40;
@@ -83,10 +85,19 @@ function DeckProgress({ slides, index, onSelect, shown }) {
 }
 
 /** Measure slide travel in layout pixels; visual bounds shrink under ancestor scaling. */
+/**
+ * `useLayoutEffect` on a client, `useEffect` on a server.
+ *
+ * The measurement has to land before the browser paints, and on a server there is
+ * nothing to measure and `useLayoutEffect` only warns. This is the standard shape
+ * for a hook that has to run in both places.
+ */
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
 function useSlideHeight(ref) {
   const [height, setHeight] = useState(0);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const element = ref.current;
     if (!element) return undefined;
 
@@ -153,6 +164,31 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
   const reduceMotion = useReducedMotion();
   const containerRef = useRef(null);
   const slideHeight = useSlideHeight(containerRef);
+  /**
+   * Until the deck has a height, `-index * slideHeight` is zero for every slide, so
+   * the offset is not yet a position — it is the absence of one. Moving into the
+   * first real one has to be instant, or a deep link travels from the opening slide
+   * all the way to the one the viewer actually asked for.
+   *
+   * Knowing the height is not enough on its own to tell those apart: the height
+   * arrives in the same commit as the first real offset, so a test of "do we have a
+   * height" is still true on the render that must not animate. What distinguishes
+   * them is whether the deck has ever been *put* somewhere, which is what `placed`
+   * records — after the first placement, every later change of `index` is a viewer
+   * moving between slides and travels normally.
+   *
+   * State rather than a ref, and not only because reading a ref during render is
+   * against the rules: the extra render this costs is the point. It happens once,
+   * after the deck is already sitting at the right offset, and changes nothing but
+   * the transition that the *next* move will use.
+   */
+  const [placed, setPlaced] = useState(false);
+  const slideTransition = reduceMotion ? REDUCED_SLIDE_TRANSITION : SLIDE_TRANSITION;
+  const positioning = placed ? slideTransition : INSTANT;
+
+  useEffect(() => {
+    if (slideHeight > 0) setPlaced(true);
+  }, [slideHeight]);
 
   const isLast = index === slides.length - 1;
 
@@ -267,48 +303,57 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
 
   return (
     <div ref={containerRef} className="fixed inset-0 overflow-hidden bg-body-bg">
-      {/* Wait for height so deep links mount at their final offset. */}
-      {slideHeight ? (
-        <motion.div
-          onPointerDown={engage}
-          className="h-full w-full will-change-transform"
-          initial={false}
-          animate={{ y: -index * slideHeight }}
-          transition={reduceMotion ? REDUCED_SLIDE_TRANSITION : SLIDE_TRANSITION}
-          onAnimationComplete={() => send({ type: 'ARRIVE' })}
-        >
-          {slides.map((slide, slideIndex) => {
-            const isCurrent = slideIndex === index;
-            const active = isSettled && isCurrent;
-            const onComplete = isCurrent ? () => send({ type: 'SCENE_COMPLETE' }) : undefined;
+      {/*
+        The stack renders whether or not it has been measured yet.
+        It used to wait: unmeasured, `y = -index * 0` is zero, so a deep link
+        mounted showing the first slide and then travelled to the one it was asked
+        for. Waiting fixed that, and cost the story its entire text on any renderer
+        without layout — a server, or a crawler that does not run scripts. It
+        emitted four kilobytes of shell and no words at all.
+        The measurement now happens in a layout effect, before the browser paints,
+        and `measured` keeps the first positioning from being animated. A deep link
+        still arrives at its own slide with nothing travelling past, and there is
+        something to render for anything that cannot measure.
+      */}
+      <motion.div
+        onPointerDown={engage}
+        className="h-full w-full will-change-transform"
+        initial={false}
+        animate={{ y: -index * slideHeight }}
+        transition={positioning}
+        onAnimationComplete={() => send({ type: 'ARRIVE' })}
+      >
+        {slides.map((slide, slideIndex) => {
+          const isCurrent = slideIndex === index;
+          const active = isSettled && isCurrent;
+          const onComplete = isCurrent ? () => send({ type: 'SCENE_COMPLETE' }) : undefined;
 
-            return (
-              // Override global section margins and contain each slide's content.
-              <section
-                key={slide.key}
-                className="my-0 h-full w-full overflow-hidden"
-                aria-hidden={!isCurrent}
-              >
-                {slide.kind === 'scene' ? (
-                  // Scenes play only when settled and reset while off-screen.
-                  slide.render({ active, current: isCurrent, engaged: isEngaged, onComplete })
-                ) : (
-                  <NarrationSlide
-                    title={slide.title}
-                    lead={slide.lead}
-                    current={isCurrent}
-                    // Signal only the final countdown state.
-                    imminent={isCurrent && isClosing(state)}
-                    body={slide.body}
-                    active={active}
-                    onComplete={onComplete}
-                  />
-                )}
-              </section>
-            );
-          })}
-        </motion.div>
-      ) : null}
+          return (
+            // Override global section margins and contain each slide's content.
+            <section
+              key={slide.key}
+              className="my-0 h-full w-full overflow-hidden"
+              aria-hidden={!isCurrent}
+            >
+              {slide.kind === 'scene' ? (
+                // Scenes play only when settled and reset while off-screen.
+                slide.render({ active, current: isCurrent, engaged: isEngaged, onComplete })
+              ) : (
+                <NarrationSlide
+                  title={slide.title}
+                  lead={slide.lead}
+                  current={isCurrent}
+                  // Signal only the final countdown state.
+                  imminent={isCurrent && isClosing(state)}
+                  body={slide.body}
+                  active={active}
+                  onComplete={onComplete}
+                />
+              )}
+            </section>
+          );
+        })}
+      </motion.div>
 
       {showCountdown ? (
         <DeckCountdown
