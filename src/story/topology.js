@@ -211,10 +211,9 @@ export function buildLookupModel({ servers = REMOVAL_SERVERS, keyNames = REMOVAL
  * the fix as having caused the problem. Both are small-sample noise rather than
  * anything about consistent hashing, and neither can be explained in a scene.
  *
- * Ten is where the expectation shows through, and it is representative rather than
- * lucky: every count from eight upwards splits the failure roughly in half. What
- * one and ten have in common is the honest part — they start from the same
- * balance, so the only thing that differs afterwards is the failure.
+ * Six still shows the split by eye. One and six start from the same balance, so
+ * the only thing that differs afterwards is the failure. Keep in step with
+ * `POSITIONS_EACH` in `placedRing`.
  */
 export const SPREAD_LEVELS = [1, 6];
 

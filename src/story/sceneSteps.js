@@ -155,3 +155,30 @@ export function createTimeline({ readingRest = 0 } = {}) {
     annotations: () => annotations,
   };
 }
+
+/** One member of a staggered group: same duration each, start times spread to fill the window. */
+export function staggered({ from, to, count, each }, index) {
+  const step = count > 1 ? (to - from - each) / (count - 1) : 0;
+  const start = from + index * step;
+
+  return { from: start, to: start + each };
+}
+
+export const group = (window, count, each) => ({ ...window, count, each });
+
+/** Cascade members inside a fixed window; `overlap` is how much of each span the next one shares. */
+export function overlapped(window, index, count, overlap) {
+  const total = window.to - window.from;
+  const span = total / (1 + (count - 1) * (1 - overlap));
+  const step = span * (1 - overlap);
+
+  return { from: window.from + index * step, to: window.from + index * step + span };
+}
+
+/** Steps from a timeline's labelled rests. */
+export function stepsFromRests(timeline) {
+  return buildSteps(
+    timeline.rests.filter(rest => rest.label).map(rest => stepAtRest(rest, rest.label)),
+    timeline.end
+  );
+}

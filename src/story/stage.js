@@ -6,6 +6,18 @@
  * that, Storybook shows the number line at one size and the wrap scene at
  * another, which breaks the illusion that Scene 1 is the same rail bending.
  */
+/** Ring placement on the stage. Models use this too: pixel gaps need the radius. */
+export const RING = {
+  centreX: 392,
+  centreY: 310,
+  radius: 232,
+  panel: { x: 760, y: 185, width: 300 },
+  annotation: { x: 760, y: 420, width: 300 },
+};
+
+/** The circumference, which is what a gap measured in pixels is a fraction of. */
+export const RING_CIRCUMFERENCE = 2 * Math.PI * RING.radius;
+
 export const STAGE = {
   width: 1100,
   height: 620,

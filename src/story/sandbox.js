@@ -62,15 +62,21 @@ const clampServers = count =>
 export function sandboxReducer(state, action) {
   const from = { serverCount: state.serverCount, vnodesPerServer: state.vnodesPerServer };
 
+  // Keep the previous `from` when the action changes nothing, or the ring crossfades into itself.
+  const settle = next =>
+    next.serverCount === from.serverCount && next.vnodesPerServer === from.vnodesPerServer
+      ? { ...next, from: state.from }
+      : { ...next, from };
+
   switch (action.type) {
     case 'ADD_SERVER':
-      return { ...from, serverCount: clampServers(from.serverCount + 1), from };
+      return settle({ ...from, serverCount: clampServers(from.serverCount + 1) });
     case 'DROP_SERVER':
-      return { ...from, serverCount: clampServers(from.serverCount - 1), from };
+      return settle({ ...from, serverCount: clampServers(from.serverCount - 1) });
     case 'SET_POSITIONS':
-      return { ...from, vnodesPerServer: action.value, from };
+      return settle({ ...from, vnodesPerServer: action.value });
     case 'RESET':
-      return { ...INITIAL_SANDBOX, from };
+      return settle({ ...INITIAL_SANDBOX });
     default:
       return state;
   }
@@ -100,9 +106,7 @@ export function moduloCost(fromServers, toServers) {
   return 1 - Math.min(fromServers, toServers) / (fromServers * toServers);
 }
 
-function snapshotOf(inputs) {
-  const topology = topologyFor(inputs);
-
+function snapshotOf(inputs, topology = topologyFor(inputs)) {
   return {
     topology,
     shares: ownershipShares(topology),
@@ -114,6 +118,7 @@ export function buildSandbox(state) {
   const servers = SANDBOX_SERVERS.slice(0, state.serverCount);
   const topology = topologyFor(state);
   const shares = ownershipShares(topology);
+  const before = state.from ? topologyFor(state.from) : null;
 
   return {
     servers,
@@ -136,7 +141,7 @@ export function buildSandbox(state) {
     change:
       state.from && state.from.serverCount !== state.serverCount
         ? {
-            ...remapDelta(topologyFor(state.from), topology),
+            ...remapDelta(before, topology),
             from: state.from,
             modulo: moduloCost(state.from.serverCount, state.serverCount),
             gained: state.serverCount > state.from.serverCount,
@@ -148,6 +153,6 @@ export function buildSandbox(state) {
      * tweened — changing the position count changes every boundary — so the only
      * honest transition between them is a crossfade, and that needs both.
      */
-    previous: state.from ? snapshotOf(state.from) : null,
+    previous: before ? snapshotOf(state.from, before) : null,
   };
 }

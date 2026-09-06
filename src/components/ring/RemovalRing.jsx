@@ -14,9 +14,10 @@ import { LAYOUT, KeyMark, OwnershipArc, ServerMarker } from './RingParts';
 import {
   annotationAt,
   annotationPresenceAt,
-  buildSteps,
   createTimeline,
-  stepAtRest,
+  group,
+  staggered,
+  stepsFromRests,
 } from '../../story/sceneSteps';
 import { buildRemovalModel } from '../../story/topology';
 import ServerLoadPanel from './ServerLoadPanel';
@@ -52,21 +53,6 @@ const WHOLE_REST = 1.6;
 const REST = 0.4;
 /** A rest that follows new narration, long enough to actually read it in. */
 const READING_REST = 5;
-
-/**
- * The window for one item of a staggered group.
- *
- * Every member takes the same time; what is staggered is when each begins, so the
- * group as a whole fills the window it was given however many members it has.
- */
-function staggered({ from, to, count, each }, index) {
-  const step = count > 1 ? (to - from - each) / (count - 1) : 0;
-  const start = from + index * step;
-
-  return { from: start, to: start + each };
-}
-
-const group = (window, count, each) => ({ ...window, count, each });
 
 export function buildRemovalTimeline(model) {
   const timeline = createTimeline({ readingRest: READING_REST });
@@ -125,12 +111,8 @@ export function buildRemovalTimeline(model) {
 export const REMOVAL_MODEL = buildRemovalModel();
 export const REMOVAL_BEATS = buildRemovalTimeline(REMOVAL_MODEL);
 
-/** Steps from the timeline's own rests. */
 export function buildRemovalSteps(timeline) {
-  return buildSteps(
-    timeline.rests.filter(rest => rest.label).map(rest => stepAtRest(rest, rest.label)),
-    timeline.end
-  );
+  return stepsFromRests(timeline);
 }
 
 export const REMOVAL_STEPS = buildRemovalSteps(REMOVAL_BEATS);

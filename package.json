@@ -11,6 +11,7 @@
     "build:cyber": "VITE_THEME=cyber vite build",
     "build:holographic": "VITE_THEME=holographic vite build",
     "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",

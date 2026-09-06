@@ -14,9 +14,10 @@ import { CIRCLE_START } from '../../story/ringDash';
 import {
   annotationAt,
   annotationPresenceAt,
-  buildSteps,
   createTimeline,
-  stepAtRest,
+  group,
+  staggered,
+  stepsFromRests,
 } from '../../story/sceneSteps';
 import { toHashLabel } from '../../story/hashSpace';
 import { buildLookupModel } from '../../story/topology';
@@ -52,15 +53,6 @@ const READING_REST = 5;
 
 /** One key per server, taught before the rule is generalised. `user:1842` first: already seen. */
 const TAUGHT = ['user:1842', 'user:6177', 'user:4570'];
-
-function staggered({ from, to, count, each }, index) {
-  const step = count > 1 ? (to - from - each) / (count - 1) : 0;
-  const start = from + index * step;
-
-  return { from: start, to: start + each };
-}
-
-const group = (window, count, each) => ({ ...window, count, each });
 
 export function buildLookupTimeline(model) {
   const timeline = createTimeline({ readingRest: READING_REST });
@@ -151,10 +143,7 @@ export const LOOKUP_MODEL = buildLookupModel();
 export const LOOKUP_BEATS = buildLookupTimeline(LOOKUP_MODEL);
 
 export function buildLookupSteps(timeline) {
-  return buildSteps(
-    timeline.rests.filter(entry => entry.label).map(entry => stepAtRest(entry, entry.label)),
-    timeline.end
-  );
+  return stepsFromRests(timeline);
 }
 
 export const LOOKUP_STEPS = buildLookupSteps(LOOKUP_BEATS);

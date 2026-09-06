@@ -23,11 +23,6 @@ export const CLOSING_MS = 1500;
 const clamp = (value, count) => Math.min(count - 1, Math.max(0, value));
 
 export const deckMachine = setup({
-  types: {
-    context: {},
-    events: {},
-    input: {},
-  },
   guards: {
     /**
      * The deck only advances by itself while nobody has taken it over, and never

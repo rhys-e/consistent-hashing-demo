@@ -1,5 +1,6 @@
 import { hashPosition } from './ringModel';
 import { DEPARTING_SERVER_ID, REMOVAL_SERVERS } from './topology';
+import { RING_CIRCUMFERENCE } from './stage';
 
 /**
  * Scene 4 positions, placed not hashed. A hash of this many points collides; the
@@ -119,7 +120,7 @@ function placeRing({
   jitter = SCATTER.loose,
   minGapPx = DEFAULT_MIN_GAP,
 } = {}) {
-  const minGap = minGapPx / (2 * Math.PI * 232);
+  const minGap = minGapPx / RING_CIRCUMFERENCE;
   const fixed = servers.map(server => ({
     serverId: server.id,
     index: 0,

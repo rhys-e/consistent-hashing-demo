@@ -127,3 +127,32 @@ describe('the sandbox model', () => {
     expect(change.modulo).toBeGreaterThan(change.fraction * 5);
   });
 });
+
+/**
+ * A change is only a change if something moved. `from` drives both the cost
+ * readout and a crossfade from the old ring to the new one, so recording it for an
+ * action that changed nothing dissolved a ring into an identical copy of itself.
+ */
+describe('an action that changes nothing', () => {
+  it('leaves no change behind to report or animate', () => {
+    const opening = initialSandbox();
+
+    expect(sandboxReducer(opening, { type: 'RESET' }).from).toBeNull();
+    expect(
+      sandboxReducer(opening, { type: 'SET_POSITIONS', value: opening.vnodesPerServer }).from
+    ).toBeNull();
+  });
+
+  it('does not record one when a limit refuses the move', () => {
+    const atFloor = { serverCount: SANDBOX_LIMITS.minServers, vnodesPerServer: 150, from: null };
+
+    expect(sandboxReducer(atFloor, { type: 'DROP_SERVER' }).from).toBeNull();
+  });
+
+  it('still records one when something does move', () => {
+    const moved = sandboxReducer(initialSandbox(), { type: 'ADD_SERVER' });
+
+    expect(moved.from).not.toBeNull();
+    expect(moved.serverCount).toBe(initialSandbox().serverCount + 1);
+  });
+});

@@ -11,9 +11,19 @@ import * as bridgeStories from '../Bridge01Density.stories.jsx';
 import * as arcStories from '../Treatment01Arcs.stories.jsx';
 import * as distributionStories from '../Treatment02Distribution.stories.jsx';
 import * as highlightStories from '../Treatment03Highlight.stories.jsx';
+import * as scene02Stories from '../Scene02KeyRoutes.stories.jsx';
+import * as scene03Stories from '../Scene03ServerLeaves.stories.jsx';
+import * as scene04Stories from '../Scene04VirtualNodes.stories.jsx';
+import * as scene05Stories from '../Scene05ZoomDensity.stories.jsx';
+import * as scene08Stories from '../Scene08Sandbox.stories.jsx';
 
 const STORY_FILES = [
   ['Scene 00 Hash Space', hashSpaceStories],
+  ['Scene 02 Key Routes', scene02Stories],
+  ['Scene 03 Server Leaves', scene03Stories],
+  ['Scene 04 Virtual Nodes', scene04Stories],
+  ['Scene 05 Zoom Density', scene05Stories],
+  ['Scene 08 Sandbox', scene08Stories],
   ['Scene 06 Lanes Separate', scene06Stories],
   ['Scene 07 Server Joins', scene07Stories],
   ['Bridge 01 Density Ramp', bridgeStories],

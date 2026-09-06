@@ -29,10 +29,6 @@ export default [
         ...globals.browser,
         ...globals.node,
         ...globals.es2021,
-        defineProps: 'readonly',
-        defineEmits: 'readonly',
-        defineExpose: 'readonly',
-        withDefaults: 'readonly',
       },
     },
     plugins: {

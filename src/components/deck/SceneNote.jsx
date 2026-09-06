@@ -32,7 +32,6 @@ export function SceneNote({ progress, text, presenceFor, remainingFor }) {
       data-testid="scene-note"
       className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-14"
       style={{ opacity: presence }}
-      aria-live="polite"
     >
       <div
         aria-hidden="true"
@@ -45,8 +44,12 @@ export function SceneNote({ progress, text, presenceFor, remainingFor }) {
 
       <motion.div className="relative max-w-2xl" style={{ y: lift }}>
         <Brackets />
+        {/* Announce the finished sentence; the scramble is decorative. */}
         <p className="text-center font-mono text-xl leading-relaxed text-ui-text-primary">
-          {resolved}
+          <span className="sr-only" aria-live="polite">
+            {text}
+          </span>
+          <span aria-hidden="true">{resolved}</span>
         </p>
         <motion.div
           aria-hidden="true"

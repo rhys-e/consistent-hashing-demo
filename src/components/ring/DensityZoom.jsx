@@ -7,13 +7,14 @@ import { ringPoint } from '../../story/projection';
 import {
   annotationAt,
   annotationPresenceAt,
-  buildSteps,
   createTimeline,
-  stepAtRest,
+  overlapped,
+  stepsFromRests,
 } from '../../story/sceneSteps';
 import { buildFullScaleModel } from '../../story/topology';
 import { LAYOUT, ServerRing } from './RingParts';
 import SceneAnnotation from './SceneAnnotation';
+import { useMotionDerived } from '../../story/useMotionDerived';
 
 /**
  * Magnify a window of the dense ring onto a strip. Same dash pattern, on a line.
@@ -167,10 +168,7 @@ export function buildZoomTimeline() {
 export const ZOOM_BEATS = buildZoomTimeline();
 
 export function buildZoomSteps(timeline) {
-  return buildSteps(
-    timeline.rests.filter(entry => entry.label).map(entry => stepAtRest(entry, entry.label)),
-    timeline.end
-  );
+  return stepsFromRests(timeline);
 }
 
 export const ZOOM_STEPS = buildZoomSteps(ZOOM_BEATS);
@@ -201,15 +199,17 @@ const magnifiedAt = (timeline, progressValue) =>
  * would shift every strip by three quarters of its width.
  */
 function StripBand({ progress, ranges, color, timeline }) {
-  const patternAt = latest => {
+  // Scan the window once; dash and opacity read this result.
+  const pattern = useTransform(progress, latest => {
     const inside = windowRanges(ranges, windowAt(timeline, latest), WINDOW);
     return buildDashPattern(inside, { pathStart: 0 });
-  };
+  });
 
-  const dashArray = useTransform(progress, latest => patternAt(latest)?.dashArray);
-  const dashOffset = useTransform(progress, latest => patternAt(latest)?.dashOffset);
-  const opacity = useTransform(progress, latest =>
-    patternAt(latest) ? magnifiedAt(timeline, latest) : 0
+  const dashArray = useTransform(pattern, latest => latest?.dashArray);
+  const dashOffset = useTransform(pattern, latest => latest?.dashOffset);
+  // Name both inputs: two transforms of `progress` are unordered, so `.get()` can be a frame behind.
+  const opacity = useTransform([progress, pattern], ([latest, current]) =>
+    current ? magnifiedAt(timeline, latest) : 0
   );
 
   return (
@@ -406,20 +406,11 @@ function ClosingKey({ progress, model, timeline, sampleKey, land, route }) {
   // the question.
   const labelOpacity = useTransform(progress, latest => landedAt(latest));
 
-  /**
-   * Colour is a React attribute, so subscribe rather than transform. Snapshot as a
-   * string: a fresh object from `getSnapshot` would re-render forever.
-   */
-  const answeredAt = React.useCallback(
-    latest =>
-      easeInOutCubic(rangeProgress(latest, route.from, route.to)) >= 1
-        ? server.color
-        : theme.colors.ui.text.bright,
-    [route, server]
+  const color = useMotionDerived(progress, latest =>
+    easeInOutCubic(rangeProgress(latest, route.from, route.to)) >= 1
+      ? server.color
+      : theme.colors.ui.text.bright
   );
-  const subscribe = React.useCallback(notify => progress.on('change', notify), [progress]);
-  const readColor = React.useCallback(() => answeredAt(progress.get()), [answeredAt, progress]);
-  const color = React.useSyncExternalStore(subscribe, readColor, readColor);
 
   const landing = useTransform(progress, latest => stripX(timeline, latest, sampleKey.arrival));
   const flare = useTransform(progress, latest =>
@@ -489,22 +480,6 @@ function ClosingKey({ progress, model, timeline, sampleKey, land, route }) {
   );
 }
 
-/**
- * One key's slice of a shared movement, so the three cascade instead of moving as
- * a block.
- *
- * Landing together and walking together would read as one event with three marks
- * in it. Offset, each key is its own small demonstration, and the viewer who
- * misses the first has two more.
- */
-function staggered(window, index, count, overlap) {
-  const total = window.to - window.from;
-  const span = total / (1 + (count - 1) * (1 - overlap));
-  const step = span * (1 - overlap);
-
-  return { from: window.from + index * step, to: window.from + index * step + span };
-}
-
 /** Loosely cascaded on the way down, more nearly one at a time on the way along. */
 const LAND_OVERLAP = 0.72;
 const ROUTE_OVERLAP = 0.45;
@@ -519,8 +494,8 @@ function ClosingKeys({ progress, model, timeline }) {
           model={model}
           timeline={timeline}
           sampleKey={sampleKey}
-          land={staggered(timeline.land, index, CLOSING_KEYS.length, LAND_OVERLAP)}
-          route={staggered(timeline.route, index, CLOSING_KEYS.length, ROUTE_OVERLAP)}
+          land={overlapped(timeline.land, index, CLOSING_KEYS.length, LAND_OVERLAP)}
+          route={overlapped(timeline.route, index, CLOSING_KEYS.length, ROUTE_OVERLAP)}
         />
       ))}
     </g>
@@ -537,16 +512,10 @@ function StripReadout({ progress, model, timeline }) {
     [model, timeline]
   );
 
-  /**
-   * Text React owns, counted as the window sweeps. Snapshot the finished sentence:
-   * a new `{ranges, servers}` object each call would never compare equal.
-   */
-  const subscribe = React.useCallback(notify => progress.on('change', notify), [progress]);
-  const readCounts = React.useCallback(() => {
-    const { ranges, servers } = countsAt(progress.get());
+  const counts = useMotionDerived(progress, latest => {
+    const { ranges, servers } = countsAt(latest);
     return `${ranges} ranges, ${servers} different servers`;
-  }, [countsAt, progress]);
-  const counts = React.useSyncExternalStore(subscribe, readCounts, readCounts);
+  });
 
   /**
    * The count belongs to one window, so it is only shown while the window is

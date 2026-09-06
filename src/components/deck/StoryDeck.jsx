@@ -183,6 +183,7 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
 
   const goTo = useCallback(next => send({ type: 'GOTO', index: next }), [send]);
   const engage = useCallback(() => send({ type: 'ENGAGE' }), [send]);
+  const sceneComplete = useCallback(() => send({ type: 'SCENE_COMPLETE' }), [send]);
 
   /** Touch gestures already engage the deck, so only mouse movement wakes the ticks. */
   const [pointerAwake, setPointerAwake] = useState(false);
@@ -315,7 +316,8 @@ export function StoryDeck({ slides, initialIndex = 0, urlSync = false }) {
         {slides.map((slide, slideIndex) => {
           const isCurrent = slideIndex === index;
           const active = isSettled && isCurrent;
-          const onComplete = isCurrent ? () => send({ type: 'SCENE_COMPLETE' }) : undefined;
+          // Stable so a slide's finish effect does not re-run on every deck render.
+          const onComplete = isCurrent ? sceneComplete : undefined;
 
           return (
             // Override global section margins and contain each slide's content.

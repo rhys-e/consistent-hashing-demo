@@ -167,7 +167,14 @@ export function remapDelta(before, after) {
     if (owned.serverId === owns.serverId) continue;
 
     const previous = ranges[ranges.length - 1];
-    if (previous && previous.to === from && previous.serverId === owns.serverId) {
+    // Merge only when the new owner and the previous owner both match.
+    const joins =
+      previous &&
+      previous.to === from &&
+      previous.serverId === owns.serverId &&
+      previous.fromServerId === owned.serverId;
+
+    if (joins) {
       previous.to = to;
     } else {
       ranges.push({ from, to, serverId: owns.serverId, fromServerId: owned.serverId });

@@ -12,9 +12,9 @@ import { ringPoint } from '../../story/projection';
 import {
   annotationAt,
   annotationPresenceAt,
-  buildSteps,
   createTimeline,
-  stepAtRest,
+  staggered,
+  stepsFromRests,
 } from '../../story/sceneSteps';
 import { buildSpreadModel, REMOVAL_KEYS } from '../../story/topology';
 import { PLACED_SPREAD } from '../../story/placedRing';
@@ -41,13 +41,6 @@ const WHOLE_REST = 1.6;
 /** Long enough that a step lands clear of the movement either side of it. */
 const REST = 0.5;
 const READING_REST = 5;
-
-function staggered({ from, to, count, each }, index) {
-  const step = count > 1 ? (to - from - each) / (count - 1) : 0;
-  const start = from + index * step;
-
-  return { from: start, to: start + each };
-}
 
 export function buildSpreadTimeline(model) {
   const timeline = createTimeline({ readingRest: READING_REST });
@@ -112,10 +105,7 @@ export const SPREAD_MODEL = buildSpreadModel(PLACED_SPREAD);
 export const SPREAD_BEATS = buildSpreadTimeline(SPREAD_MODEL);
 
 export function buildSpreadSteps(timeline) {
-  return buildSteps(
-    timeline.rests.filter(entry => entry.label).map(entry => stepAtRest(entry, entry.label)),
-    timeline.end
-  );
+  return stepsFromRests(timeline);
 }
 
 export const SPREAD_STEPS = buildSpreadSteps(SPREAD_BEATS);

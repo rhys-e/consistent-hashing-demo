@@ -7,9 +7,9 @@ import { buildDashPattern, windowRanges } from '../../story/ringDash';
 import {
   annotationAt,
   annotationPresenceAt,
-  buildSteps,
   createTimeline,
-  stepAtRest,
+  staggered,
+  stepsFromRests,
 } from '../../story/sceneSteps';
 import { useAnimatedNumber } from '../../story/useAnimatedNumber';
 import { LAYOUT, ServerMarker } from './RingParts';
@@ -45,14 +45,6 @@ const MULTIPLY = { move: 3.4, each: 0.55 };
 const MORPH = 1.1;
 
 export const TREATMENTS = ['fill-in', 'carry-over', 'through-window', 'multiply'];
-
-/** The window for one item of a staggered group, as Scenes 3 and 4 deal theirs. */
-function staggered({ from, to, count, each }, index) {
-  const step = count > 1 ? (to - from - each) / (count - 1) : 0;
-  const start = from + index * step;
-
-  return { from: start, to: start + each };
-}
 
 /**
  * The scene as durations laid end to end.
@@ -139,10 +131,7 @@ export function buildRampTimeline(model, { treatment = 'fill-in' } = {}) {
 }
 
 export function buildRampSteps(timeline) {
-  return buildSteps(
-    timeline.rests.filter(rest => rest.label).map(rest => stepAtRest(rest, rest.label)),
-    timeline.end
-  );
+  return stepsFromRests(timeline);
 }
 
 /**

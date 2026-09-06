@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion, useTransform } from 'motion/react';
 import theme from '../../themes';
+import { RING } from '../../story/stage';
+import { useMotionDerived } from '../../story/useMotionDerived';
 import { arcRanges, buildDashPattern } from '../../story/ringDash';
 import { rangeProgress } from '../../story/easing';
 import { ringPoint } from '../../story/projection';
@@ -24,13 +26,7 @@ import { toHashLabel } from '../../story/hashSpace';
  * same composition the full-scale scenes use — a viewer arriving from one of them
  * finds the ring where they left it.
  */
-export const LAYOUT = {
-  centreX: 392,
-  centreY: 310,
-  radius: 232,
-  panel: { x: 760, y: 185, width: 300 },
-  annotation: { x: 760, y: 420, width: 300 },
-};
+export const LAYOUT = RING;
 
 const ARC_WIDTH = 12;
 /**
@@ -58,8 +54,6 @@ const ARC_WIDTH = 12;
  * `fade` is kept for the Storybook comparison that settled this, and for nothing
  * else. No scene passes it.
  */
-const ARC_BANDS = 8;
-const ARC_BAND_ALPHA = 0.26;
 /**
  * A server is a node straddling the band, ringed in the background colour.
  *
@@ -146,11 +140,9 @@ export function OwnershipArc({
   lengthFor,
   fullLength,
   opacityFor,
-  fade = false,
   layer,
 }) {
   const vanishBelow = Math.min(FADE_BELOW, (fullLength ?? FADE_BELOW) / 2);
-  const bands = Array.from({ length: ARC_BANDS }, (unused, index) => (index + 1) / ARC_BANDS);
   const opacity = useTransform(
     progress,
     latest => rangeProgress(lengthFor(latest), 0, vanishBelow) * (opacityFor?.(latest) ?? 1)
@@ -158,16 +150,13 @@ export function OwnershipArc({
 
   return (
     <motion.g data-layer={layer} style={{ opacity }}>
-      {(fade ? bands : [1]).map(fraction => (
-        <ArcBand
-          key={fraction}
-          progress={progress}
-          endsAt={endsAt}
-          color={color}
-          lengthFor={latest => Math.max(MIN_DRAW, lengthFor(latest) * fraction)}
-          alpha={fade ? ARC_BAND_ALPHA : 1}
-        />
-      ))}
+      <ArcBand
+        progress={progress}
+        endsAt={endsAt}
+        color={color}
+        lengthFor={latest => Math.max(MIN_DRAW, lengthFor(latest))}
+        alpha={1}
+      />
     </motion.g>
   );
 }
@@ -352,13 +341,7 @@ export function KeyMark({ progress, sampleKey, colorFor, presenceFor, labelFor, 
     Math.min(1, (insetAt(latest) / KEY.inset) * 0.4)
   );
 
-  // Colour is not something a motion value can drive out of render, and it changes
-  // only as the absorbing arc passes over the key — see `keyColorAt`.
-  const [color, setColor] = React.useState(() => colorFor(progress.get()));
-  React.useEffect(
-    () => progress.on('change', latest => setColor(colorFor(latest))),
-    [colorFor, progress]
-  );
+  const color = useMotionDerived(progress, colorFor);
 
   const labelPresence = useTransform(progress, labelFor ?? (() => 0));
   /**
