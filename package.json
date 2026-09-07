@@ -69,6 +69,6 @@
   "overrides": {
     "brace-expansion": "5.0.9",
     "minimatch": "10.2.6",
-    "zod-validation-error": "4.0.2"
+    "zod-validation-error": "5.0.0"
   }
 }
