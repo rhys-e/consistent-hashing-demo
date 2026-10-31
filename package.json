@@ -24,7 +24,7 @@
   "author": "rhys-e",
   "dependencies": {
     "@xstate/react": "6.1.0",
-    "motion": "12.43.0",
+    "motion": "13.5.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "xstate": "5.33.2"
